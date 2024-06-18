@@ -1,0 +1,3 @@
+CREATE DATABASE initdatabase;
+CREATE USER inituser WITH ENCRYPTED PASSWORD 'test';
+GRANT ALL PRIVILEGES ON DATABASE initdatabase TO inituser;

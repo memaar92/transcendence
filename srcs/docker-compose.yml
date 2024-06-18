@@ -1,0 +1,36 @@
+services:
+  postresql:
+    restart: unless-stopped
+    build: requirements/postgresql
+    volumes:
+      - database_volume:/var/lib/postgresql/data/pgdata
+    ports:
+      - 5432:5432
+    env_file:
+      - .env
+    secrets:
+      - psql_db
+      - psql_pw
+      - psql_user_pwd
+      - psql_user
+
+volumes:
+  database_volume:
+    driver_opts:
+      type: none
+      device: /home/$USER/transdata/database_volume
+      o: bind
+
+networks:
+  transcendence_network:
+    driver: bridge
+
+secrets:
+  psql_db:
+    file: ../secrets/psql_db.txt
+  psql_pw:
+    file: ../secrets/psql_pw.txt
+  psql_user_pwd:
+    file: ../secrets/psql_user_pw.txt
+  psql_user:
+    file: ../secrets/psql_user.txt
