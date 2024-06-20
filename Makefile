@@ -3,7 +3,10 @@
 all:
 	- mkdir /home/$(USER)/transdata/
 	- mkdir /home/$(USER)/transdata/database_volume
-	docker-compose -f srcs/docker-compose.yml up
+	docker-compose -f srcs/docker-compose.yml up -d
+
+activate:
+	source ./djangoenv/bin/activate
 
 build:
 	docker-compose -f srcs/docker-compose.yml build
