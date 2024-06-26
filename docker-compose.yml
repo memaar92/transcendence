@@ -1,0 +1,26 @@
+services:
+  backend:
+    build: python/
+    restart: unless-stopped
+    volumes:
+      - transcendence:/usr/src/transcendence
+
+  nginx:
+    build: nginx/
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - transcendence:/usr/src/transcendence
+    depends_on:
+      - backend
+
+volumes:
+  transcendence:
+    name: transcendence
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: $PWD/app
