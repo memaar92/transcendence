@@ -35,22 +35,21 @@
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <a class="navbar-brand" href="#">MyApp</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+        <!-- Navbar-Inhalt wie Logo, Toggle-Button usw. -->
+        <div class="d-flex">
+            <a class="nav-link btn btn-primary btn-sm me-2" href="" onclick="loadContent('home'); return false;">Home</a>
+            <a class="nav-link btn btn-info btn-sm" href="" onclick="loadContent('profile'); return false;">Profile</a>
+        </div>
+
         <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav mr-auto">
-                <li class="nav-item active">
-                    <a class="nav-link" href="#" onclick="loadContent('home')">Home <span class="sr-only">(current)</span></a>
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link btn btn-primary btn-lg" href="/login/" role="button">Login</a>
                 </li>
-                <!-- Add other nav items here -->
+                <li class="nav-item">
+                    <a class="nav-link btn btn-success btn-lg ml-2" href="/register/" role="button">Register</a>
+                </li>
             </ul>
-            <form class="form-inline my-2 my-lg-0">
-                <input class="form-control mr-sm-2" type="search" placeholder="Username" aria-label="Username">
-                <input class="form-control mr-sm-2" type="password" placeholder="Password" aria-label="Password">
-                <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Login</button>
-            </form>
         </div>
     </nav>
 
@@ -73,13 +72,25 @@
             .then(response => response.text())
             .then(html => {
                 document.getElementById('main-content').innerHTML = html;
+                history.pushState({page: page}, null, `/user/${page}/`);
             })
             .catch(error => console.error('Error loading the page: ', error));
+    }
+
+    function loadLoginForm(login) {
+        fetch(`/user/${login}`)
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('navbarNav').innerHTML = html;
+                history.pushState({login: login}, null, `/user/${login}`);
+            })
+            .catch(error => console.error('Error loading the login form: ', error));
     }
 
     // Example of loading the 'home' content on initial load
     document.addEventListener('DOMContentLoaded', function() {
         loadContent('home');
+        loadLoginForm('login');
     });
     </script>
 </body>

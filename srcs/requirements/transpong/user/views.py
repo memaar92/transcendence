@@ -26,6 +26,15 @@ def logout_view(request):
     logout(request)
     return redirect('index')
 
+def login_check(request):
+    return render(request, 'login_check.html')
+
+def login(request):
+    return render(request, 'login.html')
+
+def profile(request):
+    return render(request, 'profile.html')
+
 def home_content(request):
     # Return HTML content for the 'home' section
     return render(request, 'home_content.html')
