@@ -16,6 +16,8 @@ class Games(models.Model):
     id = models.AutoField(primary_key=True)
     home_id = models.ForeignKey(User, related_name='home_id', on_delete=models.SET_NULL, null=True)
     visitor_id = models.ForeignKey(User, related_name='visitor_id', on_delete=models.SET_NULL, null=True)
+    visitor_score = models.IntegerField()
+    home_score = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
