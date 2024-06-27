@@ -1,26 +1,19 @@
 services:
   backend:
-    build: python/
+    container_name: backend
+    build: docker/backend/
     restart: unless-stopped
     volumes:
-      - transcendence:/usr/src/transcendence
+      - .:/app
 
   nginx:
-    build: nginx/
+    container_name: nginx
+    build: docker/nginx/
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - transcendence:/usr/src/transcendence
+      - .:/app
     depends_on:
       - backend
-
-volumes:
-  transcendence:
-    name: transcendence
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: $PWD/app

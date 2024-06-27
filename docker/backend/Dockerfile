@@ -1,6 +1,6 @@
 FROM python:3.10.12-slim
 
-ARG APP_DIR=/usr/src/transcendence
+ARG APP_DIR=/app
 
 # Set the same environment variable in the container
 ENV APP_DIR=${APP_DIR}
@@ -13,11 +13,11 @@ ENV PYTHONUNBUFFERED 1
 
 WORKDIR ${APP_DIR}
 
-COPY tools/requirements.txt ${APP_DIR}
+COPY ./tools/requirements.txt ${APP_DIR}/requirements.txt
 
 RUN pip3 install --no-cache-dir -r requirements.txt
 
-COPY transcendence/ ${APP_DIR}
+WORKDIR ${APP_DIR}/backend
 
 EXPOSE 8000
 
