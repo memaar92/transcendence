@@ -13,15 +13,17 @@ ENV PYTHONUNBUFFERED 1
 
 WORKDIR ${APP_DIR}
 
-COPY ./tools/requirements.txt ${APP_DIR}/requirements.txt
+COPY tools/requirements.txt ${APP_DIR}/requirements.txt
 
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 WORKDIR ${APP_DIR}/backend
 
+COPY scripts/backend.sh /backend.sh
+RUN chmod +x /backend.sh
+
 EXPOSE 8000
 
-# CMD python manage.py runserver
-# CMD daphne backend.asgi:application -u $APP_DIR/daphne.sock
+ENTRYPOINT ["/backend.sh"]
 
-CMD daphne -b 0.0.0.0 backend.asgi:application
+# CMD daphne -b 0.0.0.0 backend.asgi:application
