@@ -11,6 +11,170 @@
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <canvas id="gameCanvas" width="1200" height="800"></canvas>
+    <script>
+        let url = "ws://" + window.location.host + "/ws/pong/";
+        const chatSocket = new WebSocket(url);
+        let clickCount = 0; // Variable to keep track of the number of clicks
+
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            console.log(data);
+        };
+
+        // Variables to track paddle movement
+        let leftPaddleUp = false;
+        let leftPaddleDown = false;
+        let rightPaddleUp = false;
+        let rightPaddleDown = false;
+        const paddleSpeed = 5; // Adjust as needed
+
+        // Event listeners for key down
+        document.addEventListener('keydown', (event) => {
+            switch(event.code) {
+                case 'ArrowUp':
+                    rightPaddleUp = true;
+                    break;
+                case 'ArrowDown':
+                    rightPaddleDown = true;
+                    break;
+                case 'KeyW': // 'W' key
+                    leftPaddleUp = true;
+                    break;
+                case 'KeyS': // 'S' key
+                    leftPaddleDown = true;
+                    break;
+            }
+        });
+
+        // Event listeners for key up
+        document.addEventListener('keyup', (event) => {
+            switch(event.code) {
+                case 'ArrowUp':
+                    rightPaddleUp = false;
+                    break;
+                case 'ArrowDown':
+                    rightPaddleDown = false;
+                    break;
+                case 'KeyW':
+                    leftPaddleUp = false;
+                    break;
+                case 'KeyS':
+                    leftPaddleDown = false;
+                    break;
+            }
+        });
+
+        function updatePaddlePositions() {
+            // Move left paddle
+            if (leftPaddleUp && leftPaddle.y > 0) {
+                leftPaddle.y -= paddleSpeed;
+            }
+            if (leftPaddleDown && leftPaddle.y < canvas.height - paddleHeight) {
+                leftPaddle.y += paddleSpeed;
+            }
+
+            // Move right paddle
+            if (rightPaddleUp && rightPaddle.y > 0) {
+                rightPaddle.y -= paddleSpeed;
+            }
+            if (rightPaddleDown && rightPaddle.y < canvas.height - paddleHeight) {
+                rightPaddle.y += paddleSpeed;
+            }
+        }
+
+        // Initialize canvas and context
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Ball properties
+        const ball = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: 10,
+            dx: 2, // Change in position (speed) along x-axis
+            dy: -2 // Change in position (speed) along y-axis
+        };
+
+        // Paddle properties
+        const paddleWidth = 10;
+        const paddleHeight = 75;
+        const leftPaddle = {
+            x: 0,
+            y: canvas.height / 2 - paddleHeight / 2
+        };
+        const rightPaddle = {
+            x: canvas.width - paddleWidth,
+            y: canvas.height / 2 - paddleHeight / 2
+        };
+
+        function drawBall() {
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI*2);
+            ctx.fillStyle = '#0095DD';
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawPaddle(paddle) {
+            ctx.beginPath();
+            ctx.fillRect(paddle.x, paddle.y, paddleWidth, paddleHeight);
+            ctx.fillStyle = '#0095DD';
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function draw() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw ball and paddles
+            drawBall();
+            drawPaddle(leftPaddle);
+            drawPaddle(rightPaddle);
+
+            // Update paddle positions based on current input
+            updatePaddlePositions();
+
+            // Check for ball collision with top and bottom walls
+            if (ball.y + ball.dy - ball.radius < 0 || ball.y + ball.dy + ball.radius > canvas.height) {
+                ball.dy = -ball.dy; // Reverse the ball's vertical direction
+            }
+
+            // Check for ball collision with left paddle
+            if (ball.x - ball.radius <= leftPaddle.x + paddleWidth &&
+                ball.y + ball.radius >= leftPaddle.y &&
+                ball.y - ball.radius <= leftPaddle.y + paddleHeight) {
+                ball.dx = -ball.dx; // Reverse the ball's horizontal direction
+            }
+
+            // Check for ball collision with right paddle
+            if (ball.x + ball.radius >= rightPaddle.x &&
+                ball.y + ball.radius >= rightPaddle.y &&
+                ball.y - ball.radius <= rightPaddle.y + paddleHeight) {
+                ball.dx = -ball.dx; // Reverse the ball's horizontal direction
+            }
+
+            // Reset ball if it leaves the canvas
+            if (ball.x - ball.radius > canvas.width || ball.x + ball.radius < 0) {
+                // Reset ball position to the center of the canvas
+                ball.x = canvas.width / 2;
+                ball.y = canvas.height / 2;
+                // Optionally, reset the ball's direction and speed
+                ball.dx = -ball.dx; // Reverse direction as an example
+                ball.dy = 3; // Reset to a default speed as an example
+            }
+
+            // Update ball position for next frame
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+
+            // Request next frame
+            requestAnimationFrame(draw);
+        }
+
+        // Start animation
+        draw();
+    </script>
 </body>
 </html>

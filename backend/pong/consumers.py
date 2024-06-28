@@ -1,5 +1,6 @@
 import json
 import uuid
+from time import sleep
 
 from channels.generic.websocket import WebsocketConsumer
 from channels.layers import get_channel_layer
@@ -27,4 +28,6 @@ class MultiplayerConsumer(WebsocketConsumer):
         )
 
     def receive(self, text_data):
-        text_data_json = json.loads(text_data)
+        if text_data:
+            text_data_json = json.loads(text_data)
+            self.send(text_data=text_data)
