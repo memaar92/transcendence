@@ -66,32 +66,52 @@
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-    // Function to dynamically load content into the main container
-    function loadContent(page) {
-        fetch(`/user/${page}/`)
-            .then(response => response.text())
-            .then(html => {
-                document.getElementById('main-content').innerHTML = html;
+// Function to dynamically load content into the main container
+function loadContent(page, pushState = true) {
+    fetch(`/user/${page}/`)
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('main-content').innerHTML = html;
+            if (pushState) {
                 history.pushState({page: page}, null, `/user/${page}/`);
-            })
-            .catch(error => console.error('Error loading the page: ', error));
-    }
+            }
+        })
+        .catch(error => console.error('Error loading the page: ', error));
+}
 
-    function loadLoginForm(login) {
-        fetch(`/user/${login}`)
-            .then(response => response.text())
-            .then(html => {
-                document.getElementById('navbarNav').innerHTML = html;
+function loadLoginForm(login, pushState = true) {
+    fetch(`/user/${login}`)
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('navbarNav').innerHTML = html;
+            if (pushState) {
                 history.pushState({login: login}, null, `/user/${login}`);
-            })
-            .catch(error => console.error('Error loading the login form: ', error));
-    }
+            }
+        })
+        .catch(error => console.error('Error loading the login form: ', error));
+}
 
-    // Example of loading the 'home' content on initial load
-    document.addEventListener('DOMContentLoaded', function() {
-        loadContent('home');
-        loadLoginForm('login');
-    });
+// Handle back/forward button navigation
+window.onpopstate = function(event) {
+    console.log("Popstate event:", event.state); // Debugging line to see the state
+    if (event.state) {
+        if (event.state.page) {
+            console.log("Loading page content for:", event.state.page); // Debugging line
+            loadContent(event.state.page, false); // Load content without pushing state
+        } else if (event.state.login) {
+            console.log("Loading login form for:", event.state.login); // Debugging line
+            loadLoginForm(event.state.login, false); // Load login form without pushing state
+        }
+    } else {
+        console.log("No state found in popstate event"); // Debugging line
+    }
+};
+
+// Example of loading the 'home' content on initial load
+document.addEventListener('DOMContentLoaded', function() {
+    loadContent('home');
+    loadLoginForm('login');
+});
     </script>
 </body>
 </html>
