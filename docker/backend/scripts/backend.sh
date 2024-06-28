@@ -2,6 +2,13 @@
 
 python3 manage.py makemigrations && python3 manage.py migrate
 
-daphne -b 0.0.0.0 backend.asgi:application
+# Creates Admin page static files # TODO: Remove in production
+# -------------------------------------
+# Admin panel USERNAME: admin PASSWORD: admin
+python3 manage.py collectstatic
+python3 manage.py createsuperuser --noinput --username admin --email wayne@waynescoffee.ch
+echo "from django.contrib.auth import get_user_model; User = get_user_model(); user = User.objects.get(username='admin'); user.set_password('admin'); user.save()" | python3 manage.py shell
+# -------------------------------------
 
-tail -f /dev/null
+
+exec daphne -b 0.0.0.0 backend.asgi:application

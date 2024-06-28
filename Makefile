@@ -25,16 +25,19 @@ re_backend:
 	docker rmi -f $$(docker images | grep backend | awk '{print $$3}')
 	docker compose up -d --build backend
 
-restart_backend:
-	docker restart $$(docker ps -a | grep backend | awk '{print $$1}')
-
 re_frontend:
 	docker compose stop frontend
 	docker rmi -f $$(docker images | grep frontend | awk '{print $$3}')
 	docker compose up -d --build frontend
 
+re_nginx:
+	docker compose stop nginx
+	docker rmi -f $$(docker images | grep nginx | awk '{print $$3}')
+	docker compose up -d --build nginx
 
-# carefull :D
+restart_backend:
+	docker restart $$(docker ps -a | grep backend | awk '{print $$1}')
+
 fclean: down
 	docker system prune -af
 
