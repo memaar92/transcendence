@@ -14,12 +14,60 @@
     <canvas id="gameCanvas" width="1200" height="800"></canvas>
     <script>
         let url = "ws://" + window.location.host + "/ws/pong/";
-        const chatSocket = new WebSocket(url);
+        const gameSocket = new WebSocket(url);
         let clickCount = 0; // Variable to keep track of the number of clicks
 
-        chatSocket.onmessage = function(e) {
+        gameSocket.onopen = function(e) {
+            console.log('WebSocket connection established.');
+        };
+
+        gameSocket.onclose = function(e) {
+            console.error('WebSocket connection closed.');
+        };
+
+        gameSocket.onerror = function(e) {
+            console.error('WebSocket error: ' + e);
+        };
+
+        // Paddle properties
+        const paddleWidth = 10;
+        const paddleHeight = 75;
+        const leftPaddle = {
+            x: 0,
+            y: 0
+        };
+        const rightPaddle = {
+            x: 0,
+            y: 0
+        };
+        
+        const ball = {
+            x: 0,
+            y: 0,
+            radius: 10,
+            dx: 4, // Change in position (speed) along x-axis
+            dy: -4 // Change in position (speed) along y-axis
+        };
+
+        gameSocket.onmessage = function(e) {
             const data = JSON.parse(e.data);
             console.log(data);
+            // Check for player 1
+            if (data.player_1 && data.player_1.x !== undefined && data.player_1.y !== undefined) {
+                leftPaddle.x = data.player_1.x * canvas.width - paddleWidth * (data.player_1.player_number - 1);
+                leftPaddle.y = data.player_1.y * canvas.height - paddleHeight / 2;
+            }
+            // Check for player 2
+            if (data.player_2 && data.player_2.x !== undefined && data.player_2.y !== undefined) {
+                rightPaddle.x = data.player_2.x * canvas.width - paddleWidth * (data.player_2.player_number - 1);
+                rightPaddle.y = data.player_2.y * canvas.height - paddleHeight / 2;
+            }
+            // Check for ball
+            if (data.ball && data.ball.x !== undefined && data.ball.y !== undefined) {
+                ball.x = data.ball.x * canvas.width;
+                ball.y = data.ball.y * canvas.height;
+            }
+            console.log(leftPaddle);
         };
 
         // Variables to track paddle movement
@@ -27,7 +75,7 @@
         let leftPaddleDown = false;
         let rightPaddleUp = false;
         let rightPaddleDown = false;
-        const paddleSpeed = 5; // Adjust as needed
+        const paddleSpeed = 8; // Adjust as needed
 
         // Event listeners for key down
         document.addEventListener('keydown', (event) => {
@@ -65,48 +113,29 @@
             }
         });
 
-        function updatePaddlePositions() {
-            // Move left paddle
-            if (leftPaddleUp && leftPaddle.y > 0) {
-                leftPaddle.y -= paddleSpeed;
-            }
-            if (leftPaddleDown && leftPaddle.y < canvas.height - paddleHeight) {
-                leftPaddle.y += paddleSpeed;
-            }
+        // function updatePaddlePositions() {
+        //     // Move left paddle
+        //     if (leftPaddleUp && leftPaddle.y > 0) {
+        //         leftPaddle.y -= paddleSpeed;
+        //     }
+        //     if (leftPaddleDown && leftPaddle.y < canvas.height - paddleHeight) {
+        //         leftPaddle.y += paddleSpeed;
+        //     }
 
-            // Move right paddle
-            if (rightPaddleUp && rightPaddle.y > 0) {
-                rightPaddle.y -= paddleSpeed;
-            }
-            if (rightPaddleDown && rightPaddle.y < canvas.height - paddleHeight) {
-                rightPaddle.y += paddleSpeed;
-            }
-        }
+        //     // Move right paddle
+        //     if (rightPaddleUp && rightPaddle.y > 0) {
+        //         rightPaddle.y -= paddleSpeed;
+        //     }
+        //     if (rightPaddleDown && rightPaddle.y < canvas.height - paddleHeight) {
+        //         rightPaddle.y += paddleSpeed;
+        //     }
+        // }
 
         // Initialize canvas and context
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
         // Ball properties
-        const ball = {
-            x: canvas.width / 2,
-            y: canvas.height / 2,
-            radius: 10,
-            dx: 2, // Change in position (speed) along x-axis
-            dy: -2 // Change in position (speed) along y-axis
-        };
-
-        // Paddle properties
-        const paddleWidth = 10;
-        const paddleHeight = 75;
-        const leftPaddle = {
-            x: 0,
-            y: canvas.height / 2 - paddleHeight / 2
-        };
-        const rightPaddle = {
-            x: canvas.width - paddleWidth,
-            y: canvas.height / 2 - paddleHeight / 2
-        };
 
         function drawBall() {
             ctx.beginPath();
@@ -134,40 +163,40 @@
             drawPaddle(rightPaddle);
 
             // Update paddle positions based on current input
-            updatePaddlePositions();
+            // updatePaddlePositions();
 
             // Check for ball collision with top and bottom walls
-            if (ball.y + ball.dy - ball.radius < 0 || ball.y + ball.dy + ball.radius > canvas.height) {
-                ball.dy = -ball.dy; // Reverse the ball's vertical direction
-            }
+            // if (ball.y + ball.dy - ball.radius < 0 || ball.y + ball.dy + ball.radius > canvas.height) {
+            //     ball.dy = -ball.dy; // Reverse the ball's vertical direction
+            // }
 
-            // Check for ball collision with left paddle
-            if (ball.x - ball.radius <= leftPaddle.x + paddleWidth &&
-                ball.y + ball.radius >= leftPaddle.y &&
-                ball.y - ball.radius <= leftPaddle.y + paddleHeight) {
-                ball.dx = -ball.dx; // Reverse the ball's horizontal direction
-            }
+            // // Check for ball collision with left paddle
+            // if (ball.x - ball.radius <= leftPaddle.x + paddleWidth &&
+            //     ball.y + ball.radius >= leftPaddle.y &&
+            //     ball.y - ball.radius <= leftPaddle.y + paddleHeight) {
+            //     ball.dx = -ball.dx; // Reverse the ball's horizontal direction
+            // }
 
-            // Check for ball collision with right paddle
-            if (ball.x + ball.radius >= rightPaddle.x &&
-                ball.y + ball.radius >= rightPaddle.y &&
-                ball.y - ball.radius <= rightPaddle.y + paddleHeight) {
-                ball.dx = -ball.dx; // Reverse the ball's horizontal direction
-            }
+            // // Check for ball collision with right paddle
+            // if (ball.x + ball.radius >= rightPaddle.x &&
+            //     ball.y + ball.radius >= rightPaddle.y &&
+            //     ball.y - ball.radius <= rightPaddle.y + paddleHeight) {
+            //     ball.dx = -ball.dx; // Reverse the ball's horizontal direction
+            // }
 
-            // Reset ball if it leaves the canvas
-            if (ball.x - ball.radius > canvas.width || ball.x + ball.radius < 0) {
-                // Reset ball position to the center of the canvas
-                ball.x = canvas.width / 2;
-                ball.y = canvas.height / 2;
-                // Optionally, reset the ball's direction and speed
-                ball.dx = -ball.dx; // Reverse direction as an example
-                ball.dy = 3; // Reset to a default speed as an example
-            }
+            // // Reset ball if it leaves the canvas
+            // if (ball.x - ball.radius > canvas.width || ball.x + ball.radius < 0) {
+            //     // Reset ball position to the center of the canvas
+            //     ball.x = canvas.width / 2;
+            //     ball.y = canvas.height / 2;
+            //     // Optionally, reset the ball's direction and speed
+            //     ball.dx = -ball.dx; // Reverse direction as an example
+            //     ball.dy = 3; // Reset to a default speed as an example
+            // }
 
-            // Update ball position for next frame
-            ball.x += ball.dx;
-            ball.y += ball.dy;
+            // // Update ball position for next frame
+            // ball.x += ball.dx;
+            // ball.y += ball.dy;
 
             // Request next frame
             requestAnimationFrame(draw);
