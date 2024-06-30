@@ -58,7 +58,7 @@
 
         gameSocket.onmessage = function(e) {
             const data = JSON.parse(e.data);
-            console.log(data);
+            // console.log(data);
             if (data.player_id) {
                 // Maybe send a message to the server to accnowledge the player id
                 player_id = data.player_id;
@@ -155,42 +155,6 @@
             drawBall();
             drawPaddle(leftPaddle);
             drawPaddle(rightPaddle);
-
-            // Update paddle positions based on current input
-            // updatePaddlePositions();
-
-            // Check for ball collision with top and bottom walls
-            // if (ball.y + ball.dy - ball.radius < 0 || ball.y + ball.dy + ball.radius > canvas.height) {
-            //     ball.dy = -ball.dy; // Reverse the ball's vertical direction
-            // }
-
-            // // Check for ball collision with left paddle
-            // if (ball.x - ball.radius <= leftPaddle.x + paddleWidth &&
-            //     ball.y + ball.radius >= leftPaddle.y &&
-            //     ball.y - ball.radius <= leftPaddle.y + paddleHeight) {
-            //     ball.dx = -ball.dx; // Reverse the ball's horizontal direction
-            // }
-
-            // // Check for ball collision with right paddle
-            // if (ball.x + ball.radius >= rightPaddle.x &&
-            //     ball.y + ball.radius >= rightPaddle.y &&
-            //     ball.y - ball.radius <= rightPaddle.y + paddleHeight) {
-            //     ball.dx = -ball.dx; // Reverse the ball's horizontal direction
-            // }
-
-            // // Reset ball if it leaves the canvas
-            // if (ball.x - ball.radius > canvas.width || ball.x + ball.radius < 0) {
-            //     // Reset ball position to the center of the canvas
-            //     ball.x = canvas.width / 2;
-            //     ball.y = canvas.height / 2;
-            //     // Optionally, reset the ball's direction and speed
-            //     ball.dx = -ball.dx; // Reverse direction as an example
-            //     ball.dy = 3; // Reset to a default speed as an example
-            // }
-
-            // // Update ball position for next frame
-            // ball.x += ball.dx;
-            // ball.y += ball.dy;
 
             // Request next frame
             requestAnimationFrame(draw);
