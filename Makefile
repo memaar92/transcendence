@@ -1,12 +1,8 @@
-# Makefile
-
-.DEFAULT_GOAL := all
-
-all:
-	docker-compose up --build 
-
 up:
 	docker-compose up -d
+
+build:
+	docker-compose up --build
 
 it:
 	docker-compose up
@@ -55,4 +51,4 @@ dclean:
 
 re: fclean all
 
-.PHONY: all up down build execbackend execfrontend execnginx re_backend restart_backend re_frontend fclean re
+.PHONY: up down build execbackend execfrontend execnginx re_backend restart_backend re_frontend fclean re dclean re_postgresql re_nginx 
