@@ -10,6 +10,10 @@ def layout(request):
     # Render the main page
     return render(request, 'layout.html')
 
+def json(request):
+	# Render the main page
+	return render(request, 'json.json')
+
 def login_view(request):
     # Handle login logic
     username = request.POST.get('username')

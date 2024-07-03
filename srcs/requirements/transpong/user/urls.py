@@ -5,6 +5,7 @@ urlpatterns = [
     path('', views.layout, name='layout'),
     
     path('profile/', views.profile, name='profile'),
+	path('json/', views.json, name='json'),
 
     path('login/', views.login, name='login'),
     path('login_check/', views.login_check, name='login_check'),

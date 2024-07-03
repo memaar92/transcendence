@@ -1,16 +1,14 @@
 from django.db import models
 
-class User(models.Model):
-    id = models.AutoField(primary_key=True)  # For an auto-incrementing int
-    name = models.CharField(max_length=100)
-    email = models.EmailField()
-    password = models.CharField(max_length=100)
-    profile_picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+from django.db import models
+from django.contrib.auth.models import User
+
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    profile_picture = models.ImageField(upload_to='profile_pics', default='default.jpg')
 
     def __str__(self):
-        return f"Name: {self.name} ID: {self.id}"
+        return f'{self.user.username} Profile'
     
 class Games(models.Model):
     id = models.AutoField(primary_key=True)
