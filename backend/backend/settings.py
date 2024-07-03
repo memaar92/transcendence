@@ -55,6 +55,7 @@ CHANNEL_LAYERS = {
 
 
 MIDDLEWARE = [
+	'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -70,7 +71,7 @@ ROOT_URLCONF = 'backend.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],  # Your template directories here
+        'DIRS': ['templates'],  # Your template directories here
         'APP_DIRS': False,  # Changed to False
         'OPTIONS': {
             'context_processors': [

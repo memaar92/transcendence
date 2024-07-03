@@ -1,6 +1,6 @@
 from django.urls import path
-from . import views
+from pong import views
 
 urlpatterns = [
-    path('pong/', views.pong, name='pong'),
+    path('', views.pong, name='pong'),
 ]
