@@ -1,0 +1,35 @@
+services:
+  backend:
+    container_name: backend
+    build: docker/backend/
+    image: backend:latest
+    restart: unless-stopped
+    volumes:
+      - .:/app
+    depends_on:
+      - postgresql
+
+  nginx:
+    container_name: nginx
+    build: docker/nginx/
+    image: nginx:latest
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./frontend:/var/www/html/frontend
+    depends_on:
+      - backend
+
+  postgresql:
+    container_name: postgresql
+    restart: unless-stopped
+    build: docker/postgresql
+    image: postgresql:latest
+    volumes:
+      - ./database:/var/lib/postgresql/data/pgdata
+    ports:
+      - 5432:5432
+    env_file:
+      - .env

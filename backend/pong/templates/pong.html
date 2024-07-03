@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pong Game</title>
+    <style>
+        canvas {
+            background-color: #000;
+            display: block;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="800"></canvas>
+    <script>
+        
+        let url = "ws://" + window.location.host + "/ws/pong/";
+        const gameSocket = new WebSocket(url);
+        let clickCount = 0; // Variable to keep track of the number of clicks
+        let player_id = null;
+        
+        function sendMessageToServer(player_id, key, pressed) {
+            const message = { "type": "player_update", "payload": { player_id: player_id, key: key, pressed: pressed } };
+            gameSocket.send(JSON.stringify(message));
+        }
+
+        gameSocket.onopen = function(e) {
+            console.log('WebSocket connection established.');
+        };
+
+        gameSocket.onclose = function(e) {
+            console.error('WebSocket connection closed.');
+        };
+
+        gameSocket.onerror = function(e) {
+            console.error('WebSocket error: ' + e);
+        };
+
+        // Paddle properties
+        const paddleWidth = 20;
+        const paddleHeight = 100;
+        const leftPaddle = {
+            x: 0,
+            y: 0
+        };
+        const rightPaddle = {
+            x: 0,
+            y: 0
+        };
+        
+        const ball = {
+            x: 0,
+            y: 0,
+            radius: 10,
+            // dx: 4, // Change in position (speed) along x-axis
+            // dy: -4 // Change in position (speed) along y-axis
+        };
+
+        gameSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            // console.log(data);
+            if (data.player_id) {
+                // Maybe send a message to the server to accnowledge the player id
+                player_id = data.player_id;
+                console.log('Player ID: ' + data.player_id);
+                return;
+            }
+            // Check for player 1
+            if (data.player_1 && data.player_1.x !== undefined && data.player_1.y !== undefined) {
+                leftPaddle.x = 0;
+                leftPaddle.y = data.player_1.y;
+            }
+            // Check for player 2
+            if (data.player_2 && data.player_2.x !== undefined && data.player_2.y !== undefined) {
+                rightPaddle.x = canvas.width - paddleWidth;
+                rightPaddle.y = data.player_2.y;
+            }
+            // Check for ball
+            if (data.ball && data.ball.x !== undefined && data.ball.y !== undefined) {
+                ball.x = data.ball.x;
+                ball.y = data.ball.y;
+            }
+        };
+
+        // Variables to track paddle movement
+        let leftPaddleUp = false;
+        let leftPaddleDown = false;
+        let rightPaddleUp = false;
+        let rightPaddleDown = false;
+        const paddleSpeed = 8; // Adjust as needed
+
+        // Event listeners for key down
+        document.addEventListener('keydown', (event) => {
+            switch(event.code) {
+                case 'ArrowUp':
+                    sendMessageToServer(player_id, 'up', true);
+                    break;
+                case 'ArrowDown':
+                    sendMessageToServer(player_id, 'down', true);
+                    break;
+                case 'KeyW': // 'W' key
+                    sendMessageToServer(player_id, 'up', true);
+                    break;
+                case 'KeyS': // 'S' key
+                    sendMessageToServer(player_id, 'down', true);
+                    break;
+            }
+        });
+
+        // Event listeners for key up
+        document.addEventListener('keyup', (event) => {
+            switch(event.code) {
+                case 'ArrowUp':
+                    sendMessageToServer(player_id, 'up', false);
+                    break;
+                case 'ArrowDown':
+                    sendMessageToServer(player_id, 'down', false);
+                    break;
+                case 'KeyW':
+                    sendMessageToServer(player_id, 'up', false);
+                    break;
+                case 'KeyS':
+                    sendMessageToServer(player_id, 'down', false);
+                    break;
+            }
+        });
+
+        // Initialize canvas and context
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Ball properties
+
+        function drawBall() {
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI*2);
+            ctx.fillStyle = '#0095DD';
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawPaddle(paddle) {
+            ctx.beginPath();
+            ctx.fillRect(paddle.x, paddle.y, paddleWidth, paddleHeight);
+            ctx.fillStyle = '#0095DD';
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function draw() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw ball and paddles
+            drawBall();
+            drawPaddle(leftPaddle);
+            drawPaddle(rightPaddle);
+
+            // Request next frame
+            requestAnimationFrame(draw);
+        }
+
+        // Start animation
+        draw();
+    </script>
+</body>
+</html>
