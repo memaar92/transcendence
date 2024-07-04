@@ -111,17 +111,23 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+def get_secret(secret_name):
+    try:
+        with open(f'/run/secrets/{secret_name}') as secret_file:
+            return secret_file.read().strip()
+    except IOError as e:
+            raise Exception(f'Critical error reading secret {secret_name}: {e}')
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'testdatabase',
-        'USER': 'testuser',
-        'PASSWORD': 'testpassword',
+        'NAME': get_secret('psql_database'),
+        'USER': get_secret('psql_user'),
+        'PASSWORD': get_secret('psql_password'),
         'HOST': 'postgresql',
         'PORT': '5432',
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators

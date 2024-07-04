@@ -8,6 +8,10 @@ services:
       - .:/app
     depends_on:
       - postgresql
+    secrets:
+      - psql_password
+      - psql_user
+      - psql_database
 
   nginx:
     container_name: nginx
@@ -29,7 +33,25 @@ services:
     image: postgresql:latest
     volumes:
       - ./database:/var/lib/postgresql/data/pgdata
+# TODO: delete for deployment
     ports:
       - 5432:5432
-    env_file:
-      - .env
+# TODO: maybe add another not root user for safety in deployment
+    secrets:
+      - psql_password
+      - psql_user
+      - psql_database
+    environment:
+      - POSTGRES_PASSWORD_FILE=/run/secrets/psql_password
+      - POSTGRES_USER_FILE=/run/secrets/psql_user
+      - POSTGRES_DB_FILE=/run/secrets/psql_database
+
+secrets:
+  psql_password:
+    file: ./secrets/postgresql_password.txt
+  psql_user:
+    file: ./secrets/postgresql_user.txt
+  psql_database:
+    file: ./secrets/postgresql_database.txt
+  psql_su_password:
+    file: ./secrets/postgresql_su_password.txt
