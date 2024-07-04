@@ -34,9 +34,9 @@ re_nginx:
 	docker rmi -f $$(docker images | grep nginx | awk '{print $$3}')
 	docker compose up -d --build nginx.
 
-re_postgresql:
-	docker compose stop postgresql
-	docker rmi -f $$(docker images | grep postgresql | awk '{print $$3}')
+re_postgres:
+	docker compose stop postgres
+	docker rmi -f $$(docker images | grep postgres | awk '{print $$3}')
 	docker compose up -d --build nginx
 
 restart_backend:
@@ -51,4 +51,4 @@ dclean:
 
 re: fclean all
 
-.PHONY: up down build execbackend execfrontend execnginx re_backend restart_backend re_frontend fclean re dclean re_postgresql re_nginx 
+.PHONY: up down build execbackend execfrontend execnginx re_backend restart_backend re_frontend fclean re dclean re_postgres re_nginx 
