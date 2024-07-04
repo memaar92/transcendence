@@ -1,0 +1,57 @@
+services:
+  backend:
+    container_name: backend
+    build: docker/backend/
+    image: backend:latest
+    restart: unless-stopped
+    volumes:
+      - .:/app
+    depends_on:
+      - postgresql
+    secrets:
+      - psql_password
+      - psql_user
+      - psql_database
+
+  nginx:
+    container_name: nginx
+    build: docker/nginx/
+    image: nginx:latest
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./frontend:/var/www/html/frontend
+    depends_on:
+      - backend
+
+  postgresql:
+    image: postgres:latest
+    container_name: postgres
+    restart: unless-stopped
+    volumes:
+      - ./database:/var/lib/postgresql/data/pgdata
+# TODO: delete for deployment
+    ports:
+      - 5432:5432
+# TODO: maybe add another not root user for safety in deployment
+    secrets:
+      - psql_password
+      - psql_user
+      - psql_database
+    environment:
+      - POSTGRES_PASSWORD_FILE=/run/secrets/psql_password
+      - POSTGRES_USER_FILE=/run/secrets/psql_user
+      - POSTGRES_DB_FILE=/run/secrets/psql_database
+      - PGDATA=/var/lib/postgresql/data/pgdata
+
+secrets:
+  psql_password:
+    file: ./secrets/postgresql_password.txt
+  psql_user:
+    file: ./secrets/postgresql_user.txt
+  psql_database:
+    file: ./secrets/postgresql_database.txt
+  psql_su_password:
+    file: ./secrets/postgresql_su_password.txt
