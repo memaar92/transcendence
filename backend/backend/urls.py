@@ -20,6 +20,6 @@ from . import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-	path('json/', views.json, name='json'),
+    path('json/', views.json, name='json'),
     path('pong/', include('pong.urls')),
 ]
