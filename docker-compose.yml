@@ -12,6 +12,8 @@ services:
       - psql_password
       - psql_user
       - psql_database
+    env_file:
+      - docker/backend/tools/.dev_ips
 
   nginx:
     container_name: nginx
