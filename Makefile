@@ -17,9 +17,6 @@ down:
 execbackend:
 	docker exec -it backend /bin/bash
 
-execfrontend:
-	docker exec -it frontend /bin/bash
-
 execnginx:
 	docker exec -it nginx /bin/sh
 
@@ -27,11 +24,6 @@ re_backend:
 	docker compose stop backend
 	docker rmi -f $$(docker images | grep backend | awk '{print $$3}')
 	docker compose up -d --build backend
-
-re_frontend:
-	docker compose stop frontend
-	docker rmi -f $$(docker images | grep frontend | awk '{print $$3}')
-	docker compose up -d --build frontend
 
 re_nginx:
 	docker compose stop nginx
@@ -41,7 +33,7 @@ re_nginx:
 re_postgres:
 	docker compose stop postgres
 	docker rmi -f $$(docker images | grep postgres | awk '{print $$3}')
-	docker compose up -d --build nginx
+	docker compose up -d --build postgres
 
 restart:
 	docker-compose restart
@@ -70,4 +62,4 @@ update_ips:
 
 re: fclean all
 
-.PHONY: up down build execbackend execfrontend execnginx re_backend restart_backend re_frontend fclean re dclean re_postgres re_nginx update_ips restart
+.PHONY: up down build execbackend execnginx re_backend restart_backend fclean re dclean re_postgres re_nginx update_ips restart
