@@ -42,8 +42,8 @@ class Player:
         self.speed = speed
         self.x = x
         self.y = y
-        self.up = False
-        self.down = False
+        self.direction = 0
+        self.connection_id = None
 
     def update(self, x, y):
         self.x = x
@@ -134,17 +134,20 @@ class MultiplayerConsumer(AsyncWebsocketConsumer):
     ball = Ball(canvas_size, tick_rate, player_1, player_2, canvas_size.x / 2, canvas_size.y / 2, 10, degree_to_vector(-50))
     connected_players = 0
     broadcast_task = None
+    connected_users = {}
 
 
     async def connect(self):
         await self.accept()
         await self.channel_layer.group_add(self.game_group_name, self.channel_name)
-        if MultiplayerConsumer.connected_players <= 2:
+        self.connected_users[self.channel_name] = self
+        
+        if MultiplayerConsumer.connected_players < 2:
+            if MultiplayerConsumer.connected_players == 0:
+                self.player_1.connection_id = self.channel_name
+            elif MultiplayerConsumer.connected_players == 1:
+                self.player_2.connection_id = self.channel_name
             MultiplayerConsumer.connected_players += 1
-            await self.send(text_data=json.dumps({
-                'type': 'player_id',
-                'player_id': self.player_1.player_id if MultiplayerConsumer.connected_players == 1 else MultiplayerConsumer.player_2.player_id,
-            }))
             if MultiplayerConsumer.connected_players == 1:
                 MultiplayerConsumer.broadcast_task = asyncio.create_task(self.broadcast_game_data())
 
@@ -157,35 +160,22 @@ class MultiplayerConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         # Process incoming message from WebSocket
-        
+        user_id = self.channel_name
         if text_data:
             text_data_json = json.loads(text_data)
             if text_data_json["type"] == "player_update":
                 payload = text_data_json["payload"]
-                player_id = payload["player_id"]
-                key = payload["key"]
-                pressed = payload["pressed"]
-                if player_id == self.player_1.player_id:
-                    if key == "up":
-                        self.player_1.up = pressed
-                    elif key == "down":
-                        self.player_1.down = pressed
-                elif player_id == self.player_2.player_id:
-                    if key == "up":
-                        self.player_2.up = pressed
-                    elif key == "down":
-                        self.player_2.down = pressed 
+                direction = payload["direction"]
+                if direction < -1 or direction > 1:
+                    return
+                if user_id == self.player_1.connection_id:
+                    self.player_1.direction = payload["direction"]
+                elif user_id == self.player_2.connection_id:
+                    self.player_2.direction = payload["direction"]
 
     def update_player_position(self):
-        if self.player_1.up:
-            self.player_1.y -= self.player_1.speed
-        if self.player_1.down:
-            self.player_1.y += self.player_1.speed
-        if self.player_2.up:
-            self.player_2.y -= self.player_2.speed
-        if self.player_2.down:
-            self.player_2.y += self.player_2.speed
-        pass
+        self.player_1.y += self.player_1.speed * self.player_1.direction
+        self.player_2.y += self.player_2.speed * self.player_2.direction
 
     def update_game_state(self):
         self.update_player_position()
