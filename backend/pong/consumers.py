@@ -174,8 +174,23 @@ class MultiplayerConsumer(AsyncWebsocketConsumer):
                     self.player_2.direction = payload["direction"]
 
     def update_player_position(self):
-        self.player_1.y += self.player_1.speed * self.player_1.direction
-        self.player_2.y += self.player_2.speed * self.player_2.direction
+        player_1_velocity = self.player_1.speed * self.player_1.direction
+        player_1_new_y = self.player_1.y + player_1_velocity
+        player_2_velocity = self.player_2.speed * self.player_2.direction
+        player_2_new_y = self.player_2.y + player_2_velocity
+
+        if player_1_new_y < 0:
+            self.player_1.y = 0
+        elif player_1_new_y + self.player_1.paddle_height > self.canvas_size.y:
+            self.player_1.y = self.canvas_size.y - self.player_1.paddle_height
+        else:
+            self.player_1.y = player_1_new_y
+        if self.player_2.y < 0:
+            self.player_2.y = 0
+        elif self.player_2.y + self.player_2.paddle_height > self.canvas_size.y:
+            self.player_2.y = self.canvas_size.y - self.player_2.paddle_height
+        else:
+            self.player_2.y = player_2_new_y
 
     def update_game_state(self):
         self.update_player_position()
