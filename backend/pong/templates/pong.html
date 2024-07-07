@@ -69,23 +69,28 @@
             radius: 10
         };
 
+        gameSocket.binaryType = 'arraybuffer'; // Set the binary type of the WebSocket to ArrayBuffer
+
         gameSocket.onmessage = function(e) {
-            const data = JSON.parse(e.data);
-            // Check for player 1
-            if (data.player_1 && data.player_1.x !== undefined && data.player_1.y !== undefined) {
-                leftPaddle.x = 0;
-                leftPaddle.y = data.player_1.y;
-            }
-            // Check for player 2
-            if (data.player_2 && data.player_2.x !== undefined && data.player_2.y !== undefined) {
-                rightPaddle.x = canvas.width - paddleWidth;
-                rightPaddle.y = data.player_2.y;
-            }
-            // Check for ball
-            if (data.ball && data.ball.x !== undefined && data.ball.y !== undefined) {
-                ball.x = data.ball.x;
-                ball.y = data.ball.y;
-            }
+            const data = event.data;
+            const view = new DataView(data);
+
+            // Read the six floats from the DataView
+            // Assuming the data is little-endian; if not, set the second argument to false
+            const player1PosX = view.getFloat32(0, true);
+            const player1PosY = view.getFloat32(4, true);
+            const player2PosX = view.getFloat32(8, true);
+            const player2PosY = view.getFloat32(12, true);
+            const ballPosX = view.getFloat32(16, true);
+            const ballPosY = view.getFloat32(20, true);
+
+            // Update the paddles and ball
+            leftPaddle.x = player1PosX;
+            leftPaddle.y = player1PosY;
+            rightPaddle.x = player2PosX;
+            rightPaddle.y = player2PosY;
+            ball.x = ballPosX;
+            ball.y = ballPosY;
         };
 
     // Event listeners for key down
@@ -164,16 +169,17 @@
 
         function drawBall() {
             ctx.beginPath();
-            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI*2);
-            ctx.fillStyle = '#0095DD';
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(ball.x, ball.y, ball.radius * 2, ball.radius * 2);
+            // ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI*2);
             ctx.fill();
             ctx.closePath();
         }
 
         function drawPaddle(paddle) {
             ctx.beginPath();
-            ctx.fillRect(paddle.x, paddle.y, paddleWidth, paddleHeight);
             ctx.fillStyle = '#0095DD';
+            ctx.fillRect(paddle.x, paddle.y, paddleWidth, paddleHeight);
             ctx.fill();
             ctx.closePath();
         }
@@ -183,9 +189,9 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             // Draw ball and paddles
-            drawBall();
             drawPaddle(leftPaddle);
             drawPaddle(rightPaddle);
+            drawBall();
 
             // Request next frame
             requestAnimationFrame(draw);

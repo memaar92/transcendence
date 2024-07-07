@@ -1,4 +1,5 @@
 import json
+import struct
 from asyncio import sleep
 import asyncio
 from .game_logic.player import Player
@@ -18,12 +19,12 @@ class MultiplayerConsumer(AsyncWebsocketConsumer):
     start_position_p1 = Vector2(0, canvas_size.y / 2 - paddle_size.y / 2)
     start_position_p2 = Vector2(canvas_size.x - paddle_size.x, canvas_size.y / 2 - paddle_size.y / 2)
     start_position_ball = Vector2(canvas_size.x / 2, canvas_size.y / 2)
-    player_speed = 12.0
+    player_speed = 15.0
     tick_rate = 60
     player_1 = Player(1, start_position_p1, paddle_size, 12, canvas_size)
     player_2 = Player(2, start_position_p2, paddle_size, 12, canvas_size)
     collider_list = [player_1, player_2]
-    ball = Ball(start_position_ball, degree_to_vector(-50), 10, 20, canvas_size, tick_rate, collider_list)
+    ball = Ball(start_position_ball, degree_to_vector(-50), 20, 20, canvas_size, tick_rate, collider_list)
     broadcast_task = None
     connected_users = {}
 
@@ -75,16 +76,18 @@ class MultiplayerConsumer(AsyncWebsocketConsumer):
             while True:
                 # Update game state, e.g., move the ball, check for scores
                 self.update_game_state()
-                player_data = {
-                    "player_1": self.player_1.to_dict(),
-                    "player_2": self.player_2.to_dict(),
-                    "ball": self.ball.to_dict(),
-                }
+                binary_data = struct.pack('ffffff',
+                                        self.player_1.position.x,
+                                        self.player_1.position.y,
+                                        self.player_2.position.x,
+                                        self.player_2.position.y,
+                                        self.ball.position.x,
+                                        self.ball.position.y)                
                 await self.channel_layer.group_send(
                     self.game_group_name,
                     {
                         "type": "group.message",
-                        "message": json.dumps(player_data),
+                        "message": binary_data,
                     }
                 )
                 await sleep(1/self.tick_rate)  # Adjust the sleep time to control broadcast rate
@@ -94,4 +97,4 @@ class MultiplayerConsumer(AsyncWebsocketConsumer):
 
     async def group_message(self, event):
         # Forward the message to WebSocket
-        await self.send(text_data=event['message'])
+        await self.send(bytes_data=event['message'])
