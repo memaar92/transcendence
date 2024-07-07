@@ -6,41 +6,47 @@ from .game_logic.ball import Ball
 from .utils.vector2 import Vector2
 from .utils.vector_utils import degree_to_vector
 
+import logging
+logger = logging.getLogger(__name__)
+
 from channels.generic.websocket import AsyncWebsocketConsumer
-
-
-
 
 class MultiplayerConsumer(AsyncWebsocketConsumer):
     game_group_name = "game_group"
     canvas_size = Vector2(800, 800)
+    paddle_size = Vector2(20, 100)
+    start_position_p1 = Vector2(0, canvas_size.y / 2 - paddle_size.y / 2)
+    start_position_p2 = Vector2(canvas_size.x - paddle_size.x, canvas_size.y / 2 - paddle_size.y / 2)
+    start_position_ball = Vector2(canvas_size.x / 2, canvas_size.y / 2)
+    player_speed = 12.0
     tick_rate = 60
-    player_1 = Player(1, 0, 400 - 50, 100, 20, 12)
-    player_2 = Player(2, 800 - 20, 400 - 50, 100, 20, 12)
-    ball = Ball(canvas_size, tick_rate, player_1, player_2, canvas_size.x / 2, canvas_size.y / 2, 10, degree_to_vector(-50))
-    connected_players = 0
+    player_1 = Player(1, start_position_p1, paddle_size, 12, canvas_size)
+    player_2 = Player(2, start_position_p2, paddle_size, 12, canvas_size)
+    collider_list = [player_1, player_2]
+    ball = Ball(start_position_ball, degree_to_vector(-50), 10, 20, canvas_size, tick_rate, collider_list)
     broadcast_task = None
     connected_users = {}
+
 
 
     async def connect(self):
         await self.accept()
         await self.channel_layer.group_add(self.game_group_name, self.channel_name)
         self.connected_users[self.channel_name] = self
+        number_of_connected_users = len(MultiplayerConsumer.connected_users)
         
-        if MultiplayerConsumer.connected_players < 2:
-            if MultiplayerConsumer.connected_players == 0:
+        if number_of_connected_users <= 2:
+            if number_of_connected_users == 1:
                 self.player_1.connection_id = self.channel_name
-            elif MultiplayerConsumer.connected_players == 1:
-                self.player_2.connection_id = self.channel_name
-            MultiplayerConsumer.connected_players += 1
-            if MultiplayerConsumer.connected_players == 1:
                 MultiplayerConsumer.broadcast_task = asyncio.create_task(self.broadcast_game_data())
+            elif number_of_connected_users == 2:
+                self.player_2.connection_id = self.channel_name
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.game_group_name, self.channel_name)
-        MultiplayerConsumer.connected_players -= 1
-        if MultiplayerConsumer.connected_players == 0 and MultiplayerConsumer.broadcast_task:
+        del MultiplayerConsumer.connected_users[self.channel_name]
+        number_of_connected_users = len(MultiplayerConsumer.connected_users)
+        if number_of_connected_users == 0 and MultiplayerConsumer.broadcast_task:
             MultiplayerConsumer.broadcast_task.cancel()
             MultiplayerConsumer.broadcast_task = None
 
@@ -59,34 +65,15 @@ class MultiplayerConsumer(AsyncWebsocketConsumer):
                 elif user_id == self.player_2.connection_id:
                     self.player_2.direction = payload["direction"]
 
-    def update_player_position(self):
-        player_1_velocity = self.player_1.speed * self.player_1.direction
-        player_1_new_y = self.player_1.y + player_1_velocity
-        player_2_velocity = self.player_2.speed * self.player_2.direction
-        player_2_new_y = self.player_2.y + player_2_velocity
-
-        if player_1_new_y < 0:
-            self.player_1.y = 0
-        elif player_1_new_y + self.player_1.paddle_height > self.canvas_size.y:
-            self.player_1.y = self.canvas_size.y - self.player_1.paddle_height
-        else:
-            self.player_1.y = player_1_new_y
-        if self.player_2.y < 0:
-            self.player_2.y = 0
-        elif self.player_2.y + self.player_2.paddle_height > self.canvas_size.y:
-            self.player_2.y = self.canvas_size.y - self.player_2.paddle_height
-        else:
-            self.player_2.y = player_2_new_y
-
     def update_game_state(self):
-        self.update_player_position()
-        self.ball.update()
+        self.player_1.move()
+        self.player_2.move()
+        self.ball.move()
 
     async def broadcast_game_data(self):
         try:
             while True:
                 # Update game state, e.g., move the ball, check for scores
-                # self.update_game_state()
                 self.update_game_state()
                 player_data = {
                     "player_1": self.player_1.to_dict(),
@@ -102,7 +89,7 @@ class MultiplayerConsumer(AsyncWebsocketConsumer):
                 )
                 await sleep(1/self.tick_rate)  # Adjust the sleep time to control broadcast rate
         except asyncio.CancelledError:
-            # Handle cancellation gracefully
+            # Handle cancellation gracefully # TODO: Implement this
             pass
 
     async def group_message(self, event):

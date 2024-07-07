@@ -35,7 +35,6 @@ ALLOWED_HOSTS = [
     ] if host
 ]
 
-
 # Application definition
 
 INSTALLED_APPS = [

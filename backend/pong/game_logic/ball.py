@@ -1,72 +1,79 @@
 from pong.game_logic.player import Player
 from pong.utils.vector2 import Vector2
 from pong.utils.vector_utils import degree_to_vector
+import copy
+
+import logging
+logger = logging.getLogger(__name__)
 
 class Ball:
-    def __init__(self, canvas_size: Vector2, tick_rate, player_1: Player, player_2: Player, x: float, y: float, speed: float = 20, direction: Vector2 = degree_to_vector(45), size: int = 20):
-        self.canvas_size = canvas_size
-        self.tick_rate = tick_rate
-        self.player_1 = player_1
-        self.player_2 = player_2
-        self.x = x
-        self.y = y
-        self.direction = direction
-        self.speed = speed
-        self.size = size
-        self.start_pos = Vector2(x, y)
-        self.can_collide_with_paddle = True # Prevents multiple collisions with the same paddle
-        self.ticks_until_can_collide_with_paddle = 0 # Prevents multiple collisions with the same paddle
+    def __init__(self,
+                position: Vector2 = Vector2(0, 0),
+                direction: Vector2 = degree_to_vector(45),
+                speed: float = 20,
+                size: int = 20,
+                canvas_size: Vector2 = Vector2(10000, 10000),
+                tick_rate: int = 60,
+                collider_list: list = None):
 
-    def update(self):
+        self.position: Vector2 = position
+        self.direction: Vector2 = direction
+        self.speed: float = speed
+        self.size: int = size
+        self.start_pos: Vector2 = copy.deepcopy(position)
+
+        # Game configuration
+        self.canvas_size: Vector2 = canvas_size
+        self.tick_rate: int = tick_rate
+
+        # List of colliders that the ball can collide with
+        self.collider_list: list = collider_list
+        self.collided_with_list: list = []
+
+    def move(self):
         """Update the ball's position based on its speed and direction."""
-        if self.is_colliding_with_wall(self.canvas_size.y):
+        if self.is_colliding_with_wall():
             self.direction.y *= -1
-        elif self.is_colliding_with_paddle(self.player_1) or self.is_colliding_with_paddle(self.player_2):
-            self.ticks_until_can_collide_with_paddle = self.tick_rate / 2
-            self.can_collide_with_paddle = False
+        elif self.is_colliding():
             self.direction.x *= -1
-        elif self.is_colliding_with_goal(self.canvas_size.x):
+        elif self.is_colliding_with_goal():
+            self.reset()
             self.direction.x *= -1
-            self.x = self.start_pos.x
-            self.y = self.start_pos.y
-        self.x += self.speed * self.direction.x
-        self.y += self.speed * self.direction.y
+        self.position.x += self.speed * self.direction.x
+        self.position.y += self.speed * self.direction.y
 
-    # def get_new_position(self):
-    #     """Predict the ball's next position."""
-    #     return (
-    #         Vector2(
-    #             self.x + self.speed * self.direction.x,
-    #             self.y + self.speed * self.direction.y
-    #             )
-    #         )
+    def reset(self):
+        self.position.x = self.start_pos.x
+        self.position.y = self.start_pos.y
+        """Reset the ball to its starting position."""
 
-    def is_colliding_with_paddle(self, paddle):
+
+    def is_colliding(self):
         """Check if the ball is colliding with a paddle."""
-        if self.ticks_until_can_collide_with_paddle > 0:
-            self.ticks_until_can_collide_with_paddle -= 1
-            if self.ticks_until_can_collide_with_paddle == 0:
-                self.can_collide_with_paddle = True
-        if self.can_collide_with_paddle:
-            return (
-                self.x < paddle.x + paddle.paddle_width
-                and self.x + self.size > paddle.x
-                and self.y < paddle.y + paddle.paddle_height
-                and self.y + self.size > paddle.y
-            )
-        else:
-            return False
+        for collider in self.collider_list:
+            if (self.position.x < collider.position.x + collider.size.x and
+                self.position.x + self.size > collider.position.x and
+                self.position.y < collider.position.y + collider.size.y and
+                self.position.y + self.size > collider.position.y):
+                if collider not in self.collided_with_list:
+                    self.collided_with_list.append(collider)
+                return True
+            elif collider in self.collided_with_list:
+                self.collided_with_list.remove(collider)
+        return False
 
-    def is_colliding_with_wall(self, canvas_height):
+    def is_colliding_with_wall(self):
         """Check if the ball is colliding with the top or bottom wall."""
-        return self.y < 0 or self.y + self.size > canvas_height
-    
-    def is_colliding_with_goal(self, canvas_width):
+        return (self.position.y < 0 or
+                self.position.y + self.size > self.canvas_size.y)
+
+    def is_colliding_with_goal(self):
         """Check if the ball is colliding with the left or right wall."""
-        return self.x < 0 or self.x + self.size > canvas_width
+        return (self.position.x < 0 or
+                self.position.x + self.size > self.canvas_size.x)
 
     def to_dict(self):
         return {
-            "x": self.x,
-            "y": self.y
+            "x": self.position.x,
+            "y": self.position.y
         }
