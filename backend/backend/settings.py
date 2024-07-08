@@ -33,6 +33,7 @@ ALLOWED_HOSTS = ["192.168.178.37", "localhost", "79.235.212.214"]
 INSTALLED_APPS = [
     'daphne',
     'channels',
+    'rest_framework'
     
     'django.contrib.admin',
     'django.contrib.auth',
@@ -183,3 +184,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 #TODO: delete for deployment
 CORS_ALLOW_ALL_ORIGINS = True
+
+
+REST_FRAMEWORK = {
+    # Use Django's standard `django.contrib.auth` permissions,
+    # or allow read-only access for unauthenticated users.
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
+    ]
+}
