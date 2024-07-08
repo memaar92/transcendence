@@ -11,3 +11,4 @@ echo "from django.contrib.auth import get_user_model; User = get_user_model(); u
 # -------------------------------------
 
 exec daphne -b 0.0.0.0 backend.asgi:application
+

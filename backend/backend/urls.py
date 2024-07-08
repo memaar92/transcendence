@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from . import views
-from usermanagement.views import CreateUserView, UserGameHistory
+from usermanagement.views import CreateUserView
 from django.contrib.auth.models import User
 from rest_framework import routers, serializers, viewsets
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -47,5 +47,4 @@ urlpatterns = [
     path('api/token/', TokenObtainPairView.as_view(), name='get_token'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='refresh'),
     path('api/', include('usermanagement.urls')),
-    path('api/user/history', UserGameHistory.as_view(), name='history')
 ]
