@@ -12,6 +12,8 @@ services:
       - psql_password
       - psql_user
       - psql_database
+      - django_admin_password
+      - django_admin_user
 
   nginx:
     container_name: nginx
@@ -55,3 +57,7 @@ secrets:
     file: ./secrets/postgresql_database.txt
   psql_su_password:
     file: ./secrets/postgresql_su_password.txt
+  django_admin_password:
+    file: ./secrets/django_admin_password.txt
+  django_admin_user:
+    file: ./secrets/django_admin_user.txt
