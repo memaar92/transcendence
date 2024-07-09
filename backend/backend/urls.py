@@ -23,27 +23,8 @@ from rest_framework import routers, serializers, viewsets
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 
-# Serializers define the API representation.
-class UserSerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
-        model = User
-        fields = ['url', 'username', 'email', 'is_staff']
-
-# ViewSets define the view behavior.
-class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-
-# Routers provide an easy way of automatically determining the URL conf.
-router = routers.DefaultRouter()
-router.register(r'users', UserViewSet)
-
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('json/', views.json, name='json'),
     path('pong/', include('pong.urls')),
-    path('api-auth/', include('rest_framework.urls')),
-    path('api/user/register/', CreateUserView.as_view(), name='register'),
     path('api/token/', TokenObtainPairView.as_view(), name='get_token'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='refresh'),
     path('api/', include('usermanagement.urls')),

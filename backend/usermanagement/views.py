@@ -7,18 +7,13 @@ from .serializers import UserSerializer, GameHistorySerializer, UserNameSerializ
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 
-# Create your views here.
-def json(request):
-	# Render the main page
-	return render(request, 'json.json')
-
 class CreateUserView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
 
 class ChangeUserView(generics.RetrieveUpdateDestroyAPIView):
-	serializer_class = UserSerializer(filter)
+	serializer_class = UserSerializer
 	permission_classes = [IsAuthenticated]
 
 	def get_queryset(self):
@@ -26,11 +21,11 @@ class ChangeUserView(generics.RetrieveUpdateDestroyAPIView):
 		return User.objects.filter(pk=user.pk)
 
 class UserView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get(self, request, pk):
         user = get_object_or_404(User, pk=pk)
-        # Überprüfen, ob der angemeldete Nutzer derselbe ist wie der angeforderte Nutzer
+        # check if user is the same as the one requesting
         if request.user.pk == user.pk:
             serializer = UserSerializer(user)
         else:
@@ -38,8 +33,8 @@ class UserView(APIView):
         return Response(serializer.data)
 
 class GameHistoryList(APIView):
-    permission_classes = [IsAuthenticated]
-    
+    permission_classes = [AllowAny]
+	#only allow GET requests
     def get(self, request, format=None):
         games = Games.objects.all()
         serializer = GameHistorySerializer(games, many=True)
