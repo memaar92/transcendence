@@ -8,19 +8,20 @@ https://docs.djangoproject.com/en/5.0/howto/deployment/asgi/
 """
 
 import os
-import pong.routing
-
-from channels.routing import ProtocolTypeRouter, URLRouter
-from channels.auth import AuthMiddlewareStack
-from django.core.asgi import get_asgi_application
-
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
 
+from channels.routing import ProtocolTypeRouter, URLRouter
+from django.core.asgi import get_asgi_application
+django_asgi_app = get_asgi_application()
+
+from channels.auth import AuthMiddlewareStack
+import live_chat.routing
+
 application = ProtocolTypeRouter({
-    "http": get_asgi_application(),
+    "http": django_asgi_app,
     "websocket": AuthMiddlewareStack(
         URLRouter(
-            pong.routing.websocket_urlpatterns
+            live_chat.routing.websocket_urlpatterns
         )
     ),
 })

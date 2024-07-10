@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat Test</title>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            let url = "ws://" + window.location.host + "/ws/live_chat/";
+            var ws = new WebSocket(url);
+            var senderId = "{{ sender_id }}";
+            ws.onmessage = function(event) {
+                var content = JSON.parse(event.data);
+                console.log("Received content:", content); // Log the entire content object
+    
+                switch (content.type) {
+                    case 'chat_request':
+                        console.log("Chat request from:", content.sender_name, "ID:", content.sender_id); // Log sender details
+                        displayChatRequest(content.sender_name, content.sender_id);
+                        break;
+                    case 'chat_message':
+                        console.log("Chat message:", content.message); // Log the chat message
+                        var messages = document.getElementById('messages');
+                        break;
+                    case 'user_list':
+                        console.log("User list:", content.users); // Log the list of users
+                        displayUserList(content.users);
+                        break;
+                    case 'chat_request_accepted':
+                        console.log("Chat request accepted by:", content.sender_id); // Log the accepter's ID
+                        alert('Chat request accepted!');
+                        break;
+                    case 'chat_request_denied':
+                        console.log("Chat request denied by:", content.sender_id); // Log the denier's ID
+                        alert('Chat request denied!');
+                }
+            };
+    
+            function displayChatRequest(senderName, senderId) {
+                var requests = document.getElementById('messages');
+                var requestItem = document.createElement('li');
+                requestItem.textContent = `Chat request from ${senderName}: `;
+                var acceptButton = createButton('Accept', senderId, true);
+                var denyButton = createButton('Deny', senderId, false);
+                requestItem.appendChild(acceptButton);
+                requestItem.appendChild(denyButton);
+                requests.appendChild(requestItem);
+            }
+    
+            function createButton(text, senderId, isAccept) {
+                var button = document.createElement('button');
+                button.textContent = text;
+                button.onclick = function() {
+                    ws.send(JSON.stringify({
+                        'type': isAccept ? 'chat_request_accepted' : 'chat_request_denied',
+                        'sender_id': senderId
+                    }));
+                    button.parentNode.remove(); // Remove the request item after responding
+                };
+                return button;
+            }
+            function displayUserList(users) {
+                var userListElement = document.getElementById('userList');
+                userListElement.innerHTML = ''; // Clear existing list
+                users.forEach(function(user) {
+                    var userItem = document.createElement('li');
+                    userItem.textContent = user;
+                    userListElement.appendChild(userItem);
+                });
+            }
+    
+            document.getElementById("send").onclick = function() {
+                var message = document.getElementById("message-text").value;
+                ws.send(JSON.stringify({
+                    'type': 'chat_message',
+                    'message': message,
+                    'sender_id': senderId
+                }));
+            };
+            document.getElementById("send-request").onclick = function() {
+                var receiverId = document.getElementById("receiver-id").value;
+                ws.send(JSON.stringify({
+                    'type': 'chat_request',
+                    'receiver_id': receiverId,
+                    'sender_id': senderId 
+                }));
+            };
+        });
+    </script>
+</head>
+<body>
+    <ul id="messages"></ul>
+    <input type="text" id="message-text" placeholder="Write message...">
+    <button id="send">Send Message</button>
+    <br>
+    <input type="text" id="receiver-id" placeholder="Receiver ID for request...">
+    <button id="send-request">Send Chat Request</button>
+    <hr>
+    <h2>Users</h2>
+    <ul id="userList"></ul> <!-- Container for displaying user list -->
+</body>
+</html>

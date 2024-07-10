@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 	'usermanagement',
 	'corsheaders',
-    'pong',
+    'live_chat',
 ]
 
 ASGI_APPLICATION = "backend.asgi.application"
