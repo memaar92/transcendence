@@ -38,5 +38,5 @@ class GameHistorySerializer(serializers.ModelSerializer):
 
 class ProfilePictureSerializer(serializers.ModelSerializer):
 	class Meta:
-		model = User
+		model = Profile
 		fields = ['profile_picture']

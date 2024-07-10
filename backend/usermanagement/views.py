@@ -1,17 +1,19 @@
+import os
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.models import User
 from django.conf import settings
 from .models import Games
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.response import Response
 from .serializers import UserSerializer, GameHistorySerializer, UserNameSerializer, ProfilePictureSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
+from rest_framework.exceptions import PermissionDenied
 
 class CreateUserView(generics.CreateAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = [AllowAny]
+	queryset = User.objects.all()
+	serializer_class = UserSerializer
+	permission_classes = [AllowAny]
 
 class ChangeUserView(generics.RetrieveUpdateDestroyAPIView):
 	serializer_class = UserSerializer
@@ -19,7 +21,10 @@ class ChangeUserView(generics.RetrieveUpdateDestroyAPIView):
 	http_method_names = ['patch', 'delete']
 
 	def get_object(self):
-		return self.request.user
+		user = get_object_or_404(User, pk=self.kwargs['pk'])
+		if user != self.request.user:
+			raise PermissionDenied("You don't have permission to delete this profile picture.")
+		return user.profile
 
 	def patch(self, request, *args, **kwargs):
 		instance = self.get_object()
@@ -42,12 +47,12 @@ class UserView(APIView):
 		return Response(serializer.data)
 
 class GameHistoryList(APIView):
-    permission_classes = [AllowAny]
+	permission_classes = [AllowAny]
 	#only allow GET requests
-    def get(self, request, format=None):
-        games = Games.objects.all()
-        serializer = GameHistorySerializer(games, many=True)
-        return Response(serializer.data)
+	def get(self, request, format=None):
+		games = Games.objects.all()
+		serializer = GameHistorySerializer(games, many=True)
+		return Response(serializer.data)
 
 class ProfilePictureView(generics.UpdateAPIView):
 	serializer_class = ProfilePictureSerializer
@@ -55,6 +60,8 @@ class ProfilePictureView(generics.UpdateAPIView):
 
 	def get_object(self):
 		user = get_object_or_404(User, pk=self.kwargs['pk'])
+		if user != self.request.user:
+			raise PermissionDenied("You don't have permission to delete this profile picture.")
 		return user.profile
 
 	def perform_update(self, serializer):
@@ -68,16 +75,21 @@ class ProfilePictureDeleteView(generics.DestroyAPIView):
 
 	def get_object(self):
 		user = get_object_or_404(User, pk=self.kwargs['pk'])
+		if user != self.request.user:
+			raise PermissionDenied("You don't have permission to delete this profile picture.")
 		return user.profile
 
 	def delete(self, request, *args, **kwargs):
 		instance = self.get_object()
-		default_path = os.path.join(settings.MEDIA_ROOT, 'profiles/default/profilepic.jpg')
+		default_picture = 'default.png'  # The default profile picture filename
 		profile_pic_path = instance.profile_picture.path
 
-		if os.path.exists(profile_pic_path):
-			os.remove(profile_pic_path)
+		if instance.profile_picture.name != f'profile_pics/{default_picture}':  # Check if it's not the default picture
+			if os.path.exists(profile_pic_path):
+				os.remove(profile_pic_path)  # Delete the file if it exists
 
-		# Replace with default profile picture
-		instance.profile_picture.save('profilepic.jpg', ContentFile(open(default_path, 'rb').read()))
+			# Update the profile picture to the default one
+			instance.profile_picture.name = f'profile_pics/{default_picture}'
+			instance.save()
+
 		return Response(status=status.HTTP_204_NO_CONTENT)
