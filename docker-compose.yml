@@ -25,6 +25,8 @@ services:
       - "443:443"
     volumes:
       - ./frontend:/var/www/html/frontend
+      - ./backend/mediafiles:/var/www/html/mediafiles
+      - ./backend/static:/app/backend/static/
     depends_on:
       - backend
 
