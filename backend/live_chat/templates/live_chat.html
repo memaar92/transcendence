@@ -8,14 +8,24 @@
             let url = "ws://" + window.location.host + "/ws/live_chat/";
             var ws = new WebSocket(url);
             var senderId = "{{ sender_id }}";
+
+            ws.onopen = (e) => {
+                // Send a little test data, which we can use on the server if we want
+                ws.send(JSON.stringify({ "loaded" : true }));
+                // Resolve the promise - we are connected
+            }
+
+            ws.onerror = (e) => {
+                console.log(e);
+            }
+
             ws.onmessage = function(event) {
                 var content = JSON.parse(event.data);
                 console.log("Received content:", content); // Log the entire content object
     
                 switch (content.type) {
-                    case 'chat_request':
-                        console.log("Chat request from:", content.sender_name, "ID:", content.sender_id); // Log sender details
-                        displayChatRequest(content.sender_name, content.sender_id);
+                    case 'chat_request_notification':
+                        displayChatRequest(content.sender_id);
                         break;
                     case 'chat_message':
                         console.log("Chat message:", content.message); // Log the chat message
@@ -35,10 +45,10 @@
                 }
             };
     
-            function displayChatRequest(senderName, senderId) {
+            function displayChatRequest(senderId) {
                 var requests = document.getElementById('messages');
                 var requestItem = document.createElement('li');
-                requestItem.textContent = `Chat request from ${senderName}: `;
+                requestItem.textContent = `Chat request from ${senderId}`;
                 var acceptButton = createButton('Accept', senderId, true);
                 var denyButton = createButton('Deny', senderId, false);
                 requestItem.appendChild(acceptButton);
@@ -52,12 +62,14 @@
                 button.onclick = function() {
                     ws.send(JSON.stringify({
                         'type': isAccept ? 'chat_request_accepted' : 'chat_request_denied',
-                        'sender_id': senderId
+                        'sender_id': senderId,
+                        'receiver_id': document.getElementById("receiver-id").value
                     }));
                     button.parentNode.remove(); // Remove the request item after responding
                 };
                 return button;
             }
+            
             function displayUserList(users) {
                 var userListElement = document.getElementById('userList');
                 userListElement.innerHTML = ''; // Clear existing list

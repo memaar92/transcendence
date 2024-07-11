@@ -3,6 +3,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.contrib.auth.models import User
 from .models import Chat, Message
+from django.utils import timezone
 
 class ChatConsumer(AsyncWebsocketConsumer):
     user_id_to_channel_name = {}
@@ -15,7 +16,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         ChatConsumer.user_id_to_channel_name[self.user_id] = self.channel_name
         await self.accept()
         print("Connected to chat")
-        print (self.user_id)
+        print(self.user_id)
         print(self.channel_name)
         await self.broadcast_user_list()
 
@@ -43,37 +44,49 @@ class ChatConsumer(AsyncWebsocketConsumer):
             })
 
     async def send_websocket_message(self, event):
-        # Method to handle sending the actual WebSocket message
         await self.send(text_data=event['text'])
 
-    async def send_message_to_user(self, receiver_id, message, type):
+    async def send_message_to_user(self, receiver_id, message, message_type):
         receiver_id = str(receiver_id)
         channel_name = ChatConsumer.user_id_to_channel_name.get(receiver_id)
-        print ("USER " + self.user_id + " SENT MESSAGE TO " + receiver_id + " " + message + " " + type)
+        print(f"USER {self.user_id} SENT MESSAGE TO {receiver_id}: {message} ({message_type})")
         if channel_name:
             await self.channel_layer.send(channel_name, {
-                "type": type,
+                "type": "send_websocket_message",
                 "sender_id": self.user_id,
                 "receiver_id": receiver_id,
-                "message": message,
+                "text": json.dumps({
+                    "type": message_type,
+                    "message": message,
+                    "sender_id": self.user_id
+                }),
             })
-    
+
     async def chat_request(self, event):
-            sender_id = self.user_id
-            receiver_id = event['receiver_id']
-            await self.send_message_to_user(receiver_id, 'You have a new chat request from ' + sender_id, 'chat_request')
+        sender_id = self.user_id
+        receiver_id = event['receiver_id']
+        # Notify the receiver about the chat request
+        await self.send_message_to_user(receiver_id, f'You have a new chat request from {sender_id}', 'chat_request_notification')
+
+    async def chat_request_notification(self, event):
+        # This is the receiver side handler for incoming chat request notifications
+        sender_id = event['sender_id']
+        message = event['message']
+        await self.send(text_data=json.dumps({
+            'type': 'chat_request_notification',
+            'message': message,
+            'sender_id': sender_id
+        }))
 
     async def chat_request_denied(self, event):
-        sender_id = self.user_id
+        sender_id = event['sender_id']
         receiver_id = event['receiver_id']
-
-        await self.send_message_to_user(receiver_id, 'Your chat request to ' + receiver_id + ' was denied', 'chat_request_denied')
+        await self.send_message_to_user(receiver_id, f'Your chat request to {sender_id} was denied', 'chat_request_denied')
 
     async def chat_request_accepted(self, event):
-        sender_id = self.user_id
+        sender_id = event['sender_id']
         receiver_id = event['receiver_id']
-
-        await self.send_message_to_user(receiver_id, 'Your chat request to ' + receiver_id + ' was accepted', 'chat_request_accepted')
+        await self.send_message_to_user(receiver_id, f'Your chat request to {sender_id} was accepted', 'chat_request_accepted')
 
     async def receive(self, text_data=None, bytes_data=None):
         if text_data:
@@ -81,9 +94,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
             message_type = text_data_json.get('type')
             receiver_id = text_data_json.get('receiver_id')
 
+            print(message_type)
             match message_type:
                 case 'chat_request':
                     await self.chat_request(text_data_json)
+                case 'chat_request_notification':
+                    await self.chat_request_notification(text_data_json)
                 case 'chat_request_accepted':
                     await self.chat_request_accepted(text_data_json)
                 case 'chat_request_denied':
@@ -100,8 +116,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     print('Unknown message type')
 
     async def send_user_list(self):
-        # Fetch or construct the user list
-        users = self.get_user_list()
+        users = await self.get_user_list()
         await self.send(text_data=json.dumps({
             'type': 'user_list',
             'users': users
@@ -122,7 +137,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return None
 
         chats = Chat.objects.filter(participants=sender).filter(participants=receiver)
-
         chats = [chat for chat in chats if chat.participants.count() == 2]
 
         if chats:
