@@ -7,13 +7,14 @@ from django.utils import timezone
 
 class ChatConsumer(AsyncWebsocketConsumer):
     user_id_to_channel_name = {}
-
+    
     async def connect(self):
         if self.scope["user"].is_authenticated:
             self.user_id = str(self.scope["user"].id)
         else:
             self.user_id = "anonymous_" + self.channel_name
         ChatConsumer.user_id_to_channel_name[self.user_id] = self.channel_name
+        self.friends = []
         await self.accept()
         print("Connected to chat")
         print(self.user_id)
@@ -53,8 +54,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if channel_name:
             await self.channel_layer.send(channel_name, {
                 "type": "send_websocket_message",
-                "sender_id": self.user_id,
-                "receiver_id": receiver_id,
                 "text": json.dumps({
                     "type": message_type,
                     "message": message,
@@ -65,11 +64,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def chat_request(self, event):
         sender_id = self.user_id
         receiver_id = event['receiver_id']
-        # Notify the receiver about the chat request
         await self.send_message_to_user(receiver_id, f'You have a new chat request from {sender_id}', 'chat_request_notification')
 
     async def chat_request_notification(self, event):
-        # This is the receiver side handler for incoming chat request notifications
         sender_id = event['sender_id']
         message = event['message']
         await self.send(text_data=json.dumps({
@@ -81,18 +78,29 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def chat_request_denied(self, event):
         sender_id = event['sender_id']
         receiver_id = event['receiver_id']
-        await self.send_message_to_user(receiver_id, f'Your chat request to {sender_id} was denied', 'chat_request_denied')
+        await self.send(text_data=json.dumps({
+            'type': 'chat_request_denied',
+            'sender_id': sender_id,
+            'receiver_id': receiver_id
+        }))
 
     async def chat_request_accepted(self, event):
         sender_id = event['sender_id']
         receiver_id = event['receiver_id']
-        await self.send_message_to_user(receiver_id, f'Your chat request to {sender_id} was accepted', 'chat_request_accepted')
+        self.friends.append(sender_id)
+        await self.send_message_to_user(sender_id, "You are now friends with " + receiver_id, 'add_friend')
+    
+    async def add_friend(self, event):
+        receiver_id = event['receiver_id']
+        self.friends.append(receiver_id)
 
     async def receive(self, text_data=None, bytes_data=None):
         if text_data:
             text_data_json = json.loads(text_data)
             message_type = text_data_json.get('type')
             receiver_id = text_data_json.get('receiver_id')
+            content = text_data_json.get('message')
+            sender_id = text_data_json.get('sender_id')
 
             print(message_type)
             match message_type:
@@ -104,12 +112,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     await self.chat_request_accepted(text_data_json)
                 case 'chat_request_denied':
                     await self.chat_request_denied(text_data_json)
+                case 'add_friend':
+                    await self.add_friend(text_data_json)
                 case 'chat_message':
-                    chat = await self.get_or_create_chat(self.user_id, receiver_id)
-                    if not chat:
-                        return
-                    await self.save_message(chat, text_data_json.get('content'), self.user_id, receiver_id)
-                    await self.send_message_to_user(receiver_id, text_data_json.get('content'), 'chat_message')
+                    if receiver_id in self.friends:
+                        await self.send_message_to_user(receiver_id, content, 'chat_message')
+                    else:
+                        await self.send_message_to_user(sender_id, "You are not friends with " + receiver_id, 'chat_message')
                 case 'request_user_list':
                     await self.send_user_list()
                 case _:
