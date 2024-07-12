@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-all: update_ips up
+all: get_ips up
 
 up:
 	docker-compose up -d
@@ -52,17 +52,12 @@ dclean:
 	docker system prune --all --force --volumes
 
 # Get Ip addresses and export them to the .dev_ips file
-update_ips:
-	@export LOCAL_IP_WIFI=$$(ip addr show | grep inet | grep -E 'wlo|wlan|wla' | awk '{print $$2}' | cut -d/ -f1 | xargs) && \
-	export LOCAL_IP_ETH=$$(ip addr show | grep inet | grep -E 'enp|eth' | awk '{print $$2}' | cut -d/ -f1 | xargs) && \
-	export IPv4=$$(curl -s ifconfig.me -4) && \
-	export IPv6=$$(curl -s ifconfig.me -6); \
-	echo "LOCAL_IP_WIFI=$$LOCAL_IP_WIFI" > docker/backend/tools/.dev_ips && \
-	echo "LOCAL_IP_ETH=$$LOCAL_IP_ETH" >> docker/backend/tools/.dev_ips && \
-	echo "IPv4=$$IPv4" >> docker/backend/tools/.dev_ips && \
-	echo "IPv6=$$IPv6" >> docker/backend/tools/.dev_ips && \
-	echo "WiFi IP: $$LOCAL_IP_WIFI, Ethernet IP: $$LOCAL_IP_ETH, Public IPv4: $$IPv4, Public IPv6: $$IPv6"
+get_ips:
+	@echo "WiFi IP: $$(ip addr show | grep inet | grep -E 'wlo|wlan|wla' | awk '{print $$2}' | cut -d/ -f1 | xargs)" && \
+	echo "Ethernet IP: " $$(ip addr show | grep inet | grep -E 'enp|eth' | awk '{print $$2}' | cut -d/ -f1 | xargs) && \
+	echo "Public IPv4: " $$(curl -s ifconfig.me -4) && \
+	echo "Public IPv6: " $$(curl -s ifconfig.me -6);
 
 re: fclean all
 
-.PHONY: up down build execbackend execnginx re_backend restart_backend fclean re dclean re_postgres re_nginx update_ips restart execpostgres
+.PHONY: up down build execbackend execnginx re_backend restart_backend fclean re dclean re_postgres re_nginx get_ips restart execpostgres
