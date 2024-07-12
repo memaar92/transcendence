@@ -17,10 +17,25 @@
         let url = "ws://" + window.location.host + "/ws/pong/";
         const gameSocket = new WebSocket(url);
         let clickCount = 0; // Variable to keep track of the number of clicks
-        let player_id = null;
+        let move_up = false;
+        let move_down = false;
         
-        function sendMessageToServer(player_id, key, pressed) {
-            const message = { "type": "player_update", "payload": { player_id: player_id, key: key, pressed: pressed } };
+        function sendMessageToServer(key, pressed) {
+            const message = { "type": "player_update", "payload": { key: key, pressed: pressed } };
+            gameSocket.send(JSON.stringify(message));
+        }
+
+        function sendPlayerState() {
+            let message = {};
+            if (move_up && move_down) {
+                message = { "type": "player_update", "payload": { direction: 0 } };
+            } else if (move_up && !move_down) {
+                message = { "type": "player_update", "payload": { direction: -1 } };
+            } else if (!move_up && move_down) {
+                message = { "type": "player_update", "payload": { direction: 1 } };
+            } else {
+                message = { "type": "player_update", "payload": { direction: 0 } };
+            }
             gameSocket.send(JSON.stringify(message));
         }
 
@@ -51,79 +66,100 @@
         const ball = {
             x: 0,
             y: 0,
-            radius: 10,
-            // dx: 4, // Change in position (speed) along x-axis
-            // dy: -4 // Change in position (speed) along y-axis
+            radius: 10
         };
+
+        gameSocket.binaryType = 'arraybuffer'; // Set the binary type of the WebSocket to ArrayBuffer
 
         gameSocket.onmessage = function(e) {
-            const data = JSON.parse(e.data);
-            // console.log(data);
-            if (data.player_id) {
-                // Maybe send a message to the server to accnowledge the player id
-                player_id = data.player_id;
-                console.log('Player ID: ' + data.player_id);
-                return;
-            }
-            // Check for player 1
-            if (data.player_1 && data.player_1.x !== undefined && data.player_1.y !== undefined) {
-                leftPaddle.x = 0;
-                leftPaddle.y = data.player_1.y;
-            }
-            // Check for player 2
-            if (data.player_2 && data.player_2.x !== undefined && data.player_2.y !== undefined) {
-                rightPaddle.x = canvas.width - paddleWidth;
-                rightPaddle.y = data.player_2.y;
-            }
-            // Check for ball
-            if (data.ball && data.ball.x !== undefined && data.ball.y !== undefined) {
-                ball.x = data.ball.x;
-                ball.y = data.ball.y;
-            }
+            const data = event.data;
+            const view = new DataView(data);
+
+            // Read the six floats from the DataView
+            // Assuming the data is little-endian; if not, set the second argument to false
+            const player1PosX = view.getFloat32(0, true);
+            const player1PosY = view.getFloat32(4, true);
+            const player2PosX = view.getFloat32(8, true);
+            const player2PosY = view.getFloat32(12, true);
+            const ballPosX = view.getFloat32(16, true);
+            const ballPosY = view.getFloat32(20, true);
+
+            // Update the paddles and ball
+            leftPaddle.x = player1PosX;
+            leftPaddle.y = player1PosY;
+            rightPaddle.x = player2PosX;
+            rightPaddle.y = player2PosY;
+            ball.x = ballPosX;
+            ball.y = ballPosY;
         };
 
-        // Variables to track paddle movement
-        let leftPaddleUp = false;
-        let leftPaddleDown = false;
-        let rightPaddleUp = false;
-        let rightPaddleDown = false;
-        const paddleSpeed = 8; // Adjust as needed
+    // Event listeners for key down
+    document.addEventListener('keydown', (event) => {
+        let stateChanged = false;
+        switch(event.code) {
+            case 'ArrowUp':
+                if (!move_up) {
+                    move_up = true;
+                    stateChanged = true;
+                }
+                break;
+            case 'ArrowDown':
+                if (!move_down) {
+                    move_down = true;
+                    stateChanged = true;
+                }
+                break;
+            case 'KeyW': // 'W' key
+                if (!move_up) {
+                    move_up = true;
+                    stateChanged = true;
+                }
+                break;
+            case 'KeyS': // 'S' key
+                if (!move_down) {
+                    move_down = true;
+                    stateChanged = true;
+                }
+                break;
+        }
+        if (stateChanged) {
+            sendPlayerState();
+        }
+    });
 
-        // Event listeners for key down
-        document.addEventListener('keydown', (event) => {
-            switch(event.code) {
-                case 'ArrowUp':
-                    sendMessageToServer(player_id, 'up', true);
-                    break;
-                case 'ArrowDown':
-                    sendMessageToServer(player_id, 'down', true);
-                    break;
-                case 'KeyW': // 'W' key
-                    sendMessageToServer(player_id, 'up', true);
-                    break;
-                case 'KeyS': // 'S' key
-                    sendMessageToServer(player_id, 'down', true);
-                    break;
-            }
-        });
-
-        // Event listeners for key up
-        document.addEventListener('keyup', (event) => {
-            switch(event.code) {
-                case 'ArrowUp':
-                    sendMessageToServer(player_id, 'up', false);
-                    break;
-                case 'ArrowDown':
-                    sendMessageToServer(player_id, 'down', false);
-                    break;
-                case 'KeyW':
-                    sendMessageToServer(player_id, 'up', false);
-                    break;
-                case 'KeyS':
-                    sendMessageToServer(player_id, 'down', false);
-                    break;
-            }
-        });
+    // Event listeners for key up
+    document.addEventListener('keyup', (event) => {
+        let stateChanged = false;
+        switch(event.code) {
+            case 'ArrowUp':
+                if (move_up) {
+                    move_up = false;
+                    stateChanged = true;
+                }
+                break;
+            case 'ArrowDown':
+                if (move_down) {
+                    move_down = false;
+                    stateChanged = true;
+                }
+                break;
+            case 'KeyW':
+                if (move_up) {
+                    move_up = false;
+                    stateChanged = true;
+                }
+                break;
+            case 'KeyS':
+                if (move_down) {
+                    move_down = false;
+                    stateChanged = true;
+                }
+                break;
+        }
+        if (stateChanged) {
+            sendPlayerState();
+        }
+    });
 
         // Initialize canvas and context
         const canvas = document.getElementById('gameCanvas');
@@ -133,16 +169,17 @@
 
         function drawBall() {
             ctx.beginPath();
-            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI*2);
-            ctx.fillStyle = '#0095DD';
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(ball.x, ball.y, ball.radius * 2, ball.radius * 2);
+            // ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI*2);
             ctx.fill();
             ctx.closePath();
         }
 
         function drawPaddle(paddle) {
             ctx.beginPath();
-            ctx.fillRect(paddle.x, paddle.y, paddleWidth, paddleHeight);
             ctx.fillStyle = '#0095DD';
+            ctx.fillRect(paddle.x, paddle.y, paddleWidth, paddleHeight);
             ctx.fill();
             ctx.closePath();
         }
@@ -152,9 +189,9 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             // Draw ball and paddles
-            drawBall();
             drawPaddle(leftPaddle);
             drawPaddle(rightPaddle);
+            drawBall();
 
             // Request next frame
             requestAnimationFrame(draw);

@@ -1,219 +1,100 @@
 import json
-import uuid
+import struct
 from asyncio import sleep
 import asyncio
-import math
+from .game_logic.player import Player
+from .game_logic.ball import Ball
+from .utils.vector2 import Vector2
+from .utils.vector_utils import degree_to_vector
+
+import logging
+logger = logging.getLogger(__name__)
 
 from channels.generic.websocket import AsyncWebsocketConsumer
-
-def degree_to_vector(angle_degrees):
-    # Convert angle from degrees to radians
-    angle_radians = math.radians(angle_degrees)
-    # Calculate x and y components
-    x = math.cos(angle_radians)
-    y = math.sin(angle_radians)
-    return (Vector2(x, y))
-
-
-def vector_to_degree(x, y):
-    # Calculate angle in radians
-    angle_radians = math.atan2(y, x)
-    # Convert angle from radians to degrees
-    angle_degrees = math.degrees(angle_radians)
-    return angle_degrees
-
-class Vector2:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-    
-    def to_dict(self):
-        return {
-            "x": self.x,
-            "y": self.y
-        }
-
-class Player:
-    def __init__(self, player: int, x: int, y: int, paddle_height: int = 100, paddle_width: int = 20, speed: int = 10):
-        self.player_id = str(uuid.uuid4())
-        self.player = player
-        self.paddle_height = paddle_height
-        self.paddle_width = paddle_width
-        self.speed = speed
-        self.x = x
-        self.y = y
-        self.up = False
-        self.down = False
-
-    def update(self, x, y):
-        self.x = x
-        self.y = y
-
-    def to_dict(self):
-        return {
-            "player": self.player,
-            "x": self.x,
-            "y": self.y
-        }
-    
-class Ball:
-    def __init__(self, canvas_size: Vector2, tick_rate, player_1: Player, player_2: Player, x: float, y: float, speed: float = 20, direction: Vector2 = degree_to_vector(45), size: int = 20):
-        self.canvas_size = canvas_size
-        self.tick_rate = tick_rate
-        self.player_1 = player_1
-        self.player_2 = player_2
-        self.x = x
-        self.y = y
-        self.direction = direction
-        self.speed = speed
-        self.size = size
-        self.start_pos = Vector2(x, y)
-        self.can_collide_with_paddle = True # Prevents multiple collisions with the same paddle
-        self.ticks_until_can_collide_with_paddle = 0 # Prevents multiple collisions with the same paddle
-
-    def update(self):
-        """Update the ball's position based on its speed and direction."""
-        if self.is_colliding_with_wall(self.canvas_size.y):
-            self.direction.y *= -1
-        elif self.is_colliding_with_paddle(self.player_1) or self.is_colliding_with_paddle(self.player_2):
-            self.ticks_until_can_collide_with_paddle = self.tick_rate / 2
-            self.can_collide_with_paddle = False
-            self.direction.x *= -1
-        elif self.is_colliding_with_goal(self.canvas_size.x):
-            self.direction.x *= -1
-            self.x = self.start_pos.x
-            self.y = self.start_pos.y
-        self.x += self.speed * self.direction.x
-        self.y += self.speed * self.direction.y
-
-    # def get_new_position(self):
-    #     """Predict the ball's next position."""
-    #     return (
-    #         Vector2(
-    #             self.x + self.speed * self.direction.x,
-    #             self.y + self.speed * self.direction.y
-    #             )
-    #         )
-
-    def is_colliding_with_paddle(self, paddle):
-        """Check if the ball is colliding with a paddle."""
-        if self.ticks_until_can_collide_with_paddle > 0:
-            self.ticks_until_can_collide_with_paddle -= 1
-            if self.ticks_until_can_collide_with_paddle == 0:
-                self.can_collide_with_paddle = True
-        if self.can_collide_with_paddle:
-            return (
-                self.x < paddle.x + paddle.paddle_width
-                and self.x + self.size > paddle.x
-                and self.y < paddle.y + paddle.paddle_height
-                and self.y + self.size > paddle.y
-            )
-        else:
-            return False
-
-    def is_colliding_with_wall(self, canvas_height):
-        """Check if the ball is colliding with the top or bottom wall."""
-        return self.y < 0 or self.y + self.size > canvas_height
-    
-    def is_colliding_with_goal(self, canvas_width):
-        """Check if the ball is colliding with the left or right wall."""
-        return self.x < 0 or self.x + self.size > canvas_width
-
-    def to_dict(self):
-        return {
-            "x": self.x,
-            "y": self.y
-        }
 
 class MultiplayerConsumer(AsyncWebsocketConsumer):
     game_group_name = "game_group"
     canvas_size = Vector2(800, 800)
+    paddle_size = Vector2(20, 100)
+    start_position_p1 = Vector2(0, canvas_size.y / 2 - paddle_size.y / 2)
+    start_position_p2 = Vector2(canvas_size.x - paddle_size.x, canvas_size.y / 2 - paddle_size.y / 2)
+    start_position_ball = Vector2(canvas_size.x / 2, canvas_size.y / 2)
+    player_speed = 15.0
     tick_rate = 60
-    player_1 = Player(1, 0, 400 - 50, 100, 20, 12)
-    player_2 = Player(2, 800 - 20, 400 - 50, 100, 20, 12)
-    ball = Ball(canvas_size, tick_rate, player_1, player_2, canvas_size.x / 2, canvas_size.y / 2, 10, degree_to_vector(-50))
-    connected_players = 0
+    player_1 = Player(1, start_position_p1, paddle_size, 12, canvas_size)
+    player_2 = Player(2, start_position_p2, paddle_size, 12, canvas_size)
+    collider_list = [player_1, player_2]
+    ball = Ball(start_position_ball, degree_to_vector(-50), 12, 20, canvas_size, tick_rate, collider_list)
     broadcast_task = None
+    connected_users = {}
+
 
 
     async def connect(self):
         await self.accept()
         await self.channel_layer.group_add(self.game_group_name, self.channel_name)
-        if MultiplayerConsumer.connected_players <= 2:
-            MultiplayerConsumer.connected_players += 1
-            await self.send(text_data=json.dumps({
-                'type': 'player_id',
-                'player_id': self.player_1.player_id if MultiplayerConsumer.connected_players == 1 else MultiplayerConsumer.player_2.player_id,
-            }))
-            if MultiplayerConsumer.connected_players == 1:
+        self.connected_users[self.channel_name] = self
+        number_of_connected_users = len(MultiplayerConsumer.connected_users)
+        
+        if number_of_connected_users <= 2:
+            if number_of_connected_users == 1:
+                self.player_1.connection_id = self.channel_name
                 MultiplayerConsumer.broadcast_task = asyncio.create_task(self.broadcast_game_data())
+            elif number_of_connected_users == 2:
+                self.player_2.connection_id = self.channel_name
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.game_group_name, self.channel_name)
-        MultiplayerConsumer.connected_players -= 1
-        if MultiplayerConsumer.connected_players == 0 and MultiplayerConsumer.broadcast_task:
+        del MultiplayerConsumer.connected_users[self.channel_name]
+        number_of_connected_users = len(MultiplayerConsumer.connected_users)
+        if number_of_connected_users == 0 and MultiplayerConsumer.broadcast_task:
             MultiplayerConsumer.broadcast_task.cancel()
             MultiplayerConsumer.broadcast_task = None
 
     async def receive(self, text_data):
         # Process incoming message from WebSocket
-        
+        user_id = self.channel_name
         if text_data:
             text_data_json = json.loads(text_data)
             if text_data_json["type"] == "player_update":
                 payload = text_data_json["payload"]
-                player_id = payload["player_id"]
-                key = payload["key"]
-                pressed = payload["pressed"]
-                if player_id == self.player_1.player_id:
-                    if key == "up":
-                        self.player_1.up = pressed
-                    elif key == "down":
-                        self.player_1.down = pressed
-                elif player_id == self.player_2.player_id:
-                    if key == "up":
-                        self.player_2.up = pressed
-                    elif key == "down":
-                        self.player_2.down = pressed 
-
-    def update_player_position(self):
-        if self.player_1.up:
-            self.player_1.y -= self.player_1.speed
-        if self.player_1.down:
-            self.player_1.y += self.player_1.speed
-        if self.player_2.up:
-            self.player_2.y -= self.player_2.speed
-        if self.player_2.down:
-            self.player_2.y += self.player_2.speed
-        pass
+                direction = payload["direction"]
+                if direction < -1 or direction > 1:
+                    return
+                if user_id == self.player_1.connection_id:
+                    self.player_1.direction = payload["direction"]
+                elif user_id == self.player_2.connection_id:
+                    self.player_2.direction = payload["direction"]
 
     def update_game_state(self):
-        self.update_player_position()
-        self.ball.update()
+        self.player_1.move()
+        self.player_2.move()
+        self.ball.move()
 
     async def broadcast_game_data(self):
         try:
             while True:
                 # Update game state, e.g., move the ball, check for scores
-                # self.update_game_state()
                 self.update_game_state()
-                player_data = {
-                    "player_1": self.player_1.to_dict(),
-                    "player_2": self.player_2.to_dict(),
-                    "ball": self.ball.to_dict(),
-                }
+                binary_data = struct.pack('ffffff',
+                                        self.player_1.position.x,
+                                        self.player_1.position.y,
+                                        self.player_2.position.x,
+                                        self.player_2.position.y,
+                                        self.ball.position.x,
+                                        self.ball.position.y)                
                 await self.channel_layer.group_send(
                     self.game_group_name,
                     {
                         "type": "group.message",
-                        "message": json.dumps(player_data),
+                        "message": binary_data,
                     }
                 )
                 await sleep(1/self.tick_rate)  # Adjust the sleep time to control broadcast rate
         except asyncio.CancelledError:
-            # Handle cancellation gracefully
+            # Handle cancellation gracefully # TODO: Implement this
             pass
 
     async def group_message(self, event):
         # Forward the message to WebSocket
-        await self.send(text_data=event['message'])
+        await self.send(bytes_data=event['message'])
