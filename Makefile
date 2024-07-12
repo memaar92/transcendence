@@ -20,6 +20,9 @@ execbackend:
 execnginx:
 	docker exec -it nginx /bin/sh
 
+execpostgres:
+	docker exec -it postgres /bin/bash
+
 re_backend:
 	docker compose stop backend
 	docker rmi -f $$(docker images | grep backend | awk '{print $$3}')
@@ -62,4 +65,4 @@ update_ips:
 
 re: fclean all
 
-.PHONY: up down build execbackend execnginx re_backend restart_backend fclean re dclean re_postgres re_nginx update_ips restart
+.PHONY: up down build execbackend execnginx re_backend restart_backend fclean re dclean re_postgres re_nginx update_ips restart execpostgres

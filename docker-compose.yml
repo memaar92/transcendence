@@ -14,6 +14,8 @@ services:
       - psql_database
     env_file:
       - docker/backend/tools/.dev_ips
+      - django_admin_password
+      - django_admin_user
 
   nginx:
     container_name: nginx
@@ -25,6 +27,8 @@ services:
       - "443:443"
     volumes:
       - ./frontend:/var/www/html/frontend
+      - ./backend/mediafiles:/var/www/html/mediafiles
+      - ./backend/static:/app/backend/static/
     depends_on:
       - backend
 
@@ -57,3 +61,7 @@ secrets:
     file: ./secrets/postgresql_database.txt
   psql_su_password:
     file: ./secrets/postgresql_su_password.txt
+  django_admin_password:
+    file: ./secrets/django_admin_password.txt
+  django_admin_user:
+    file: ./secrets/django_admin_user.txt

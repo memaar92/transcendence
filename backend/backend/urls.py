@@ -1,4 +1,4 @@
-"""
+'''
 URL configuration for transcendence project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
@@ -13,13 +13,19 @@ Class-based views
 Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
+'''
 from django.contrib import admin
 from django.urls import path, include
 from . import views
+from usermanagement.views import CreateUserView
+from django.contrib.auth.models import User
+from rest_framework import routers, serializers, viewsets
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('json/', views.json, name='json'),
     path('pong/', include('pong.urls')),
+    path('api/token/', TokenObtainPairView.as_view(), name='get_token'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='refresh'),
+    path('api/', include('usermanagement.urls')),
 ]
