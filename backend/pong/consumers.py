@@ -24,7 +24,7 @@ class MultiplayerConsumer(AsyncWebsocketConsumer):
     player_1 = Player(1, start_position_p1, paddle_size, 12, canvas_size)
     player_2 = Player(2, start_position_p2, paddle_size, 12, canvas_size)
     collider_list = [player_1, player_2]
-    ball = Ball(start_position_ball, degree_to_vector(-50), 20, 20, canvas_size, tick_rate, collider_list)
+    ball = Ball(start_position_ball, degree_to_vector(-50), 12, 20, canvas_size, tick_rate, collider_list)
     broadcast_task = None
     connected_users = {}
 
