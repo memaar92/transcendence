@@ -8,6 +8,7 @@ from .serializers import UserSerializer, GameHistorySerializer, UserNameSerializ
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework.exceptions import PermissionDenied
+from .permissions import IsSelf
 
 class CreateUserView(generics.CreateAPIView):
 	queryset = CustomUser.objects.all()
@@ -16,14 +17,9 @@ class CreateUserView(generics.CreateAPIView):
 
 class ChangeUserView(generics.RetrieveUpdateDestroyAPIView):
 	serializer_class = UserSerializer
-	permission_classes = [IsAuthenticated]
+	permission_classes = [IsAuthenticated, IsSelf]
 	http_method_names = ['patch', 'delete']
-
-	def get_object(self):
-		user = get_object_or_404(CustomUser, pk=self.kwargs['pk'])
-		if user != self.request.user:
-			raise PermissionDenied("You don't have permission to delete this profile picture.")
-		return user.profile
+	queryset = CustomUser.objects.all()
 
 	def patch(self, request, *args, **kwargs):
 		instance = self.get_object()
