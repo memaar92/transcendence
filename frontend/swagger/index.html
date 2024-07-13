@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>Django Backend API</title>
+  <title>Django Application API</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   <meta charset="UTF-8" />
@@ -689,6 +689,26 @@
   <script>
     // Script section to load models into a JS Var
     var defs = {}
+            defs["api_register_body"] = {
+  "required" : [ "displayname", "email", "password" ],
+  "type" : "object",
+  "properties" : {
+    "email" : {
+      "type" : "string",
+      "format" : "email"
+    },
+    "password" : {
+      "type" : "string"
+    },
+    "displayname" : {
+      "type" : "string"
+    },
+    "profile_picture" : {
+      "type" : "string",
+      "format" : "binary"
+    }
+  }
+};
             defs["api_token_body"] = {
   "required" : [ "password", "username" ],
   "type" : "object",
@@ -701,7 +721,7 @@
     }
   }
 };
-            defs["GameHistory"] = {
+            defs["Game"] = {
   "type" : "object",
   "properties" : {
     "id" : {
@@ -729,9 +749,82 @@
     }
   }
 };
-            defs["profilepicture_pk_body"] = {
+            defs["id_edit_body"] = {
   "type" : "object",
   "properties" : {
+    "email" : {
+      "type" : "string",
+      "format" : "email"
+    },
+    "displayname" : {
+      "type" : "string"
+    },
+    "profile_picture" : {
+      "type" : "string",
+      "format" : "binary"
+    }
+  }
+};
+            defs["inline_response_200"] = {
+  "type" : "object",
+  "properties" : {
+    "access" : {
+      "type" : "string"
+    },
+    "refresh" : {
+      "type" : "string"
+    }
+  }
+};
+            defs["inline_response_200_1"] = {
+  "type" : "object",
+  "properties" : {
+    "access" : {
+      "type" : "string"
+    }
+  }
+};
+            defs["inline_response_200_2"] = {
+  "type" : "object",
+  "properties" : {
+    "id" : {
+      "type" : "integer"
+    },
+    "home_id" : {
+      "type" : "integer"
+    },
+    "visitor_id" : {
+      "type" : "integer"
+    },
+    "visitor_score" : {
+      "type" : "integer"
+    },
+    "home_score" : {
+      "type" : "integer"
+    },
+    "created_at" : {
+      "type" : "string",
+      "format" : "date-time"
+    },
+    "updated_at" : {
+      "type" : "string",
+      "format" : "date-time"
+    }
+  }
+};
+            defs["inline_response_201"] = {
+  "type" : "object",
+  "properties" : {
+    "id" : {
+      "type" : "integer"
+    },
+    "email" : {
+      "type" : "string",
+      "format" : "email"
+    },
+    "displayname" : {
+      "type" : "string"
+    },
     "profile_picture" : {
       "type" : "string",
       "format" : "binary"
@@ -748,32 +841,21 @@
   }
 };
             defs["User"] = {
-  "required" : [ "email", "password", "username" ],
   "type" : "object",
   "properties" : {
     "id" : {
       "type" : "integer"
     },
-    "username" : {
-      "type" : "string"
-    },
-    "password" : {
-      "type" : "string",
-      "format" : "password"
-    },
     "email" : {
       "type" : "string",
       "format" : "email"
     },
-    "first_name" : {
-      "type" : "string"
-    },
-    "last_name" : {
+    "displayname" : {
       "type" : "string"
     },
     "profile_picture" : {
       "type" : "string",
-      "format" : "url"
+      "format" : "binary"
     }
   }
 };
@@ -794,14 +876,11 @@
             <li class="nav-fixed nav-header active" data-group="_"><a href="#api-_">API Summary</a></li>
 
                   <li class="nav-header" data-group="Default"><a href="#api-Default">API Methods - Default</a></li>
-                    <li data-group="Default" data-name="changeUser" class="">
-                      <a href="#api-Default-changeUser">changeUser</a>
+                    <li data-group="Default" data-name="deleteUserProfilePicture" class="">
+                      <a href="#api-Default-deleteUserProfilePicture">deleteUserProfilePicture</a>
                     </li>
-                    <li data-group="Default" data-name="deleteProfilePicture" class="">
-                      <a href="#api-Default-deleteProfilePicture">deleteProfilePicture</a>
-                    </li>
-                    <li data-group="Default" data-name="deleteUser" class="">
-                      <a href="#api-Default-deleteUser">deleteUser</a>
+                    <li data-group="Default" data-name="getUserDetails" class="">
+                      <a href="#api-Default-getUserDetails">getUserDetails</a>
                     </li>
                     <li data-group="Default" data-name="listGameHistory" class="">
                       <a href="#api-Default-listGameHistory">listGameHistory</a>
@@ -809,20 +888,14 @@
                     <li data-group="Default" data-name="obtainToken" class="">
                       <a href="#api-Default-obtainToken">obtainToken</a>
                     </li>
-                    <li data-group="Default" data-name="pong" class="">
-                      <a href="#api-Default-pong">pong</a>
-                    </li>
                     <li data-group="Default" data-name="refreshToken" class="">
                       <a href="#api-Default-refreshToken">refreshToken</a>
                     </li>
                     <li data-group="Default" data-name="registerUser" class="">
                       <a href="#api-Default-registerUser">registerUser</a>
                     </li>
-                    <li data-group="Default" data-name="retrieveUser" class="">
-                      <a href="#api-Default-retrieveUser">retrieveUser</a>
-                    </li>
-                    <li data-group="Default" data-name="updateProfilePicture" class="">
-                      <a href="#api-Default-updateProfilePicture">updateProfilePicture</a>
+                    <li data-group="Default" data-name="updateUserDetails" class="">
+                      <a href="#api-Default-updateUserDetails">updateUserDetails</a>
                     </li>
           </ul>
         </nav>
@@ -830,7 +903,7 @@
       <div id="content">
         <div id="project">
           <div class="pull-left">
-            <h1>Django Backend API</h1>
+            <h1>Django Application API</h1>
           </div>
           <div class="clearfix"></div>
         </div>
@@ -839,17 +912,17 @@
             <h2 id="welcome-to-apidoc">API and SDK Documentation</h2>
               <div class="app-desc">Version: 1.0.0</div>
             <hr>
-            <div>No description provided (generated by Swagger Codegen https://github.com/swagger-api/swagger-codegen)</div>
+            <div>API documentation for the Django application.</div>
           </div>
         </div>
         <div id="sections">
                 <section id="api-Default">
                   <h1>Default</h1>
-                    <div id="api-Default-changeUser">
-                      <article id="api-Default-changeUser-0" data-group="User" data-name="changeUser" data-version="0">
+                    <div id="api-Default-deleteUserProfilePicture">
+                      <article id="api-Default-deleteUserProfilePicture-0" data-group="User" data-name="deleteUserProfilePicture" data-version="0">
                         <div class="pull-left">
-                          <h1>changeUser</h1>
-                          <p>Change user details</p>
+                          <h1>deleteUserProfilePicture</h1>
+                          <p>Delete user profile picture</p>
                         </div>
                         <div class="pull-right"></div>
                         <div class="clearfix"></div>
@@ -857,326 +930,30 @@
                         <p class="marked"></p>
                         <p></p>
                         <br />
-                        <pre class="prettyprint language-html prettyprinted" data-type="patch"><code><span class="pln">/api/users/{pk}/change/</span></code></pre>
+                        <pre class="prettyprint language-html prettyprinted" data-type="delete"><code><span class="pln">/api/users/{id}/delete_picture/</span></code></pre>
                         <p>
                           <h3>Usage and SDK Samples</h3>
                         </p>
                         <ul class="nav nav-tabs nav-tabs-examples">
-                          <li class="active"><a href="#examples-Default-changeUser-0-curl">Curl</a></li>
-                          <li class=""><a href="#examples-Default-changeUser-0-java">Java</a></li>
-                          <li class=""><a href="#examples-Default-changeUser-0-android">Android</a></li>
-                          <!--<li class=""><a href="#examples-Default-changeUser-0-groovy">Groovy</a></li>-->
-                          <li class=""><a href="#examples-Default-changeUser-0-objc">Obj-C</a></li>
-                          <li class=""><a href="#examples-Default-changeUser-0-javascript">JavaScript</a></li>
-                          <!--<li class=""><a href="#examples-Default-changeUser-0-angular">Angular</a></li>-->
-                          <li class=""><a href="#examples-Default-changeUser-0-csharp">C#</a></li>
-                          <li class=""><a href="#examples-Default-changeUser-0-php">PHP</a></li>
-                          <li class=""><a href="#examples-Default-changeUser-0-perl">Perl</a></li>
-                          <li class=""><a href="#examples-Default-changeUser-0-python">Python</a></li>
+                          <li class="active"><a href="#examples-Default-deleteUserProfilePicture-0-curl">Curl</a></li>
+                          <li class=""><a href="#examples-Default-deleteUserProfilePicture-0-java">Java</a></li>
+                          <li class=""><a href="#examples-Default-deleteUserProfilePicture-0-android">Android</a></li>
+                          <!--<li class=""><a href="#examples-Default-deleteUserProfilePicture-0-groovy">Groovy</a></li>-->
+                          <li class=""><a href="#examples-Default-deleteUserProfilePicture-0-objc">Obj-C</a></li>
+                          <li class=""><a href="#examples-Default-deleteUserProfilePicture-0-javascript">JavaScript</a></li>
+                          <!--<li class=""><a href="#examples-Default-deleteUserProfilePicture-0-angular">Angular</a></li>-->
+                          <li class=""><a href="#examples-Default-deleteUserProfilePicture-0-csharp">C#</a></li>
+                          <li class=""><a href="#examples-Default-deleteUserProfilePicture-0-php">PHP</a></li>
+                          <li class=""><a href="#examples-Default-deleteUserProfilePicture-0-perl">Perl</a></li>
+                          <li class=""><a href="#examples-Default-deleteUserProfilePicture-0-python">Python</a></li>
                         </ul>
 
                         <div class="tab-content">
-                          <div class="tab-pane active" id="examples-Default-changeUser-0-curl">
-                           <pre class="prettyprint"><code class="language-bsh">curl -X PATCH\
--H "Content-Type: application/json"\
-"//api/users/{pk}/change/"</code></pre>
-                          </div>
-                          <div class="tab-pane" id="examples-Default-changeUser-0-java">
-                            <pre class="prettyprint"><code class="language-java">import io.swagger.client.*;
-import io.swagger.client.auth.*;
-import io.swagger.client.model.*;
-import io.swagger.client.api.DefaultApi;
-
-import java.io.File;
-import java.util.*;
-
-public class DefaultApiExample {
-
-    public static void main(String[] args) {
-        
-        DefaultApi apiInstance = new DefaultApi();
-        Integer pk = 56; // Integer | 
-        User body = ; // User | 
-        try {
-            apiInstance.changeUser(pk, body);
-        } catch (ApiException e) {
-            System.err.println("Exception when calling DefaultApi#changeUser");
-            e.printStackTrace();
-        }
-    }
-}</code></pre>
-                          </div>
-
-                          <div class="tab-pane" id="examples-Default-changeUser-0-android">
-                            <pre class="prettyprint"><code class="language-java">import io.swagger.client.api.DefaultApi;
-
-public class DefaultApiExample {
-
-    public static void main(String[] args) {
-        DefaultApi apiInstance = new DefaultApi();
-        Integer pk = 56; // Integer | 
-        User body = ; // User | 
-        try {
-            apiInstance.changeUser(pk, body);
-        } catch (ApiException e) {
-            System.err.println("Exception when calling DefaultApi#changeUser");
-            e.printStackTrace();
-        }
-    }
-}</code></pre>
-                          </div>
-  <!--
-  <div class="tab-pane" id="examples-Default-changeUser-0-groovy">
-  <pre class="prettyprint language-json prettyprinted" data-type="json"><code>Coming Soon!</code></pre>
-  </div> -->
-                            <div class="tab-pane" id="examples-Default-changeUser-0-objc">
-                              <pre class="prettyprint"><code class="language-cpp">Integer *pk = 56; // 
-User *body = ; //  (optional)
-
-DefaultApi *apiInstance = [[DefaultApi alloc] init];
-
-// Change user details
-[apiInstance changeUserWith:pk
-    body:body
-              completionHandler: ^(NSError* error) {
-                            if (error) {
-                                NSLog(@"Error: %@", error);
-                            }
-                        }];
-</code></pre>
-                            </div>
-
-                            <div class="tab-pane" id="examples-Default-changeUser-0-javascript">
-                              <pre class="prettyprint"><code class="language-js">var DjangoBackendApi = require('django_backend_api');
-
-var api = new DjangoBackendApi.DefaultApi()
-var pk = 56; // {{Integer}} 
-var opts = { 
-  'body':  // {{User}} 
-};
-var callback = function(error, data, response) {
-  if (error) {
-    console.error(error);
-  } else {
-    console.log('API called successfully.');
-  }
-};
-api.changeUser(pk, opts, callback);
-</code></pre>
-                            </div>
-
-                            <!--<div class="tab-pane" id="examples-Default-changeUser-0-angular">
-              <pre class="prettyprint language-json prettyprinted" data-type="json"><code>Coming Soon!</code></pre>
-            </div>-->
-                            <div class="tab-pane" id="examples-Default-changeUser-0-csharp">
-                              <pre class="prettyprint"><code class="language-cs">using System;
-using System.Diagnostics;
-using IO.Swagger.Api;
-using IO.Swagger.Client;
-using IO.Swagger.Model;
-
-namespace Example
-{
-    public class changeUserExample
-    {
-        public void main()
-        {
-
-            var apiInstance = new DefaultApi();
-            var pk = 56;  // Integer | 
-            var body = new User(); // User |  (optional) 
-
-            try
-            {
-                // Change user details
-                apiInstance.changeUser(pk, body);
-            }
-            catch (Exception e)
-            {
-                Debug.Print("Exception when calling DefaultApi.changeUser: " + e.Message );
-            }
-        }
-    }
-}
-</code></pre>
-                            </div>
-
-                            <div class="tab-pane" id="examples-Default-changeUser-0-php">
-                              <pre class="prettyprint"><code class="language-php"><&#63;php
-require_once(__DIR__ . '/vendor/autoload.php');
-
-$api_instance = new Swagger\Client\ApiDefaultApi();
-$pk = 56; // Integer | 
-$body = ; // User | 
-
-try {
-    $api_instance->changeUser($pk, $body);
-} catch (Exception $e) {
-    echo 'Exception when calling DefaultApi->changeUser: ', $e->getMessage(), PHP_EOL;
-}
-?></code></pre>
-                            </div>
-
-                            <div class="tab-pane" id="examples-Default-changeUser-0-perl">
-                              <pre class="prettyprint"><code class="language-perl">use Data::Dumper;
-use WWW::SwaggerClient::Configuration;
-use WWW::SwaggerClient::DefaultApi;
-
-my $api_instance = WWW::SwaggerClient::DefaultApi->new();
-my $pk = 56; # Integer | 
-my $body = WWW::SwaggerClient::Object::User->new(); # User | 
-
-eval { 
-    $api_instance->changeUser(pk => $pk, body => $body);
-};
-if ($@) {
-    warn "Exception when calling DefaultApi->changeUser: $@\n";
-}</code></pre>
-                            </div>
-
-                            <div class="tab-pane" id="examples-Default-changeUser-0-python">
-                              <pre class="prettyprint"><code class="language-python">from __future__ import print_statement
-import time
-import swagger_client
-from swagger_client.rest import ApiException
-from pprint import pprint
-
-# create an instance of the API class
-api_instance = swagger_client.DefaultApi()
-pk = 56 # Integer | 
-body =  # User |  (optional)
-
-try: 
-    # Change user details
-    api_instance.change_user(pk, body=body)
-except ApiException as e:
-    print("Exception when calling DefaultApi->changeUser: %s\n" % e)</code></pre>
-                            </div>
-                          </div>
-
-                          <h2>Parameters</h2>
-
-                            <div class="methodsubtabletitle">Path parameters</div>
-                            <table id="methodsubtable">
-                                <tr>
-                                  <th width="150px">Name</th>
-                                  <th>Description</th>
-                                </tr>
-                                  <tr><td style="width:150px;">pk*</td>
-                                  <td>
-                                  
-                                  
-                                      <div id="d2e199_changeUser_pk">
-                                          <div class="json-schema-view">
-                                              <div class="primitive">
-                                                  <span class="type">
-                                                      Integer
-                                                  </span>
-                                  
-                                              </div>
-                                                  <div class="inner required">
-                                                      Required
-                                                  </div>
-                                          </div>
-                                      </div>
-                                  </td>
-                                  </tr>
-                            </table>
-
-
-                            <div class="methodsubtabletitle">Body parameters</div>
-                            <table id="methodsubtable">
-                              <tr>
-                                <th width="150px">Name</th>
-                                <th>Description</th>
-                              </tr>
-                                <tr><td style="width:150px;">body </td>
-                                <td>
-                                
-                                
-                                <script>
-                                $(document).ready(function() {
-                                  var schemaWrapper = {
-  "content" : {
-    "application/json" : {
-      "schema" : {
-        "$ref" : "#/components/schemas/User"
-      }
-    }
-  }
-};
-                                  var schema = schemaWrapper.content["application/json"].schema;
-                                  if (schema.$ref != null) {
-                                    schema = defsParser.$refs.get(schema.$ref);
-                                  } else {
-                                    schemaWrapper.components = {};
-                                    schemaWrapper.components.schemas = Object.assign({}, defs);
-                                    $RefParser.dereference(schemaWrapper).catch(function(err) {
-                                      console.log(err);
-                                    });
-                                  }
-                                
-                                  var view = new JSONSchemaView(schema,2,{isBodyParam: true});
-                                  var result = $('#d2e199_changeUser_body');
-                                  result.empty();
-                                  result.append(view.render());
-                                });
-                                </script>
-                                <div id="d2e199_changeUser_body"></div>
-                                </td>
-                                </tr>
-                            </table>
-
-
-
-                          <h2>Responses</h2>
-                            <h3> Status: 200 - User details changed </h3>
-
-                            <ul class="nav nav-tabs nav-tabs-examples" >
-                            </ul>
-
-                            <div class="tab-content" style='margin-bottom: 10px;'>
-                            </div>
-
-                        </article>
-                      </div>
-                      <hr>
-                    <div id="api-Default-deleteProfilePicture">
-                      <article id="api-Default-deleteProfilePicture-0" data-group="User" data-name="deleteProfilePicture" data-version="0">
-                        <div class="pull-left">
-                          <h1>deleteProfilePicture</h1>
-                          <p>Delete profile picture</p>
-                        </div>
-                        <div class="pull-right"></div>
-                        <div class="clearfix"></div>
-                        <p></p>
-                        <p class="marked"></p>
-                        <p></p>
-                        <br />
-                        <pre class="prettyprint language-html prettyprinted" data-type="delete"><code><span class="pln">/api/user/profilepicture/{pk}/delete/</span></code></pre>
-                        <p>
-                          <h3>Usage and SDK Samples</h3>
-                        </p>
-                        <ul class="nav nav-tabs nav-tabs-examples">
-                          <li class="active"><a href="#examples-Default-deleteProfilePicture-0-curl">Curl</a></li>
-                          <li class=""><a href="#examples-Default-deleteProfilePicture-0-java">Java</a></li>
-                          <li class=""><a href="#examples-Default-deleteProfilePicture-0-android">Android</a></li>
-                          <!--<li class=""><a href="#examples-Default-deleteProfilePicture-0-groovy">Groovy</a></li>-->
-                          <li class=""><a href="#examples-Default-deleteProfilePicture-0-objc">Obj-C</a></li>
-                          <li class=""><a href="#examples-Default-deleteProfilePicture-0-javascript">JavaScript</a></li>
-                          <!--<li class=""><a href="#examples-Default-deleteProfilePicture-0-angular">Angular</a></li>-->
-                          <li class=""><a href="#examples-Default-deleteProfilePicture-0-csharp">C#</a></li>
-                          <li class=""><a href="#examples-Default-deleteProfilePicture-0-php">PHP</a></li>
-                          <li class=""><a href="#examples-Default-deleteProfilePicture-0-perl">Perl</a></li>
-                          <li class=""><a href="#examples-Default-deleteProfilePicture-0-python">Python</a></li>
-                        </ul>
-
-                        <div class="tab-content">
-                          <div class="tab-pane active" id="examples-Default-deleteProfilePicture-0-curl">
+                          <div class="tab-pane active" id="examples-Default-deleteUserProfilePicture-0-curl">
                            <pre class="prettyprint"><code class="language-bsh">curl -X DELETE\
-"//api/user/profilepicture/{pk}/delete/"</code></pre>
+"//api/users/{id}/delete_picture/"</code></pre>
                           </div>
-                          <div class="tab-pane" id="examples-Default-deleteProfilePicture-0-java">
+                          <div class="tab-pane" id="examples-Default-deleteUserProfilePicture-0-java">
                             <pre class="prettyprint"><code class="language-java">import io.swagger.client.*;
 import io.swagger.client.auth.*;
 import io.swagger.client.model.*;
@@ -1190,45 +967,45 @@ public class DefaultApiExample {
     public static void main(String[] args) {
         
         DefaultApi apiInstance = new DefaultApi();
-        Integer pk = 56; // Integer | 
+        Integer id = 56; // Integer | 
         try {
-            apiInstance.deleteProfilePicture(pk);
+            apiInstance.deleteUserProfilePicture(id);
         } catch (ApiException e) {
-            System.err.println("Exception when calling DefaultApi#deleteProfilePicture");
+            System.err.println("Exception when calling DefaultApi#deleteUserProfilePicture");
             e.printStackTrace();
         }
     }
 }</code></pre>
                           </div>
 
-                          <div class="tab-pane" id="examples-Default-deleteProfilePicture-0-android">
+                          <div class="tab-pane" id="examples-Default-deleteUserProfilePicture-0-android">
                             <pre class="prettyprint"><code class="language-java">import io.swagger.client.api.DefaultApi;
 
 public class DefaultApiExample {
 
     public static void main(String[] args) {
         DefaultApi apiInstance = new DefaultApi();
-        Integer pk = 56; // Integer | 
+        Integer id = 56; // Integer | 
         try {
-            apiInstance.deleteProfilePicture(pk);
+            apiInstance.deleteUserProfilePicture(id);
         } catch (ApiException e) {
-            System.err.println("Exception when calling DefaultApi#deleteProfilePicture");
+            System.err.println("Exception when calling DefaultApi#deleteUserProfilePicture");
             e.printStackTrace();
         }
     }
 }</code></pre>
                           </div>
   <!--
-  <div class="tab-pane" id="examples-Default-deleteProfilePicture-0-groovy">
+  <div class="tab-pane" id="examples-Default-deleteUserProfilePicture-0-groovy">
   <pre class="prettyprint language-json prettyprinted" data-type="json"><code>Coming Soon!</code></pre>
   </div> -->
-                            <div class="tab-pane" id="examples-Default-deleteProfilePicture-0-objc">
-                              <pre class="prettyprint"><code class="language-cpp">Integer *pk = 56; // 
+                            <div class="tab-pane" id="examples-Default-deleteUserProfilePicture-0-objc">
+                              <pre class="prettyprint"><code class="language-cpp">Integer *id = 56; // 
 
 DefaultApi *apiInstance = [[DefaultApi alloc] init];
 
-// Delete profile picture
-[apiInstance deleteProfilePictureWith:pk
+// Delete user profile picture
+[apiInstance deleteUserProfilePictureWith:id
               completionHandler: ^(NSError* error) {
                             if (error) {
                                 NSLog(@"Error: %@", error);
@@ -1237,11 +1014,11 @@ DefaultApi *apiInstance = [[DefaultApi alloc] init];
 </code></pre>
                             </div>
 
-                            <div class="tab-pane" id="examples-Default-deleteProfilePicture-0-javascript">
-                              <pre class="prettyprint"><code class="language-js">var DjangoBackendApi = require('django_backend_api');
+                            <div class="tab-pane" id="examples-Default-deleteUserProfilePicture-0-javascript">
+                              <pre class="prettyprint"><code class="language-js">var DjangoApplicationApi = require('django_application_api');
 
-var api = new DjangoBackendApi.DefaultApi()
-var pk = 56; // {{Integer}} 
+var api = new DjangoApplicationApi.DefaultApi()
+var id = 56; // {{Integer}} 
 
 var callback = function(error, data, response) {
   if (error) {
@@ -1250,14 +1027,14 @@ var callback = function(error, data, response) {
     console.log('API called successfully.');
   }
 };
-api.deleteProfilePicture(pk, callback);
+api.deleteUserProfilePicture(id, callback);
 </code></pre>
                             </div>
 
-                            <!--<div class="tab-pane" id="examples-Default-deleteProfilePicture-0-angular">
+                            <!--<div class="tab-pane" id="examples-Default-deleteUserProfilePicture-0-angular">
               <pre class="prettyprint language-json prettyprinted" data-type="json"><code>Coming Soon!</code></pre>
             </div>-->
-                            <div class="tab-pane" id="examples-Default-deleteProfilePicture-0-csharp">
+                            <div class="tab-pane" id="examples-Default-deleteUserProfilePicture-0-csharp">
                               <pre class="prettyprint"><code class="language-cs">using System;
 using System.Diagnostics;
 using IO.Swagger.Api;
@@ -1266,22 +1043,22 @@ using IO.Swagger.Model;
 
 namespace Example
 {
-    public class deleteProfilePictureExample
+    public class deleteUserProfilePictureExample
     {
         public void main()
         {
 
             var apiInstance = new DefaultApi();
-            var pk = 56;  // Integer | 
+            var id = 56;  // Integer | 
 
             try
             {
-                // Delete profile picture
-                apiInstance.deleteProfilePicture(pk);
+                // Delete user profile picture
+                apiInstance.deleteUserProfilePicture(id);
             }
             catch (Exception e)
             {
-                Debug.Print("Exception when calling DefaultApi.deleteProfilePicture: " + e.Message );
+                Debug.Print("Exception when calling DefaultApi.deleteUserProfilePicture: " + e.Message );
             }
         }
     }
@@ -1289,38 +1066,38 @@ namespace Example
 </code></pre>
                             </div>
 
-                            <div class="tab-pane" id="examples-Default-deleteProfilePicture-0-php">
+                            <div class="tab-pane" id="examples-Default-deleteUserProfilePicture-0-php">
                               <pre class="prettyprint"><code class="language-php"><&#63;php
 require_once(__DIR__ . '/vendor/autoload.php');
 
 $api_instance = new Swagger\Client\ApiDefaultApi();
-$pk = 56; // Integer | 
+$id = 56; // Integer | 
 
 try {
-    $api_instance->deleteProfilePicture($pk);
+    $api_instance->deleteUserProfilePicture($id);
 } catch (Exception $e) {
-    echo 'Exception when calling DefaultApi->deleteProfilePicture: ', $e->getMessage(), PHP_EOL;
+    echo 'Exception when calling DefaultApi->deleteUserProfilePicture: ', $e->getMessage(), PHP_EOL;
 }
 ?></code></pre>
                             </div>
 
-                            <div class="tab-pane" id="examples-Default-deleteProfilePicture-0-perl">
+                            <div class="tab-pane" id="examples-Default-deleteUserProfilePicture-0-perl">
                               <pre class="prettyprint"><code class="language-perl">use Data::Dumper;
 use WWW::SwaggerClient::Configuration;
 use WWW::SwaggerClient::DefaultApi;
 
 my $api_instance = WWW::SwaggerClient::DefaultApi->new();
-my $pk = 56; # Integer | 
+my $id = 56; # Integer | 
 
 eval { 
-    $api_instance->deleteProfilePicture(pk => $pk);
+    $api_instance->deleteUserProfilePicture(id => $id);
 };
 if ($@) {
-    warn "Exception when calling DefaultApi->deleteProfilePicture: $@\n";
+    warn "Exception when calling DefaultApi->deleteUserProfilePicture: $@\n";
 }</code></pre>
                             </div>
 
-                            <div class="tab-pane" id="examples-Default-deleteProfilePicture-0-python">
+                            <div class="tab-pane" id="examples-Default-deleteUserProfilePicture-0-python">
                               <pre class="prettyprint"><code class="language-python">from __future__ import print_statement
 import time
 import swagger_client
@@ -1329,13 +1106,13 @@ from pprint import pprint
 
 # create an instance of the API class
 api_instance = swagger_client.DefaultApi()
-pk = 56 # Integer | 
+id = 56 # Integer | 
 
 try: 
-    # Delete profile picture
-    api_instance.delete_profile_picture(pk)
+    # Delete user profile picture
+    api_instance.delete_user_profile_picture(id)
 except ApiException as e:
-    print("Exception when calling DefaultApi->deleteProfilePicture: %s\n" % e)</code></pre>
+    print("Exception when calling DefaultApi->deleteUserProfilePicture: %s\n" % e)</code></pre>
                             </div>
                           </div>
 
@@ -1347,11 +1124,11 @@ except ApiException as e:
                                   <th width="150px">Name</th>
                                   <th>Description</th>
                                 </tr>
-                                  <tr><td style="width:150px;">pk*</td>
+                                  <tr><td style="width:150px;">id*</td>
                                   <td>
                                   
                                   
-                                      <div id="d2e199_deleteProfilePicture_pk">
+                                      <div id="d2e199_deleteUserProfilePicture_id">
                                           <div class="json-schema-view">
                                               <div class="primitive">
                                                   <span class="type">
@@ -1384,11 +1161,11 @@ except ApiException as e:
                         </article>
                       </div>
                       <hr>
-                    <div id="api-Default-deleteUser">
-                      <article id="api-Default-deleteUser-0" data-group="User" data-name="deleteUser" data-version="0">
+                    <div id="api-Default-getUserDetails">
+                      <article id="api-Default-getUserDetails-0" data-group="User" data-name="getUserDetails" data-version="0">
                         <div class="pull-left">
-                          <h1>deleteUser</h1>
-                          <p>Delete user</p>
+                          <h1>getUserDetails</h1>
+                          <p>Retrieve user details</p>
                         </div>
                         <div class="pull-right"></div>
                         <div class="clearfix"></div>
@@ -1396,30 +1173,31 @@ except ApiException as e:
                         <p class="marked"></p>
                         <p></p>
                         <br />
-                        <pre class="prettyprint language-html prettyprinted" data-type="delete"><code><span class="pln">/api/users/{pk}/change/</span></code></pre>
+                        <pre class="prettyprint language-html prettyprinted" data-type="get"><code><span class="pln">/api/users/{id}/</span></code></pre>
                         <p>
                           <h3>Usage and SDK Samples</h3>
                         </p>
                         <ul class="nav nav-tabs nav-tabs-examples">
-                          <li class="active"><a href="#examples-Default-deleteUser-0-curl">Curl</a></li>
-                          <li class=""><a href="#examples-Default-deleteUser-0-java">Java</a></li>
-                          <li class=""><a href="#examples-Default-deleteUser-0-android">Android</a></li>
-                          <!--<li class=""><a href="#examples-Default-deleteUser-0-groovy">Groovy</a></li>-->
-                          <li class=""><a href="#examples-Default-deleteUser-0-objc">Obj-C</a></li>
-                          <li class=""><a href="#examples-Default-deleteUser-0-javascript">JavaScript</a></li>
-                          <!--<li class=""><a href="#examples-Default-deleteUser-0-angular">Angular</a></li>-->
-                          <li class=""><a href="#examples-Default-deleteUser-0-csharp">C#</a></li>
-                          <li class=""><a href="#examples-Default-deleteUser-0-php">PHP</a></li>
-                          <li class=""><a href="#examples-Default-deleteUser-0-perl">Perl</a></li>
-                          <li class=""><a href="#examples-Default-deleteUser-0-python">Python</a></li>
+                          <li class="active"><a href="#examples-Default-getUserDetails-0-curl">Curl</a></li>
+                          <li class=""><a href="#examples-Default-getUserDetails-0-java">Java</a></li>
+                          <li class=""><a href="#examples-Default-getUserDetails-0-android">Android</a></li>
+                          <!--<li class=""><a href="#examples-Default-getUserDetails-0-groovy">Groovy</a></li>-->
+                          <li class=""><a href="#examples-Default-getUserDetails-0-objc">Obj-C</a></li>
+                          <li class=""><a href="#examples-Default-getUserDetails-0-javascript">JavaScript</a></li>
+                          <!--<li class=""><a href="#examples-Default-getUserDetails-0-angular">Angular</a></li>-->
+                          <li class=""><a href="#examples-Default-getUserDetails-0-csharp">C#</a></li>
+                          <li class=""><a href="#examples-Default-getUserDetails-0-php">PHP</a></li>
+                          <li class=""><a href="#examples-Default-getUserDetails-0-perl">Perl</a></li>
+                          <li class=""><a href="#examples-Default-getUserDetails-0-python">Python</a></li>
                         </ul>
 
                         <div class="tab-content">
-                          <div class="tab-pane active" id="examples-Default-deleteUser-0-curl">
-                           <pre class="prettyprint"><code class="language-bsh">curl -X DELETE\
-"//api/users/{pk}/change/"</code></pre>
+                          <div class="tab-pane active" id="examples-Default-getUserDetails-0-curl">
+                           <pre class="prettyprint"><code class="language-bsh">curl -X GET\
+-H "Accept: application/json"\
+"//api/users/{id}/"</code></pre>
                           </div>
-                          <div class="tab-pane" id="examples-Default-deleteUser-0-java">
+                          <div class="tab-pane" id="examples-Default-getUserDetails-0-java">
                             <pre class="prettyprint"><code class="language-java">import io.swagger.client.*;
 import io.swagger.client.auth.*;
 import io.swagger.client.model.*;
@@ -1433,46 +1211,51 @@ public class DefaultApiExample {
     public static void main(String[] args) {
         
         DefaultApi apiInstance = new DefaultApi();
-        Integer pk = 56; // Integer | 
+        Integer id = 56; // Integer | 
         try {
-            apiInstance.deleteUser(pk);
+            inline_response_201 result = apiInstance.getUserDetails(id);
+            System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling DefaultApi#deleteUser");
+            System.err.println("Exception when calling DefaultApi#getUserDetails");
             e.printStackTrace();
         }
     }
 }</code></pre>
                           </div>
 
-                          <div class="tab-pane" id="examples-Default-deleteUser-0-android">
+                          <div class="tab-pane" id="examples-Default-getUserDetails-0-android">
                             <pre class="prettyprint"><code class="language-java">import io.swagger.client.api.DefaultApi;
 
 public class DefaultApiExample {
 
     public static void main(String[] args) {
         DefaultApi apiInstance = new DefaultApi();
-        Integer pk = 56; // Integer | 
+        Integer id = 56; // Integer | 
         try {
-            apiInstance.deleteUser(pk);
+            inline_response_201 result = apiInstance.getUserDetails(id);
+            System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling DefaultApi#deleteUser");
+            System.err.println("Exception when calling DefaultApi#getUserDetails");
             e.printStackTrace();
         }
     }
 }</code></pre>
                           </div>
   <!--
-  <div class="tab-pane" id="examples-Default-deleteUser-0-groovy">
+  <div class="tab-pane" id="examples-Default-getUserDetails-0-groovy">
   <pre class="prettyprint language-json prettyprinted" data-type="json"><code>Coming Soon!</code></pre>
   </div> -->
-                            <div class="tab-pane" id="examples-Default-deleteUser-0-objc">
-                              <pre class="prettyprint"><code class="language-cpp">Integer *pk = 56; // 
+                            <div class="tab-pane" id="examples-Default-getUserDetails-0-objc">
+                              <pre class="prettyprint"><code class="language-cpp">Integer *id = 56; // 
 
 DefaultApi *apiInstance = [[DefaultApi alloc] init];
 
-// Delete user
-[apiInstance deleteUserWith:pk
-              completionHandler: ^(NSError* error) {
+// Retrieve user details
+[apiInstance getUserDetailsWith:id
+              completionHandler: ^(inline_response_201 output, NSError* error) {
+                            if (output) {
+                                NSLog(@"%@", output);
+                            }
                             if (error) {
                                 NSLog(@"Error: %@", error);
                             }
@@ -1480,27 +1263,27 @@ DefaultApi *apiInstance = [[DefaultApi alloc] init];
 </code></pre>
                             </div>
 
-                            <div class="tab-pane" id="examples-Default-deleteUser-0-javascript">
-                              <pre class="prettyprint"><code class="language-js">var DjangoBackendApi = require('django_backend_api');
+                            <div class="tab-pane" id="examples-Default-getUserDetails-0-javascript">
+                              <pre class="prettyprint"><code class="language-js">var DjangoApplicationApi = require('django_application_api');
 
-var api = new DjangoBackendApi.DefaultApi()
-var pk = 56; // {{Integer}} 
+var api = new DjangoApplicationApi.DefaultApi()
+var id = 56; // {{Integer}} 
 
 var callback = function(error, data, response) {
   if (error) {
     console.error(error);
   } else {
-    console.log('API called successfully.');
+    console.log('API called successfully. Returned data: ' + data);
   }
 };
-api.deleteUser(pk, callback);
+api.getUserDetails(id, callback);
 </code></pre>
                             </div>
 
-                            <!--<div class="tab-pane" id="examples-Default-deleteUser-0-angular">
+                            <!--<div class="tab-pane" id="examples-Default-getUserDetails-0-angular">
               <pre class="prettyprint language-json prettyprinted" data-type="json"><code>Coming Soon!</code></pre>
             </div>-->
-                            <div class="tab-pane" id="examples-Default-deleteUser-0-csharp">
+                            <div class="tab-pane" id="examples-Default-getUserDetails-0-csharp">
                               <pre class="prettyprint"><code class="language-cs">using System;
 using System.Diagnostics;
 using IO.Swagger.Api;
@@ -1509,22 +1292,23 @@ using IO.Swagger.Model;
 
 namespace Example
 {
-    public class deleteUserExample
+    public class getUserDetailsExample
     {
         public void main()
         {
 
             var apiInstance = new DefaultApi();
-            var pk = 56;  // Integer | 
+            var id = 56;  // Integer | 
 
             try
             {
-                // Delete user
-                apiInstance.deleteUser(pk);
+                // Retrieve user details
+                inline_response_201 result = apiInstance.getUserDetails(id);
+                Debug.WriteLine(result);
             }
             catch (Exception e)
             {
-                Debug.Print("Exception when calling DefaultApi.deleteUser: " + e.Message );
+                Debug.Print("Exception when calling DefaultApi.getUserDetails: " + e.Message );
             }
         }
     }
@@ -1532,38 +1316,40 @@ namespace Example
 </code></pre>
                             </div>
 
-                            <div class="tab-pane" id="examples-Default-deleteUser-0-php">
+                            <div class="tab-pane" id="examples-Default-getUserDetails-0-php">
                               <pre class="prettyprint"><code class="language-php"><&#63;php
 require_once(__DIR__ . '/vendor/autoload.php');
 
 $api_instance = new Swagger\Client\ApiDefaultApi();
-$pk = 56; // Integer | 
+$id = 56; // Integer | 
 
 try {
-    $api_instance->deleteUser($pk);
+    $result = $api_instance->getUserDetails($id);
+    print_r($result);
 } catch (Exception $e) {
-    echo 'Exception when calling DefaultApi->deleteUser: ', $e->getMessage(), PHP_EOL;
+    echo 'Exception when calling DefaultApi->getUserDetails: ', $e->getMessage(), PHP_EOL;
 }
 ?></code></pre>
                             </div>
 
-                            <div class="tab-pane" id="examples-Default-deleteUser-0-perl">
+                            <div class="tab-pane" id="examples-Default-getUserDetails-0-perl">
                               <pre class="prettyprint"><code class="language-perl">use Data::Dumper;
 use WWW::SwaggerClient::Configuration;
 use WWW::SwaggerClient::DefaultApi;
 
 my $api_instance = WWW::SwaggerClient::DefaultApi->new();
-my $pk = 56; # Integer | 
+my $id = 56; # Integer | 
 
 eval { 
-    $api_instance->deleteUser(pk => $pk);
+    my $result = $api_instance->getUserDetails(id => $id);
+    print Dumper($result);
 };
 if ($@) {
-    warn "Exception when calling DefaultApi->deleteUser: $@\n";
+    warn "Exception when calling DefaultApi->getUserDetails: $@\n";
 }</code></pre>
                             </div>
 
-                            <div class="tab-pane" id="examples-Default-deleteUser-0-python">
+                            <div class="tab-pane" id="examples-Default-getUserDetails-0-python">
                               <pre class="prettyprint"><code class="language-python">from __future__ import print_statement
 import time
 import swagger_client
@@ -1572,13 +1358,14 @@ from pprint import pprint
 
 # create an instance of the API class
 api_instance = swagger_client.DefaultApi()
-pk = 56 # Integer | 
+id = 56 # Integer | 
 
 try: 
-    # Delete user
-    api_instance.delete_user(pk)
+    # Retrieve user details
+    api_response = api_instance.get_user_details(id)
+    pprint(api_response)
 except ApiException as e:
-    print("Exception when calling DefaultApi->deleteUser: %s\n" % e)</code></pre>
+    print("Exception when calling DefaultApi->getUserDetails: %s\n" % e)</code></pre>
                             </div>
                           </div>
 
@@ -1590,11 +1377,11 @@ except ApiException as e:
                                   <th width="150px">Name</th>
                                   <th>Description</th>
                                 </tr>
-                                  <tr><td style="width:150px;">pk*</td>
+                                  <tr><td style="width:150px;">id*</td>
                                   <td>
                                   
                                   
-                                      <div id="d2e199_deleteUser_pk">
+                                      <div id="d2e199_getUserDetails_id">
                                           <div class="json-schema-view">
                                               <div class="primitive">
                                                   <span class="type">
@@ -1616,12 +1403,52 @@ except ApiException as e:
 
 
                           <h2>Responses</h2>
-                            <h3> Status: 204 - User deleted </h3>
+                            <h3> Status: 200 - User details </h3>
 
                             <ul class="nav nav-tabs nav-tabs-examples" >
+                                <li class="active">
+                                  <a data-toggle="tab" href="#responses-getUserDetails-200-schema">Schema</a>
+                                </li>
+
                             </ul>
 
                             <div class="tab-content" style='margin-bottom: 10px;'>
+                                <div class="tab-pane active" id="responses-getUserDetails-200-schema">
+                                  <div id='responses-getUserDetails-200-schema-200' style="padding: 30px; border-left: 1px solid #eee; border-right: 1px solid #eee; border-bottom: 1px solid #eee;">
+                                    <script>
+                                      $(document).ready(function() {
+                                        var schemaWrapper = {
+  "description" : "User details",
+  "content" : {
+    "application/json" : {
+      "schema" : {
+        "$ref" : "#/components/schemas/inline_response_201"
+      }
+    }
+  }
+};
+                                        var schema = schemaWrapper.content["application/json"].schema;
+                                        if (schema.$ref != null) {
+                                          schema = defsParser.$refs.get(schema.$ref);
+                                        } else {
+                                          schemaWrapper.components = {};
+                                          schemaWrapper.components.schemas = Object.assign({}, defs);
+                                          $RefParser.dereference(schemaWrapper).catch(function(err) {
+                                            console.log(err);
+                                          });
+                                        }
+
+                                        //console.log(JSON.stringify(schema));
+                                        var view = new JSONSchemaView(schema, 3);
+                                        $('#responses-getUserDetails-200-schema-data').val(stringify(schema));
+                                        var result = $('#responses-getUserDetails-200-schema-200');
+                                        result.empty();
+                                        result.append(view.render());
+                                      });
+                                    </script>
+                                  </div>
+                                  <input id='responses-getUserDetails-200-schema-data' type='hidden' value=''></input>
+                                </div>
                             </div>
 
                         </article>
@@ -1678,7 +1505,7 @@ public class DefaultApiExample {
         
         DefaultApi apiInstance = new DefaultApi();
         try {
-            GameHistory result = apiInstance.listGameHistory();
+            array[inline_response_200_2] result = apiInstance.listGameHistory();
             System.out.println(result);
         } catch (ApiException e) {
             System.err.println("Exception when calling DefaultApi#listGameHistory");
@@ -1696,7 +1523,7 @@ public class DefaultApiExample {
     public static void main(String[] args) {
         DefaultApi apiInstance = new DefaultApi();
         try {
-            GameHistory result = apiInstance.listGameHistory();
+            array[inline_response_200_2] result = apiInstance.listGameHistory();
             System.out.println(result);
         } catch (ApiException e) {
             System.err.println("Exception when calling DefaultApi#listGameHistory");
@@ -1715,7 +1542,7 @@ DefaultApi *apiInstance = [[DefaultApi alloc] init];
 
 // List game history
 [apiInstance listGameHistoryWithCompletionHandler: 
-              ^(GameHistory output, NSError* error) {
+              ^(array[inline_response_200_2] output, NSError* error) {
                             if (output) {
                                 NSLog(@"%@", output);
                             }
@@ -1727,9 +1554,9 @@ DefaultApi *apiInstance = [[DefaultApi alloc] init];
                             </div>
 
                             <div class="tab-pane" id="examples-Default-listGameHistory-0-javascript">
-                              <pre class="prettyprint"><code class="language-js">var DjangoBackendApi = require('django_backend_api');
+                              <pre class="prettyprint"><code class="language-js">var DjangoApplicationApi = require('django_application_api');
 
-var api = new DjangoBackendApi.DefaultApi()
+var api = new DjangoApplicationApi.DefaultApi()
 var callback = function(error, data, response) {
   if (error) {
     console.error(error);
@@ -1763,7 +1590,7 @@ namespace Example
             try
             {
                 // List game history
-                GameHistory result = apiInstance.listGameHistory();
+                array[inline_response_200_2] result = apiInstance.listGameHistory();
                 Debug.WriteLine(result);
             }
             catch (Exception e)
@@ -1853,7 +1680,11 @@ except ApiException as e:
   "content" : {
     "application/json" : {
       "schema" : {
-        "$ref" : "#/components/schemas/GameHistory"
+        "type" : "array",
+        "items" : {
+          "$ref" : "#/components/schemas/inline_response_200_2"
+        },
+        "x-content-type" : "application/json"
       }
     }
   }
@@ -1918,6 +1749,7 @@ except ApiException as e:
                         <div class="tab-content">
                           <div class="tab-pane active" id="examples-Default-obtainToken-0-curl">
                            <pre class="prettyprint"><code class="language-bsh">curl -X POST\
+-H "Accept: application/json"\
 -H "Content-Type: application/json"\
 "//api/token/"</code></pre>
                           </div>
@@ -1937,7 +1769,8 @@ public class DefaultApiExample {
         DefaultApi apiInstance = new DefaultApi();
         Api_token_body body = ; // Api_token_body | 
         try {
-            apiInstance.obtainToken(body);
+            inline_response_200 result = apiInstance.obtainToken(body);
+            System.out.println(result);
         } catch (ApiException e) {
             System.err.println("Exception when calling DefaultApi#obtainToken");
             e.printStackTrace();
@@ -1955,7 +1788,8 @@ public class DefaultApiExample {
         DefaultApi apiInstance = new DefaultApi();
         Api_token_body body = ; // Api_token_body | 
         try {
-            apiInstance.obtainToken(body);
+            inline_response_200 result = apiInstance.obtainToken(body);
+            System.out.println(result);
         } catch (ApiException e) {
             System.err.println("Exception when calling DefaultApi#obtainToken");
             e.printStackTrace();
@@ -1968,13 +1802,16 @@ public class DefaultApiExample {
   <pre class="prettyprint language-json prettyprinted" data-type="json"><code>Coming Soon!</code></pre>
   </div> -->
                             <div class="tab-pane" id="examples-Default-obtainToken-0-objc">
-                              <pre class="prettyprint"><code class="language-cpp">Api_token_body *body = ; //  (optional)
+                              <pre class="prettyprint"><code class="language-cpp">Api_token_body *body = ; // 
 
 DefaultApi *apiInstance = [[DefaultApi alloc] init];
 
 // Obtain JWT token
 [apiInstance obtainTokenWith:body
-              completionHandler: ^(NSError* error) {
+              completionHandler: ^(inline_response_200 output, NSError* error) {
+                            if (output) {
+                                NSLog(@"%@", output);
+                            }
                             if (error) {
                                 NSLog(@"Error: %@", error);
                             }
@@ -1983,20 +1820,19 @@ DefaultApi *apiInstance = [[DefaultApi alloc] init];
                             </div>
 
                             <div class="tab-pane" id="examples-Default-obtainToken-0-javascript">
-                              <pre class="prettyprint"><code class="language-js">var DjangoBackendApi = require('django_backend_api');
+                              <pre class="prettyprint"><code class="language-js">var DjangoApplicationApi = require('django_application_api');
 
-var api = new DjangoBackendApi.DefaultApi()
-var opts = { 
-  'body':  // {{Api_token_body}} 
-};
+var api = new DjangoApplicationApi.DefaultApi()
+var body = ; // {{Api_token_body}} 
+
 var callback = function(error, data, response) {
   if (error) {
     console.error(error);
   } else {
-    console.log('API called successfully.');
+    console.log('API called successfully. Returned data: ' + data);
   }
 };
-api.obtainToken(opts, callback);
+api.obtainToken(body, callback);
 </code></pre>
                             </div>
 
@@ -2018,12 +1854,13 @@ namespace Example
         {
 
             var apiInstance = new DefaultApi();
-            var body = new Api_token_body(); // Api_token_body |  (optional) 
+            var body = new Api_token_body(); // Api_token_body | 
 
             try
             {
                 // Obtain JWT token
-                apiInstance.obtainToken(body);
+                inline_response_200 result = apiInstance.obtainToken(body);
+                Debug.WriteLine(result);
             }
             catch (Exception e)
             {
@@ -2043,7 +1880,8 @@ $api_instance = new Swagger\Client\ApiDefaultApi();
 $body = ; // Api_token_body | 
 
 try {
-    $api_instance->obtainToken($body);
+    $result = $api_instance->obtainToken($body);
+    print_r($result);
 } catch (Exception $e) {
     echo 'Exception when calling DefaultApi->obtainToken: ', $e->getMessage(), PHP_EOL;
 }
@@ -2059,7 +1897,8 @@ my $api_instance = WWW::SwaggerClient::DefaultApi->new();
 my $body = WWW::SwaggerClient::Object::Api_token_body->new(); # Api_token_body | 
 
 eval { 
-    $api_instance->obtainToken(body => $body);
+    my $result = $api_instance->obtainToken(body => $body);
+    print Dumper($result);
 };
 if ($@) {
     warn "Exception when calling DefaultApi->obtainToken: $@\n";
@@ -2075,11 +1914,12 @@ from pprint import pprint
 
 # create an instance of the API class
 api_instance = swagger_client.DefaultApi()
-body =  # Api_token_body |  (optional)
+body =  # Api_token_body | 
 
 try: 
     # Obtain JWT token
-    api_instance.obtain_token(body=body)
+    api_response = api_instance.obtain_token(body)
+    pprint(api_response)
 except ApiException as e:
     print("Exception when calling DefaultApi->obtainToken: %s\n" % e)</code></pre>
                             </div>
@@ -2095,7 +1935,7 @@ except ApiException as e:
                                 <th width="150px">Name</th>
                                 <th>Description</th>
                               </tr>
-                                <tr><td style="width:150px;">body </td>
+                                <tr><td style="width:150px;">body <span style="color:red;">*</span></td>
                                 <td>
                                 
                                 
@@ -2108,7 +1948,8 @@ except ApiException as e:
         "$ref" : "#/components/schemas/api_token_body"
       }
     }
-  }
+  },
+  "required" : true
 };
                                   var schema = schemaWrapper.content["application/json"].schema;
                                   if (schema.$ref != null) {
@@ -2138,217 +1979,49 @@ except ApiException as e:
                             <h3> Status: 200 - Token obtained </h3>
 
                             <ul class="nav nav-tabs nav-tabs-examples" >
+                                <li class="active">
+                                  <a data-toggle="tab" href="#responses-obtainToken-200-schema">Schema</a>
+                                </li>
+
                             </ul>
 
                             <div class="tab-content" style='margin-bottom: 10px;'>
-                            </div>
-
-                        </article>
-                      </div>
-                      <hr>
-                    <div id="api-Default-pong">
-                      <article id="api-Default-pong-0" data-group="User" data-name="pong" data-version="0">
-                        <div class="pull-left">
-                          <h1>pong</h1>
-                          <p>Pong endpoint</p>
-                        </div>
-                        <div class="pull-right"></div>
-                        <div class="clearfix"></div>
-                        <p></p>
-                        <p class="marked"></p>
-                        <p></p>
-                        <br />
-                        <pre class="prettyprint language-html prettyprinted" data-type="get"><code><span class="pln">/pong/</span></code></pre>
-                        <p>
-                          <h3>Usage and SDK Samples</h3>
-                        </p>
-                        <ul class="nav nav-tabs nav-tabs-examples">
-                          <li class="active"><a href="#examples-Default-pong-0-curl">Curl</a></li>
-                          <li class=""><a href="#examples-Default-pong-0-java">Java</a></li>
-                          <li class=""><a href="#examples-Default-pong-0-android">Android</a></li>
-                          <!--<li class=""><a href="#examples-Default-pong-0-groovy">Groovy</a></li>-->
-                          <li class=""><a href="#examples-Default-pong-0-objc">Obj-C</a></li>
-                          <li class=""><a href="#examples-Default-pong-0-javascript">JavaScript</a></li>
-                          <!--<li class=""><a href="#examples-Default-pong-0-angular">Angular</a></li>-->
-                          <li class=""><a href="#examples-Default-pong-0-csharp">C#</a></li>
-                          <li class=""><a href="#examples-Default-pong-0-php">PHP</a></li>
-                          <li class=""><a href="#examples-Default-pong-0-perl">Perl</a></li>
-                          <li class=""><a href="#examples-Default-pong-0-python">Python</a></li>
-                        </ul>
-
-                        <div class="tab-content">
-                          <div class="tab-pane active" id="examples-Default-pong-0-curl">
-                           <pre class="prettyprint"><code class="language-bsh">curl -X GET\
-"//pong/"</code></pre>
-                          </div>
-                          <div class="tab-pane" id="examples-Default-pong-0-java">
-                            <pre class="prettyprint"><code class="language-java">import io.swagger.client.*;
-import io.swagger.client.auth.*;
-import io.swagger.client.model.*;
-import io.swagger.client.api.DefaultApi;
-
-import java.io.File;
-import java.util.*;
-
-public class DefaultApiExample {
-
-    public static void main(String[] args) {
-        
-        DefaultApi apiInstance = new DefaultApi();
-        try {
-            apiInstance.pong();
-        } catch (ApiException e) {
-            System.err.println("Exception when calling DefaultApi#pong");
-            e.printStackTrace();
-        }
+                                <div class="tab-pane active" id="responses-obtainToken-200-schema">
+                                  <div id='responses-obtainToken-200-schema-200' style="padding: 30px; border-left: 1px solid #eee; border-right: 1px solid #eee; border-bottom: 1px solid #eee;">
+                                    <script>
+                                      $(document).ready(function() {
+                                        var schemaWrapper = {
+  "description" : "Token obtained",
+  "content" : {
+    "application/json" : {
+      "schema" : {
+        "$ref" : "#/components/schemas/inline_response_200"
+      }
     }
-}</code></pre>
-                          </div>
-
-                          <div class="tab-pane" id="examples-Default-pong-0-android">
-                            <pre class="prettyprint"><code class="language-java">import io.swagger.client.api.DefaultApi;
-
-public class DefaultApiExample {
-
-    public static void main(String[] args) {
-        DefaultApi apiInstance = new DefaultApi();
-        try {
-            apiInstance.pong();
-        } catch (ApiException e) {
-            System.err.println("Exception when calling DefaultApi#pong");
-            e.printStackTrace();
-        }
-    }
-}</code></pre>
-                          </div>
-  <!--
-  <div class="tab-pane" id="examples-Default-pong-0-groovy">
-  <pre class="prettyprint language-json prettyprinted" data-type="json"><code>Coming Soon!</code></pre>
-  </div> -->
-                            <div class="tab-pane" id="examples-Default-pong-0-objc">
-                              <pre class="prettyprint"><code class="language-cpp">
-DefaultApi *apiInstance = [[DefaultApi alloc] init];
-
-// Pong endpoint
-[apiInstance pongWithCompletionHandler: 
-              ^(NSError* error) {
-                            if (error) {
-                                NSLog(@"Error: %@", error);
-                            }
-                        }];
-</code></pre>
-                            </div>
-
-                            <div class="tab-pane" id="examples-Default-pong-0-javascript">
-                              <pre class="prettyprint"><code class="language-js">var DjangoBackendApi = require('django_backend_api');
-
-var api = new DjangoBackendApi.DefaultApi()
-var callback = function(error, data, response) {
-  if (error) {
-    console.error(error);
-  } else {
-    console.log('API called successfully.');
   }
 };
-api.pong(callback);
-</code></pre>
-                            </div>
+                                        var schema = schemaWrapper.content["application/json"].schema;
+                                        if (schema.$ref != null) {
+                                          schema = defsParser.$refs.get(schema.$ref);
+                                        } else {
+                                          schemaWrapper.components = {};
+                                          schemaWrapper.components.schemas = Object.assign({}, defs);
+                                          $RefParser.dereference(schemaWrapper).catch(function(err) {
+                                            console.log(err);
+                                          });
+                                        }
 
-                            <!--<div class="tab-pane" id="examples-Default-pong-0-angular">
-              <pre class="prettyprint language-json prettyprinted" data-type="json"><code>Coming Soon!</code></pre>
-            </div>-->
-                            <div class="tab-pane" id="examples-Default-pong-0-csharp">
-                              <pre class="prettyprint"><code class="language-cs">using System;
-using System.Diagnostics;
-using IO.Swagger.Api;
-using IO.Swagger.Client;
-using IO.Swagger.Model;
-
-namespace Example
-{
-    public class pongExample
-    {
-        public void main()
-        {
-
-            var apiInstance = new DefaultApi();
-
-            try
-            {
-                // Pong endpoint
-                apiInstance.pong();
-            }
-            catch (Exception e)
-            {
-                Debug.Print("Exception when calling DefaultApi.pong: " + e.Message );
-            }
-        }
-    }
-}
-</code></pre>
-                            </div>
-
-                            <div class="tab-pane" id="examples-Default-pong-0-php">
-                              <pre class="prettyprint"><code class="language-php"><&#63;php
-require_once(__DIR__ . '/vendor/autoload.php');
-
-$api_instance = new Swagger\Client\ApiDefaultApi();
-
-try {
-    $api_instance->pong();
-} catch (Exception $e) {
-    echo 'Exception when calling DefaultApi->pong: ', $e->getMessage(), PHP_EOL;
-}
-?></code></pre>
-                            </div>
-
-                            <div class="tab-pane" id="examples-Default-pong-0-perl">
-                              <pre class="prettyprint"><code class="language-perl">use Data::Dumper;
-use WWW::SwaggerClient::Configuration;
-use WWW::SwaggerClient::DefaultApi;
-
-my $api_instance = WWW::SwaggerClient::DefaultApi->new();
-
-eval { 
-    $api_instance->pong();
-};
-if ($@) {
-    warn "Exception when calling DefaultApi->pong: $@\n";
-}</code></pre>
-                            </div>
-
-                            <div class="tab-pane" id="examples-Default-pong-0-python">
-                              <pre class="prettyprint"><code class="language-python">from __future__ import print_statement
-import time
-import swagger_client
-from swagger_client.rest import ApiException
-from pprint import pprint
-
-# create an instance of the API class
-api_instance = swagger_client.DefaultApi()
-
-try: 
-    # Pong endpoint
-    api_instance.pong()
-except ApiException as e:
-    print("Exception when calling DefaultApi->pong: %s\n" % e)</code></pre>
-                            </div>
-                          </div>
-
-                          <h2>Parameters</h2>
-
-
-
-
-
-
-                          <h2>Responses</h2>
-                            <h3> Status: 200 - Pong response </h3>
-
-                            <ul class="nav nav-tabs nav-tabs-examples" >
-                            </ul>
-
-                            <div class="tab-content" style='margin-bottom: 10px;'>
+                                        //console.log(JSON.stringify(schema));
+                                        var view = new JSONSchemaView(schema, 3);
+                                        $('#responses-obtainToken-200-schema-data').val(stringify(schema));
+                                        var result = $('#responses-obtainToken-200-schema-200');
+                                        result.empty();
+                                        result.append(view.render());
+                                      });
+                                    </script>
+                                  </div>
+                                  <input id='responses-obtainToken-200-schema-data' type='hidden' value=''></input>
+                                </div>
                             </div>
 
                         </article>
@@ -2387,6 +2060,7 @@ except ApiException as e:
                         <div class="tab-content">
                           <div class="tab-pane active" id="examples-Default-refreshToken-0-curl">
                            <pre class="prettyprint"><code class="language-bsh">curl -X POST\
+-H "Accept: application/json"\
 -H "Content-Type: application/json"\
 "//api/token/refresh/"</code></pre>
                           </div>
@@ -2406,7 +2080,8 @@ public class DefaultApiExample {
         DefaultApi apiInstance = new DefaultApi();
         Token_refresh_body body = ; // Token_refresh_body | 
         try {
-            apiInstance.refreshToken(body);
+            inline_response_200_1 result = apiInstance.refreshToken(body);
+            System.out.println(result);
         } catch (ApiException e) {
             System.err.println("Exception when calling DefaultApi#refreshToken");
             e.printStackTrace();
@@ -2424,7 +2099,8 @@ public class DefaultApiExample {
         DefaultApi apiInstance = new DefaultApi();
         Token_refresh_body body = ; // Token_refresh_body | 
         try {
-            apiInstance.refreshToken(body);
+            inline_response_200_1 result = apiInstance.refreshToken(body);
+            System.out.println(result);
         } catch (ApiException e) {
             System.err.println("Exception when calling DefaultApi#refreshToken");
             e.printStackTrace();
@@ -2437,13 +2113,16 @@ public class DefaultApiExample {
   <pre class="prettyprint language-json prettyprinted" data-type="json"><code>Coming Soon!</code></pre>
   </div> -->
                             <div class="tab-pane" id="examples-Default-refreshToken-0-objc">
-                              <pre class="prettyprint"><code class="language-cpp">Token_refresh_body *body = ; //  (optional)
+                              <pre class="prettyprint"><code class="language-cpp">Token_refresh_body *body = ; // 
 
 DefaultApi *apiInstance = [[DefaultApi alloc] init];
 
 // Refresh JWT token
 [apiInstance refreshTokenWith:body
-              completionHandler: ^(NSError* error) {
+              completionHandler: ^(inline_response_200_1 output, NSError* error) {
+                            if (output) {
+                                NSLog(@"%@", output);
+                            }
                             if (error) {
                                 NSLog(@"Error: %@", error);
                             }
@@ -2452,20 +2131,19 @@ DefaultApi *apiInstance = [[DefaultApi alloc] init];
                             </div>
 
                             <div class="tab-pane" id="examples-Default-refreshToken-0-javascript">
-                              <pre class="prettyprint"><code class="language-js">var DjangoBackendApi = require('django_backend_api');
+                              <pre class="prettyprint"><code class="language-js">var DjangoApplicationApi = require('django_application_api');
 
-var api = new DjangoBackendApi.DefaultApi()
-var opts = { 
-  'body':  // {{Token_refresh_body}} 
-};
+var api = new DjangoApplicationApi.DefaultApi()
+var body = ; // {{Token_refresh_body}} 
+
 var callback = function(error, data, response) {
   if (error) {
     console.error(error);
   } else {
-    console.log('API called successfully.');
+    console.log('API called successfully. Returned data: ' + data);
   }
 };
-api.refreshToken(opts, callback);
+api.refreshToken(body, callback);
 </code></pre>
                             </div>
 
@@ -2487,12 +2165,13 @@ namespace Example
         {
 
             var apiInstance = new DefaultApi();
-            var body = new Token_refresh_body(); // Token_refresh_body |  (optional) 
+            var body = new Token_refresh_body(); // Token_refresh_body | 
 
             try
             {
                 // Refresh JWT token
-                apiInstance.refreshToken(body);
+                inline_response_200_1 result = apiInstance.refreshToken(body);
+                Debug.WriteLine(result);
             }
             catch (Exception e)
             {
@@ -2512,7 +2191,8 @@ $api_instance = new Swagger\Client\ApiDefaultApi();
 $body = ; // Token_refresh_body | 
 
 try {
-    $api_instance->refreshToken($body);
+    $result = $api_instance->refreshToken($body);
+    print_r($result);
 } catch (Exception $e) {
     echo 'Exception when calling DefaultApi->refreshToken: ', $e->getMessage(), PHP_EOL;
 }
@@ -2528,7 +2208,8 @@ my $api_instance = WWW::SwaggerClient::DefaultApi->new();
 my $body = WWW::SwaggerClient::Object::Token_refresh_body->new(); # Token_refresh_body | 
 
 eval { 
-    $api_instance->refreshToken(body => $body);
+    my $result = $api_instance->refreshToken(body => $body);
+    print Dumper($result);
 };
 if ($@) {
     warn "Exception when calling DefaultApi->refreshToken: $@\n";
@@ -2544,11 +2225,12 @@ from pprint import pprint
 
 # create an instance of the API class
 api_instance = swagger_client.DefaultApi()
-body =  # Token_refresh_body |  (optional)
+body =  # Token_refresh_body | 
 
 try: 
     # Refresh JWT token
-    api_instance.refresh_token(body=body)
+    api_response = api_instance.refresh_token(body)
+    pprint(api_response)
 except ApiException as e:
     print("Exception when calling DefaultApi->refreshToken: %s\n" % e)</code></pre>
                             </div>
@@ -2564,7 +2246,7 @@ except ApiException as e:
                                 <th width="150px">Name</th>
                                 <th>Description</th>
                               </tr>
-                                <tr><td style="width:150px;">body </td>
+                                <tr><td style="width:150px;">body <span style="color:red;">*</span></td>
                                 <td>
                                 
                                 
@@ -2577,7 +2259,8 @@ except ApiException as e:
         "$ref" : "#/components/schemas/token_refresh_body"
       }
     }
-  }
+  },
+  "required" : true
 };
                                   var schema = schemaWrapper.content["application/json"].schema;
                                   if (schema.$ref != null) {
@@ -2607,9 +2290,49 @@ except ApiException as e:
                             <h3> Status: 200 - Token refreshed </h3>
 
                             <ul class="nav nav-tabs nav-tabs-examples" >
+                                <li class="active">
+                                  <a data-toggle="tab" href="#responses-refreshToken-200-schema">Schema</a>
+                                </li>
+
                             </ul>
 
                             <div class="tab-content" style='margin-bottom: 10px;'>
+                                <div class="tab-pane active" id="responses-refreshToken-200-schema">
+                                  <div id='responses-refreshToken-200-schema-200' style="padding: 30px; border-left: 1px solid #eee; border-right: 1px solid #eee; border-bottom: 1px solid #eee;">
+                                    <script>
+                                      $(document).ready(function() {
+                                        var schemaWrapper = {
+  "description" : "Token refreshed",
+  "content" : {
+    "application/json" : {
+      "schema" : {
+        "$ref" : "#/components/schemas/inline_response_200_1"
+      }
+    }
+  }
+};
+                                        var schema = schemaWrapper.content["application/json"].schema;
+                                        if (schema.$ref != null) {
+                                          schema = defsParser.$refs.get(schema.$ref);
+                                        } else {
+                                          schemaWrapper.components = {};
+                                          schemaWrapper.components.schemas = Object.assign({}, defs);
+                                          $RefParser.dereference(schemaWrapper).catch(function(err) {
+                                            console.log(err);
+                                          });
+                                        }
+
+                                        //console.log(JSON.stringify(schema));
+                                        var view = new JSONSchemaView(schema, 3);
+                                        $('#responses-refreshToken-200-schema-data').val(stringify(schema));
+                                        var result = $('#responses-refreshToken-200-schema-200');
+                                        result.empty();
+                                        result.append(view.render());
+                                      });
+                                    </script>
+                                  </div>
+                                  <input id='responses-refreshToken-200-schema-data' type='hidden' value=''></input>
+                                </div>
                             </div>
 
                         </article>
@@ -2648,6 +2371,7 @@ except ApiException as e:
                         <div class="tab-content">
                           <div class="tab-pane active" id="examples-Default-registerUser-0-curl">
                            <pre class="prettyprint"><code class="language-bsh">curl -X POST\
+-H "Accept: application/json"\
 -H "Content-Type: application/json"\
 "//api/register/"</code></pre>
                           </div>
@@ -2665,9 +2389,10 @@ public class DefaultApiExample {
     public static void main(String[] args) {
         
         DefaultApi apiInstance = new DefaultApi();
-        User body = ; // User | 
+        Api_register_body body = ; // Api_register_body | 
         try {
-            apiInstance.registerUser(body);
+            inline_response_201 result = apiInstance.registerUser(body);
+            System.out.println(result);
         } catch (ApiException e) {
             System.err.println("Exception when calling DefaultApi#registerUser");
             e.printStackTrace();
@@ -2683,9 +2408,10 @@ public class DefaultApiExample {
 
     public static void main(String[] args) {
         DefaultApi apiInstance = new DefaultApi();
-        User body = ; // User | 
+        Api_register_body body = ; // Api_register_body | 
         try {
-            apiInstance.registerUser(body);
+            inline_response_201 result = apiInstance.registerUser(body);
+            System.out.println(result);
         } catch (ApiException e) {
             System.err.println("Exception when calling DefaultApi#registerUser");
             e.printStackTrace();
@@ -2698,13 +2424,16 @@ public class DefaultApiExample {
   <pre class="prettyprint language-json prettyprinted" data-type="json"><code>Coming Soon!</code></pre>
   </div> -->
                             <div class="tab-pane" id="examples-Default-registerUser-0-objc">
-                              <pre class="prettyprint"><code class="language-cpp">User *body = ; //  (optional)
+                              <pre class="prettyprint"><code class="language-cpp">Api_register_body *body = ; // 
 
 DefaultApi *apiInstance = [[DefaultApi alloc] init];
 
 // Register a new user
 [apiInstance registerUserWith:body
-              completionHandler: ^(NSError* error) {
+              completionHandler: ^(inline_response_201 output, NSError* error) {
+                            if (output) {
+                                NSLog(@"%@", output);
+                            }
                             if (error) {
                                 NSLog(@"Error: %@", error);
                             }
@@ -2713,20 +2442,19 @@ DefaultApi *apiInstance = [[DefaultApi alloc] init];
                             </div>
 
                             <div class="tab-pane" id="examples-Default-registerUser-0-javascript">
-                              <pre class="prettyprint"><code class="language-js">var DjangoBackendApi = require('django_backend_api');
+                              <pre class="prettyprint"><code class="language-js">var DjangoApplicationApi = require('django_application_api');
 
-var api = new DjangoBackendApi.DefaultApi()
-var opts = { 
-  'body':  // {{User}} 
-};
+var api = new DjangoApplicationApi.DefaultApi()
+var body = ; // {{Api_register_body}} 
+
 var callback = function(error, data, response) {
   if (error) {
     console.error(error);
   } else {
-    console.log('API called successfully.');
+    console.log('API called successfully. Returned data: ' + data);
   }
 };
-api.registerUser(opts, callback);
+api.registerUser(body, callback);
 </code></pre>
                             </div>
 
@@ -2748,12 +2476,13 @@ namespace Example
         {
 
             var apiInstance = new DefaultApi();
-            var body = new User(); // User |  (optional) 
+            var body = new Api_register_body(); // Api_register_body | 
 
             try
             {
                 // Register a new user
-                apiInstance.registerUser(body);
+                inline_response_201 result = apiInstance.registerUser(body);
+                Debug.WriteLine(result);
             }
             catch (Exception e)
             {
@@ -2770,10 +2499,11 @@ namespace Example
 require_once(__DIR__ . '/vendor/autoload.php');
 
 $api_instance = new Swagger\Client\ApiDefaultApi();
-$body = ; // User | 
+$body = ; // Api_register_body | 
 
 try {
-    $api_instance->registerUser($body);
+    $result = $api_instance->registerUser($body);
+    print_r($result);
 } catch (Exception $e) {
     echo 'Exception when calling DefaultApi->registerUser: ', $e->getMessage(), PHP_EOL;
 }
@@ -2786,10 +2516,11 @@ use WWW::SwaggerClient::Configuration;
 use WWW::SwaggerClient::DefaultApi;
 
 my $api_instance = WWW::SwaggerClient::DefaultApi->new();
-my $body = WWW::SwaggerClient::Object::User->new(); # User | 
+my $body = WWW::SwaggerClient::Object::Api_register_body->new(); # Api_register_body | 
 
 eval { 
-    $api_instance->registerUser(body => $body);
+    my $result = $api_instance->registerUser(body => $body);
+    print Dumper($result);
 };
 if ($@) {
     warn "Exception when calling DefaultApi->registerUser: $@\n";
@@ -2805,11 +2536,12 @@ from pprint import pprint
 
 # create an instance of the API class
 api_instance = swagger_client.DefaultApi()
-body =  # User |  (optional)
+body =  # Api_register_body | 
 
 try: 
     # Register a new user
-    api_instance.register_user(body=body)
+    api_response = api_instance.register_user(body)
+    pprint(api_response)
 except ApiException as e:
     print("Exception when calling DefaultApi->registerUser: %s\n" % e)</code></pre>
                             </div>
@@ -2825,7 +2557,7 @@ except ApiException as e:
                                 <th width="150px">Name</th>
                                 <th>Description</th>
                               </tr>
-                                <tr><td style="width:150px;">body </td>
+                                <tr><td style="width:150px;">body <span style="color:red;">*</span></td>
                                 <td>
                                 
                                 
@@ -2835,10 +2567,11 @@ except ApiException as e:
   "content" : {
     "application/json" : {
       "schema" : {
-        "$ref" : "#/components/schemas/User"
+        "$ref" : "#/components/schemas/api_register_body"
       }
     }
-  }
+  },
+  "required" : true
 };
                                   var schema = schemaWrapper.content["application/json"].schema;
                                   if (schema.$ref != null) {
@@ -2868,276 +2601,23 @@ except ApiException as e:
                             <h3> Status: 201 - User registered </h3>
 
                             <ul class="nav nav-tabs nav-tabs-examples" >
-                            </ul>
-
-                            <div class="tab-content" style='margin-bottom: 10px;'>
-                            </div>
-
-                        </article>
-                      </div>
-                      <hr>
-                    <div id="api-Default-retrieveUser">
-                      <article id="api-Default-retrieveUser-0" data-group="User" data-name="retrieveUser" data-version="0">
-                        <div class="pull-left">
-                          <h1>retrieveUser</h1>
-                          <p>Retrieve user details</p>
-                        </div>
-                        <div class="pull-right"></div>
-                        <div class="clearfix"></div>
-                        <p></p>
-                        <p class="marked"></p>
-                        <p></p>
-                        <br />
-                        <pre class="prettyprint language-html prettyprinted" data-type="get"><code><span class="pln">/api/users/{pk}/</span></code></pre>
-                        <p>
-                          <h3>Usage and SDK Samples</h3>
-                        </p>
-                        <ul class="nav nav-tabs nav-tabs-examples">
-                          <li class="active"><a href="#examples-Default-retrieveUser-0-curl">Curl</a></li>
-                          <li class=""><a href="#examples-Default-retrieveUser-0-java">Java</a></li>
-                          <li class=""><a href="#examples-Default-retrieveUser-0-android">Android</a></li>
-                          <!--<li class=""><a href="#examples-Default-retrieveUser-0-groovy">Groovy</a></li>-->
-                          <li class=""><a href="#examples-Default-retrieveUser-0-objc">Obj-C</a></li>
-                          <li class=""><a href="#examples-Default-retrieveUser-0-javascript">JavaScript</a></li>
-                          <!--<li class=""><a href="#examples-Default-retrieveUser-0-angular">Angular</a></li>-->
-                          <li class=""><a href="#examples-Default-retrieveUser-0-csharp">C#</a></li>
-                          <li class=""><a href="#examples-Default-retrieveUser-0-php">PHP</a></li>
-                          <li class=""><a href="#examples-Default-retrieveUser-0-perl">Perl</a></li>
-                          <li class=""><a href="#examples-Default-retrieveUser-0-python">Python</a></li>
-                        </ul>
-
-                        <div class="tab-content">
-                          <div class="tab-pane active" id="examples-Default-retrieveUser-0-curl">
-                           <pre class="prettyprint"><code class="language-bsh">curl -X GET\
--H "Accept: application/json"\
-"//api/users/{pk}/"</code></pre>
-                          </div>
-                          <div class="tab-pane" id="examples-Default-retrieveUser-0-java">
-                            <pre class="prettyprint"><code class="language-java">import io.swagger.client.*;
-import io.swagger.client.auth.*;
-import io.swagger.client.model.*;
-import io.swagger.client.api.DefaultApi;
-
-import java.io.File;
-import java.util.*;
-
-public class DefaultApiExample {
-
-    public static void main(String[] args) {
-        
-        DefaultApi apiInstance = new DefaultApi();
-        Integer pk = 56; // Integer | 
-        try {
-            User result = apiInstance.retrieveUser(pk);
-            System.out.println(result);
-        } catch (ApiException e) {
-            System.err.println("Exception when calling DefaultApi#retrieveUser");
-            e.printStackTrace();
-        }
-    }
-}</code></pre>
-                          </div>
-
-                          <div class="tab-pane" id="examples-Default-retrieveUser-0-android">
-                            <pre class="prettyprint"><code class="language-java">import io.swagger.client.api.DefaultApi;
-
-public class DefaultApiExample {
-
-    public static void main(String[] args) {
-        DefaultApi apiInstance = new DefaultApi();
-        Integer pk = 56; // Integer | 
-        try {
-            User result = apiInstance.retrieveUser(pk);
-            System.out.println(result);
-        } catch (ApiException e) {
-            System.err.println("Exception when calling DefaultApi#retrieveUser");
-            e.printStackTrace();
-        }
-    }
-}</code></pre>
-                          </div>
-  <!--
-  <div class="tab-pane" id="examples-Default-retrieveUser-0-groovy">
-  <pre class="prettyprint language-json prettyprinted" data-type="json"><code>Coming Soon!</code></pre>
-  </div> -->
-                            <div class="tab-pane" id="examples-Default-retrieveUser-0-objc">
-                              <pre class="prettyprint"><code class="language-cpp">Integer *pk = 56; // 
-
-DefaultApi *apiInstance = [[DefaultApi alloc] init];
-
-// Retrieve user details
-[apiInstance retrieveUserWith:pk
-              completionHandler: ^(User output, NSError* error) {
-                            if (output) {
-                                NSLog(@"%@", output);
-                            }
-                            if (error) {
-                                NSLog(@"Error: %@", error);
-                            }
-                        }];
-</code></pre>
-                            </div>
-
-                            <div class="tab-pane" id="examples-Default-retrieveUser-0-javascript">
-                              <pre class="prettyprint"><code class="language-js">var DjangoBackendApi = require('django_backend_api');
-
-var api = new DjangoBackendApi.DefaultApi()
-var pk = 56; // {{Integer}} 
-
-var callback = function(error, data, response) {
-  if (error) {
-    console.error(error);
-  } else {
-    console.log('API called successfully. Returned data: ' + data);
-  }
-};
-api.retrieveUser(pk, callback);
-</code></pre>
-                            </div>
-
-                            <!--<div class="tab-pane" id="examples-Default-retrieveUser-0-angular">
-              <pre class="prettyprint language-json prettyprinted" data-type="json"><code>Coming Soon!</code></pre>
-            </div>-->
-                            <div class="tab-pane" id="examples-Default-retrieveUser-0-csharp">
-                              <pre class="prettyprint"><code class="language-cs">using System;
-using System.Diagnostics;
-using IO.Swagger.Api;
-using IO.Swagger.Client;
-using IO.Swagger.Model;
-
-namespace Example
-{
-    public class retrieveUserExample
-    {
-        public void main()
-        {
-
-            var apiInstance = new DefaultApi();
-            var pk = 56;  // Integer | 
-
-            try
-            {
-                // Retrieve user details
-                User result = apiInstance.retrieveUser(pk);
-                Debug.WriteLine(result);
-            }
-            catch (Exception e)
-            {
-                Debug.Print("Exception when calling DefaultApi.retrieveUser: " + e.Message );
-            }
-        }
-    }
-}
-</code></pre>
-                            </div>
-
-                            <div class="tab-pane" id="examples-Default-retrieveUser-0-php">
-                              <pre class="prettyprint"><code class="language-php"><&#63;php
-require_once(__DIR__ . '/vendor/autoload.php');
-
-$api_instance = new Swagger\Client\ApiDefaultApi();
-$pk = 56; // Integer | 
-
-try {
-    $result = $api_instance->retrieveUser($pk);
-    print_r($result);
-} catch (Exception $e) {
-    echo 'Exception when calling DefaultApi->retrieveUser: ', $e->getMessage(), PHP_EOL;
-}
-?></code></pre>
-                            </div>
-
-                            <div class="tab-pane" id="examples-Default-retrieveUser-0-perl">
-                              <pre class="prettyprint"><code class="language-perl">use Data::Dumper;
-use WWW::SwaggerClient::Configuration;
-use WWW::SwaggerClient::DefaultApi;
-
-my $api_instance = WWW::SwaggerClient::DefaultApi->new();
-my $pk = 56; # Integer | 
-
-eval { 
-    my $result = $api_instance->retrieveUser(pk => $pk);
-    print Dumper($result);
-};
-if ($@) {
-    warn "Exception when calling DefaultApi->retrieveUser: $@\n";
-}</code></pre>
-                            </div>
-
-                            <div class="tab-pane" id="examples-Default-retrieveUser-0-python">
-                              <pre class="prettyprint"><code class="language-python">from __future__ import print_statement
-import time
-import swagger_client
-from swagger_client.rest import ApiException
-from pprint import pprint
-
-# create an instance of the API class
-api_instance = swagger_client.DefaultApi()
-pk = 56 # Integer | 
-
-try: 
-    # Retrieve user details
-    api_response = api_instance.retrieve_user(pk)
-    pprint(api_response)
-except ApiException as e:
-    print("Exception when calling DefaultApi->retrieveUser: %s\n" % e)</code></pre>
-                            </div>
-                          </div>
-
-                          <h2>Parameters</h2>
-
-                            <div class="methodsubtabletitle">Path parameters</div>
-                            <table id="methodsubtable">
-                                <tr>
-                                  <th width="150px">Name</th>
-                                  <th>Description</th>
-                                </tr>
-                                  <tr><td style="width:150px;">pk*</td>
-                                  <td>
-                                  
-                                  
-                                      <div id="d2e199_retrieveUser_pk">
-                                          <div class="json-schema-view">
-                                              <div class="primitive">
-                                                  <span class="type">
-                                                      Integer
-                                                  </span>
-                                  
-                                              </div>
-                                                  <div class="inner required">
-                                                      Required
-                                                  </div>
-                                          </div>
-                                      </div>
-                                  </td>
-                                  </tr>
-                            </table>
-
-
-
-
-
-                          <h2>Responses</h2>
-                            <h3> Status: 200 - User details </h3>
-
-                            <ul class="nav nav-tabs nav-tabs-examples" >
                                 <li class="active">
-                                  <a data-toggle="tab" href="#responses-retrieveUser-200-schema">Schema</a>
+                                  <a data-toggle="tab" href="#responses-registerUser-201-schema">Schema</a>
                                 </li>
 
                             </ul>
 
                             <div class="tab-content" style='margin-bottom: 10px;'>
-                                <div class="tab-pane active" id="responses-retrieveUser-200-schema">
-                                  <div id='responses-retrieveUser-200-schema-200' style="padding: 30px; border-left: 1px solid #eee; border-right: 1px solid #eee; border-bottom: 1px solid #eee;">
+                                <div class="tab-pane active" id="responses-registerUser-201-schema">
+                                  <div id='responses-registerUser-201-schema-201' style="padding: 30px; border-left: 1px solid #eee; border-right: 1px solid #eee; border-bottom: 1px solid #eee;">
                                     <script>
                                       $(document).ready(function() {
                                         var schemaWrapper = {
-  "description" : "User details",
+  "description" : "User registered",
   "content" : {
     "application/json" : {
       "schema" : {
-        "$ref" : "#/components/schemas/User"
+        "$ref" : "#/components/schemas/inline_response_201"
       }
     }
   }
@@ -3155,25 +2635,25 @@ except ApiException as e:
 
                                         //console.log(JSON.stringify(schema));
                                         var view = new JSONSchemaView(schema, 3);
-                                        $('#responses-retrieveUser-200-schema-data').val(stringify(schema));
-                                        var result = $('#responses-retrieveUser-200-schema-200');
+                                        $('#responses-registerUser-201-schema-data').val(stringify(schema));
+                                        var result = $('#responses-registerUser-201-schema-201');
                                         result.empty();
                                         result.append(view.render());
                                       });
                                     </script>
                                   </div>
-                                  <input id='responses-retrieveUser-200-schema-data' type='hidden' value=''></input>
+                                  <input id='responses-registerUser-201-schema-data' type='hidden' value=''></input>
                                 </div>
                             </div>
 
                         </article>
                       </div>
                       <hr>
-                    <div id="api-Default-updateProfilePicture">
-                      <article id="api-Default-updateProfilePicture-0" data-group="User" data-name="updateProfilePicture" data-version="0">
+                    <div id="api-Default-updateUserDetails">
+                      <article id="api-Default-updateUserDetails-0" data-group="User" data-name="updateUserDetails" data-version="0">
                         <div class="pull-left">
-                          <h1>updateProfilePicture</h1>
-                          <p>Update profile picture</p>
+                          <h1>updateUserDetails</h1>
+                          <p>Update user details</p>
                         </div>
                         <div class="pull-right"></div>
                         <div class="clearfix"></div>
@@ -3181,31 +2661,32 @@ except ApiException as e:
                         <p class="marked"></p>
                         <p></p>
                         <br />
-                        <pre class="prettyprint language-html prettyprinted" data-type="patch"><code><span class="pln">/api/user/profilepicture/{pk}/</span></code></pre>
+                        <pre class="prettyprint language-html prettyprinted" data-type="patch"><code><span class="pln">/api/users/{id}/edit/</span></code></pre>
                         <p>
                           <h3>Usage and SDK Samples</h3>
                         </p>
                         <ul class="nav nav-tabs nav-tabs-examples">
-                          <li class="active"><a href="#examples-Default-updateProfilePicture-0-curl">Curl</a></li>
-                          <li class=""><a href="#examples-Default-updateProfilePicture-0-java">Java</a></li>
-                          <li class=""><a href="#examples-Default-updateProfilePicture-0-android">Android</a></li>
-                          <!--<li class=""><a href="#examples-Default-updateProfilePicture-0-groovy">Groovy</a></li>-->
-                          <li class=""><a href="#examples-Default-updateProfilePicture-0-objc">Obj-C</a></li>
-                          <li class=""><a href="#examples-Default-updateProfilePicture-0-javascript">JavaScript</a></li>
-                          <!--<li class=""><a href="#examples-Default-updateProfilePicture-0-angular">Angular</a></li>-->
-                          <li class=""><a href="#examples-Default-updateProfilePicture-0-csharp">C#</a></li>
-                          <li class=""><a href="#examples-Default-updateProfilePicture-0-php">PHP</a></li>
-                          <li class=""><a href="#examples-Default-updateProfilePicture-0-perl">Perl</a></li>
-                          <li class=""><a href="#examples-Default-updateProfilePicture-0-python">Python</a></li>
+                          <li class="active"><a href="#examples-Default-updateUserDetails-0-curl">Curl</a></li>
+                          <li class=""><a href="#examples-Default-updateUserDetails-0-java">Java</a></li>
+                          <li class=""><a href="#examples-Default-updateUserDetails-0-android">Android</a></li>
+                          <!--<li class=""><a href="#examples-Default-updateUserDetails-0-groovy">Groovy</a></li>-->
+                          <li class=""><a href="#examples-Default-updateUserDetails-0-objc">Obj-C</a></li>
+                          <li class=""><a href="#examples-Default-updateUserDetails-0-javascript">JavaScript</a></li>
+                          <!--<li class=""><a href="#examples-Default-updateUserDetails-0-angular">Angular</a></li>-->
+                          <li class=""><a href="#examples-Default-updateUserDetails-0-csharp">C#</a></li>
+                          <li class=""><a href="#examples-Default-updateUserDetails-0-php">PHP</a></li>
+                          <li class=""><a href="#examples-Default-updateUserDetails-0-perl">Perl</a></li>
+                          <li class=""><a href="#examples-Default-updateUserDetails-0-python">Python</a></li>
                         </ul>
 
                         <div class="tab-content">
-                          <div class="tab-pane active" id="examples-Default-updateProfilePicture-0-curl">
+                          <div class="tab-pane active" id="examples-Default-updateUserDetails-0-curl">
                            <pre class="prettyprint"><code class="language-bsh">curl -X PATCH\
--H "Content-Type: multipart/form-data"\
-"//api/user/profilepicture/{pk}/"</code></pre>
+-H "Accept: application/json"\
+-H "Content-Type: application/json"\
+"//api/users/{id}/edit/"</code></pre>
                           </div>
-                          <div class="tab-pane" id="examples-Default-updateProfilePicture-0-java">
+                          <div class="tab-pane" id="examples-Default-updateUserDetails-0-java">
                             <pre class="prettyprint"><code class="language-java">import io.swagger.client.*;
 import io.swagger.client.auth.*;
 import io.swagger.client.model.*;
@@ -3219,50 +2700,55 @@ public class DefaultApiExample {
     public static void main(String[] args) {
         
         DefaultApi apiInstance = new DefaultApi();
-        Integer pk = 56; // Integer | 
-        byte[] profilePicture = profilePicture_example; // byte[] | 
+        Id_edit_body body = ; // Id_edit_body | 
+        Integer id = 56; // Integer | 
         try {
-            apiInstance.updateProfilePicture(pk, profilePicture);
+            inline_response_201 result = apiInstance.updateUserDetails(body, id);
+            System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling DefaultApi#updateProfilePicture");
+            System.err.println("Exception when calling DefaultApi#updateUserDetails");
             e.printStackTrace();
         }
     }
 }</code></pre>
                           </div>
 
-                          <div class="tab-pane" id="examples-Default-updateProfilePicture-0-android">
+                          <div class="tab-pane" id="examples-Default-updateUserDetails-0-android">
                             <pre class="prettyprint"><code class="language-java">import io.swagger.client.api.DefaultApi;
 
 public class DefaultApiExample {
 
     public static void main(String[] args) {
         DefaultApi apiInstance = new DefaultApi();
-        Integer pk = 56; // Integer | 
-        byte[] profilePicture = profilePicture_example; // byte[] | 
+        Id_edit_body body = ; // Id_edit_body | 
+        Integer id = 56; // Integer | 
         try {
-            apiInstance.updateProfilePicture(pk, profilePicture);
+            inline_response_201 result = apiInstance.updateUserDetails(body, id);
+            System.out.println(result);
         } catch (ApiException e) {
-            System.err.println("Exception when calling DefaultApi#updateProfilePicture");
+            System.err.println("Exception when calling DefaultApi#updateUserDetails");
             e.printStackTrace();
         }
     }
 }</code></pre>
                           </div>
   <!--
-  <div class="tab-pane" id="examples-Default-updateProfilePicture-0-groovy">
+  <div class="tab-pane" id="examples-Default-updateUserDetails-0-groovy">
   <pre class="prettyprint language-json prettyprinted" data-type="json"><code>Coming Soon!</code></pre>
   </div> -->
-                            <div class="tab-pane" id="examples-Default-updateProfilePicture-0-objc">
-                              <pre class="prettyprint"><code class="language-cpp">Integer *pk = 56; // 
-byte[] *profilePicture = profilePicture_example; //  (optional)
+                            <div class="tab-pane" id="examples-Default-updateUserDetails-0-objc">
+                              <pre class="prettyprint"><code class="language-cpp">Id_edit_body *body = ; // 
+Integer *id = 56; // 
 
 DefaultApi *apiInstance = [[DefaultApi alloc] init];
 
-// Update profile picture
-[apiInstance updateProfilePictureWith:pk
-    profilePicture:profilePicture
-              completionHandler: ^(NSError* error) {
+// Update user details
+[apiInstance updateUserDetailsWith:body
+    id:id
+              completionHandler: ^(inline_response_201 output, NSError* error) {
+                            if (output) {
+                                NSLog(@"%@", output);
+                            }
                             if (error) {
                                 NSLog(@"Error: %@", error);
                             }
@@ -3270,29 +2756,28 @@ DefaultApi *apiInstance = [[DefaultApi alloc] init];
 </code></pre>
                             </div>
 
-                            <div class="tab-pane" id="examples-Default-updateProfilePicture-0-javascript">
-                              <pre class="prettyprint"><code class="language-js">var DjangoBackendApi = require('django_backend_api');
+                            <div class="tab-pane" id="examples-Default-updateUserDetails-0-javascript">
+                              <pre class="prettyprint"><code class="language-js">var DjangoApplicationApi = require('django_application_api');
 
-var api = new DjangoBackendApi.DefaultApi()
-var pk = 56; // {{Integer}} 
-var opts = { 
-  'profilePicture': profilePicture_example // {{byte[]}} 
-};
+var api = new DjangoApplicationApi.DefaultApi()
+var body = ; // {{Id_edit_body}} 
+var id = 56; // {{Integer}} 
+
 var callback = function(error, data, response) {
   if (error) {
     console.error(error);
   } else {
-    console.log('API called successfully.');
+    console.log('API called successfully. Returned data: ' + data);
   }
 };
-api.updateProfilePicture(pk, opts, callback);
+api.updateUserDetails(bodyid, callback);
 </code></pre>
                             </div>
 
-                            <!--<div class="tab-pane" id="examples-Default-updateProfilePicture-0-angular">
+                            <!--<div class="tab-pane" id="examples-Default-updateUserDetails-0-angular">
               <pre class="prettyprint language-json prettyprinted" data-type="json"><code>Coming Soon!</code></pre>
             </div>-->
-                            <div class="tab-pane" id="examples-Default-updateProfilePicture-0-csharp">
+                            <div class="tab-pane" id="examples-Default-updateUserDetails-0-csharp">
                               <pre class="prettyprint"><code class="language-cs">using System;
 using System.Diagnostics;
 using IO.Swagger.Api;
@@ -3301,23 +2786,24 @@ using IO.Swagger.Model;
 
 namespace Example
 {
-    public class updateProfilePictureExample
+    public class updateUserDetailsExample
     {
         public void main()
         {
 
             var apiInstance = new DefaultApi();
-            var pk = 56;  // Integer | 
-            var profilePicture = profilePicture_example;  // byte[] |  (optional) 
+            var body = new Id_edit_body(); // Id_edit_body | 
+            var id = 56;  // Integer | 
 
             try
             {
-                // Update profile picture
-                apiInstance.updateProfilePicture(pk, profilePicture);
+                // Update user details
+                inline_response_201 result = apiInstance.updateUserDetails(body, id);
+                Debug.WriteLine(result);
             }
             catch (Exception e)
             {
-                Debug.Print("Exception when calling DefaultApi.updateProfilePicture: " + e.Message );
+                Debug.Print("Exception when calling DefaultApi.updateUserDetails: " + e.Message );
             }
         }
     }
@@ -3325,40 +2811,42 @@ namespace Example
 </code></pre>
                             </div>
 
-                            <div class="tab-pane" id="examples-Default-updateProfilePicture-0-php">
+                            <div class="tab-pane" id="examples-Default-updateUserDetails-0-php">
                               <pre class="prettyprint"><code class="language-php"><&#63;php
 require_once(__DIR__ . '/vendor/autoload.php');
 
 $api_instance = new Swagger\Client\ApiDefaultApi();
-$pk = 56; // Integer | 
-$profilePicture = profilePicture_example; // byte[] | 
+$body = ; // Id_edit_body | 
+$id = 56; // Integer | 
 
 try {
-    $api_instance->updateProfilePicture($pk, $profilePicture);
+    $result = $api_instance->updateUserDetails($body, $id);
+    print_r($result);
 } catch (Exception $e) {
-    echo 'Exception when calling DefaultApi->updateProfilePicture: ', $e->getMessage(), PHP_EOL;
+    echo 'Exception when calling DefaultApi->updateUserDetails: ', $e->getMessage(), PHP_EOL;
 }
 ?></code></pre>
                             </div>
 
-                            <div class="tab-pane" id="examples-Default-updateProfilePicture-0-perl">
+                            <div class="tab-pane" id="examples-Default-updateUserDetails-0-perl">
                               <pre class="prettyprint"><code class="language-perl">use Data::Dumper;
 use WWW::SwaggerClient::Configuration;
 use WWW::SwaggerClient::DefaultApi;
 
 my $api_instance = WWW::SwaggerClient::DefaultApi->new();
-my $pk = 56; # Integer | 
-my $profilePicture = profilePicture_example; # byte[] | 
+my $body = WWW::SwaggerClient::Object::Id_edit_body->new(); # Id_edit_body | 
+my $id = 56; # Integer | 
 
 eval { 
-    $api_instance->updateProfilePicture(pk => $pk, profilePicture => $profilePicture);
+    my $result = $api_instance->updateUserDetails(body => $body, id => $id);
+    print Dumper($result);
 };
 if ($@) {
-    warn "Exception when calling DefaultApi->updateProfilePicture: $@\n";
+    warn "Exception when calling DefaultApi->updateUserDetails: $@\n";
 }</code></pre>
                             </div>
 
-                            <div class="tab-pane" id="examples-Default-updateProfilePicture-0-python">
+                            <div class="tab-pane" id="examples-Default-updateUserDetails-0-python">
                               <pre class="prettyprint"><code class="language-python">from __future__ import print_statement
 import time
 import swagger_client
@@ -3367,14 +2855,15 @@ from pprint import pprint
 
 # create an instance of the API class
 api_instance = swagger_client.DefaultApi()
-pk = 56 # Integer | 
-profilePicture = profilePicture_example # byte[] |  (optional)
+body =  # Id_edit_body | 
+id = 56 # Integer | 
 
 try: 
-    # Update profile picture
-    api_instance.update_profile_picture(pk, profilePicture=profilePicture)
+    # Update user details
+    api_response = api_instance.update_user_details(body, id)
+    pprint(api_response)
 except ApiException as e:
-    print("Exception when calling DefaultApi->updateProfilePicture: %s\n" % e)</code></pre>
+    print("Exception when calling DefaultApi->updateUserDetails: %s\n" % e)</code></pre>
                             </div>
                           </div>
 
@@ -3386,11 +2875,11 @@ except ApiException as e:
                                   <th width="150px">Name</th>
                                   <th>Description</th>
                                 </tr>
-                                  <tr><td style="width:150px;">pk*</td>
+                                  <tr><td style="width:150px;">id*</td>
                                   <td>
                                   
                                   
-                                      <div id="d2e199_updateProfilePicture_pk">
+                                      <div id="d2e199_updateUserDetails_id">
                                           <div class="json-schema-view">
                                               <div class="primitive">
                                                   <span class="type">
@@ -3408,42 +2897,99 @@ except ApiException as e:
                             </table>
 
 
-
-                            <div class="methodsubtabletitle">Form parameters</div>
+                            <div class="methodsubtabletitle">Body parameters</div>
                             <table id="methodsubtable">
                               <tr>
                                 <th width="150px">Name</th>
                                 <th>Description</th>
                               </tr>
-                                  <tr><td style="width:150px;">profile_picture</td>
-                                  <td>
-                                  
-                                  
-                                      <div id="d2e199_updateProfilePicture_profilePicture">
-                                          <div class="json-schema-view">
-                                              <div class="primitive">
-                                                  <span class="type">
-                                                      byte[]
-                                                  </span>
-                                                      <span class="format">
-                                                          (binary)
-                                                      </span>
-                                  
-                                              </div>
-                                          </div>
-                                      </div>
-                                  </td>
-                                  </tr>
+                                <tr><td style="width:150px;">body <span style="color:red;">*</span></td>
+                                <td>
+                                
+                                
+                                <script>
+                                $(document).ready(function() {
+                                  var schemaWrapper = {
+  "content" : {
+    "application/json" : {
+      "schema" : {
+        "$ref" : "#/components/schemas/id_edit_body"
+      }
+    }
+  },
+  "required" : true
+};
+                                  var schema = schemaWrapper.content["application/json"].schema;
+                                  if (schema.$ref != null) {
+                                    schema = defsParser.$refs.get(schema.$ref);
+                                  } else {
+                                    schemaWrapper.components = {};
+                                    schemaWrapper.components.schemas = Object.assign({}, defs);
+                                    $RefParser.dereference(schemaWrapper).catch(function(err) {
+                                      console.log(err);
+                                    });
+                                  }
+                                
+                                  var view = new JSONSchemaView(schema,2,{isBodyParam: true});
+                                  var result = $('#d2e199_updateUserDetails_body');
+                                  result.empty();
+                                  result.append(view.render());
+                                });
+                                </script>
+                                <div id="d2e199_updateUserDetails_body"></div>
+                                </td>
+                                </tr>
                             </table>
 
 
+
                           <h2>Responses</h2>
-                            <h3> Status: 200 - Profile picture updated </h3>
+                            <h3> Status: 200 - User updated </h3>
 
                             <ul class="nav nav-tabs nav-tabs-examples" >
+                                <li class="active">
+                                  <a data-toggle="tab" href="#responses-updateUserDetails-200-schema">Schema</a>
+                                </li>
+
                             </ul>
 
                             <div class="tab-content" style='margin-bottom: 10px;'>
+                                <div class="tab-pane active" id="responses-updateUserDetails-200-schema">
+                                  <div id='responses-updateUserDetails-200-schema-200' style="padding: 30px; border-left: 1px solid #eee; border-right: 1px solid #eee; border-bottom: 1px solid #eee;">
+                                    <script>
+                                      $(document).ready(function() {
+                                        var schemaWrapper = {
+  "description" : "User updated",
+  "content" : {
+    "application/json" : {
+      "schema" : {
+        "$ref" : "#/components/schemas/inline_response_201"
+      }
+    }
+  }
+};
+                                        var schema = schemaWrapper.content["application/json"].schema;
+                                        if (schema.$ref != null) {
+                                          schema = defsParser.$refs.get(schema.$ref);
+                                        } else {
+                                          schemaWrapper.components = {};
+                                          schemaWrapper.components.schemas = Object.assign({}, defs);
+                                          $RefParser.dereference(schemaWrapper).catch(function(err) {
+                                            console.log(err);
+                                          });
+                                        }
+
+                                        //console.log(JSON.stringify(schema));
+                                        var view = new JSONSchemaView(schema, 3);
+                                        $('#responses-updateUserDetails-200-schema-data').val(stringify(schema));
+                                        var result = $('#responses-updateUserDetails-200-schema-200');
+                                        result.empty();
+                                        result.append(view.render());
+                                      });
+                                    </script>
+                                  </div>
+                                  <input id='responses-updateUserDetails-200-schema-data' type='hidden' value=''></input>
+                                </div>
                             </div>
 
                         </article>
