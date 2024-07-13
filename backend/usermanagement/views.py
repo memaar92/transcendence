@@ -4,14 +4,14 @@ from django.conf import settings
 from .models import Games, CustomUser
 from rest_framework import generics, status
 from rest_framework.response import Response
-from .serializers import UserSerializer, GameHistorySerializer, UserNameSerializer
+from .serializers import UserSerializer, GameHistorySerializer, UserNameSerializer, UserCreateSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework.exceptions import PermissionDenied
 
 class CreateUserView(generics.CreateAPIView):
 	queryset = CustomUser.objects.all()
-	serializer_class = UserSerializer
+	serializer_class = UserCreateSerializer
 	permission_classes = [AllowAny]
 
 class ChangeUserView(generics.RetrieveUpdateDestroyAPIView):
@@ -37,7 +37,7 @@ class UserView(APIView):
 	permission_classes = [IsAuthenticated]
 
 	def get(self, request, pk):
-		user = get_object_or_404(User, pk=pk)
+		user = get_object_or_404(CustomUser, pk=pk)
 		# check if user is the same as the one requesting
 		if request.user.pk == user.pk:
 			serializer = UserSerializer(user)
