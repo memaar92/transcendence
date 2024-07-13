@@ -15,7 +15,7 @@ class CreateUserView(generics.CreateAPIView):
 	serializer_class = UserCreateSerializer
 	permission_classes = [AllowAny]
 
-class ChangeUserView(generics.RetrieveUpdateDestroyAPIView):
+class EditUserView(generics.RetrieveUpdateDestroyAPIView):
 	serializer_class = UserSerializer
 	permission_classes = [IsAuthenticated, IsSelf]
 	http_method_names = ['patch', 'delete']
