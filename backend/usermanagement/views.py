@@ -68,23 +68,26 @@ class GameHistoryList(APIView):
 # class ProfilePictureDeleteView(generics.DestroyAPIView):
 # 	permission_classes = [IsAuthenticated]
 
-# 	def get_object(self):
-# 		user = get_object_or_404(User, pk=self.kwargs['pk'])
-# 		if user != self.request.user:
-# 			raise PermissionDenied("You don't have permission to delete this profile picture.")
-# 		return user.profile
+class ProfilePictureDeleteView(APIView):
+	permission_classes = [IsAuthenticated]
 
-# 	def delete(self, request, *args, **kwargs):
-# 		instance = self.get_object()
-# 		default_picture = 'default.png'  # The default profile picture filename
-# 		profile_pic_path = instance.profile_picture.path
+	def get_object(self):
+		user = get_object_or_404(CustomUser, pk=self.kwargs['pk'])
+		if user != self.request.user:
+			raise PermissionDenied("You don't have permission to delete this profile picture.")
+		return user
 
-# 		if instance.profile_picture.name != f'profile_pics/{default_picture}':  # Check if it's not the default picture
-# 			if os.path.exists(profile_pic_path):
-# 				os.remove(profile_pic_path)  # Delete the file if it exists
+	def delete(self, request, *args, **kwargs):
+		user = self.get_object()
+		default_picture = 'default.png'  # The default profile picture filename
+		profile_pic_path = user.profile_picture.path
 
-# 			# Update the profile picture to the default one
-# 			instance.profile_picture.name = f'profile_pics/{default_picture}'
-# 			instance.save()
+		if user.profile_picture.name != f'profile_pics/{default_picture}':  # Check if it's not the default picture
+			if os.path.exists(profile_pic_path):
+				os.remove(profile_pic_path)  # Delete the file if it exists
 
-# 		return Response(status=status.HTTP_204_NO_CONTENT)
+			# Update the profile picture to the default one
+			user.profile_picture.name = f'profile_pics/{default_picture}'
+			user.save()
+
+		return Response(status=status.HTTP_204_NO_CONTENT)
