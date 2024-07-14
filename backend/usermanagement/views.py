@@ -4,26 +4,22 @@ from django.conf import settings
 from .models import Games, CustomUser
 from rest_framework import generics, status
 from rest_framework.response import Response
-from .serializers import UserSerializer, GameHistorySerializer, UserNameSerializer
+from .serializers import UserSerializer, GameHistorySerializer, UserNameSerializer, UserCreateSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework.exceptions import PermissionDenied
+from .permissions import IsSelf
 
 class CreateUserView(generics.CreateAPIView):
 	queryset = CustomUser.objects.all()
-	serializer_class = UserSerializer
+	serializer_class = UserCreateSerializer
 	permission_classes = [AllowAny]
 
-class ChangeUserView(generics.RetrieveUpdateDestroyAPIView):
+class EditUserView(generics.RetrieveUpdateDestroyAPIView):
 	serializer_class = UserSerializer
-	permission_classes = [IsAuthenticated]
+	permission_classes = [IsAuthenticated, IsSelf]
 	http_method_names = ['patch', 'delete']
-
-	def get_object(self):
-		user = get_object_or_404(CustomUser, pk=self.kwargs['pk'])
-		if user != self.request.user:
-			raise PermissionDenied("You don't have permission to delete this profile picture.")
-		return user.profile
+	queryset = CustomUser.objects.all()
 
 	def patch(self, request, *args, **kwargs):
 		instance = self.get_object()
@@ -37,7 +33,7 @@ class UserView(APIView):
 	permission_classes = [IsAuthenticated]
 
 	def get(self, request, pk):
-		user = get_object_or_404(User, pk=pk)
+		user = get_object_or_404(CustomUser, pk=pk)
 		# check if user is the same as the one requesting
 		if request.user.pk == user.pk:
 			serializer = UserSerializer(user)
@@ -72,23 +68,26 @@ class GameHistoryList(APIView):
 # class ProfilePictureDeleteView(generics.DestroyAPIView):
 # 	permission_classes = [IsAuthenticated]
 
-# 	def get_object(self):
-# 		user = get_object_or_404(User, pk=self.kwargs['pk'])
-# 		if user != self.request.user:
-# 			raise PermissionDenied("You don't have permission to delete this profile picture.")
-# 		return user.profile
+class ProfilePictureDeleteView(APIView):
+	permission_classes = [IsAuthenticated]
 
-# 	def delete(self, request, *args, **kwargs):
-# 		instance = self.get_object()
-# 		default_picture = 'default.png'  # The default profile picture filename
-# 		profile_pic_path = instance.profile_picture.path
+	def get_object(self):
+		user = get_object_or_404(CustomUser, pk=self.kwargs['pk'])
+		if user != self.request.user:
+			raise PermissionDenied("You don't have permission to delete this profile picture.")
+		return user
 
-# 		if instance.profile_picture.name != f'profile_pics/{default_picture}':  # Check if it's not the default picture
-# 			if os.path.exists(profile_pic_path):
-# 				os.remove(profile_pic_path)  # Delete the file if it exists
+	def delete(self, request, *args, **kwargs):
+		user = self.get_object()
+		default_picture = 'default.png'  # The default profile picture filename
+		profile_pic_path = user.profile_picture.path
 
-# 			# Update the profile picture to the default one
-# 			instance.profile_picture.name = f'profile_pics/{default_picture}'
-# 			instance.save()
+		if user.profile_picture.name != f'profile_pics/{default_picture}':  # Check if it's not the default picture
+			if os.path.exists(profile_pic_path):
+				os.remove(profile_pic_path)  # Delete the file if it exists
 
-# 		return Response(status=status.HTTP_204_NO_CONTENT)
+			# Update the profile picture to the default one
+			user.profile_picture.name = f'profile_pics/{default_picture}'
+			user.save()
+
+		return Response(status=status.HTTP_204_NO_CONTENT)
