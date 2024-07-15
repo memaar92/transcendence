@@ -117,10 +117,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 case 'chat_message':
                     if receiver_id in self.friends:
                         await self.send_message_to_user(receiver_id, content, 'chat_message')
+                        # await self.save_message(await self.get_or_create_chat(sender_id, receiver_id), content, sender_id, receiver_id)
                     else:
                         await self.send_message_to_user(sender_id, "You are not friends with " + receiver_id, 'chat_message')
                 case 'request_user_list':
                     await self.send_user_list()
+                case 'chat_history':
+                    await self.send_chat_history(sender_id, receiver_id)
                 case _:
                     print('Unknown message type')
 
@@ -129,6 +132,22 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             'type': 'user_list',
             'users': users
+        }))
+
+    async def send_chat_history(self, sender_id, receiver_id):
+        chat = await self.get_or_create_chat(sender_id, receiver_id)
+        messages = await self.get_chat_messages(chat)
+        await self.send(text_data=json.dumps({
+            'type': 'chat_history',
+            'messages': [
+                {
+                    'sender_id': message.sender.id,
+                    'receiver_id': message.receiver.id,
+                    'content': message.content,
+                    'timestamp': message.timestamp
+                }
+                for message in messages
+            ]
         }))
 
     @database_sync_to_async
@@ -163,3 +182,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         except User.DoesNotExist:
             return None
         return Message.objects.create(chat=chat, content=content, sender=sender, receiver=receiver, timestamp=timezone.now())
+
+    @database_sync_to_async
+    def get_chat_messages(self, chat):
+        return Message.objects.filter(chat=chat).order_by('timestamp')
