@@ -1,7 +1,8 @@
 import json
+from django.conf import settings
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from .models import Chat, Message
 from django.utils import timezone
 
@@ -158,6 +159,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def get_or_create_chat(self, sender_id, receiver_id):
+        User = get_user_model()
         try:
             sender = User.objects.get(id=sender_id)
             receiver = User.objects.get(id=receiver_id)
@@ -176,6 +178,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def save_message(self, chat, content, sender_id, receiver_id):
+        User = get_user_model()  # Again, use get_user_model here
         try:
             sender = User.objects.get(id=sender_id)
             receiver = User.objects.get(id=receiver_id)

@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 import os
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-g=eom8w39!m$+1xegc@p!(6&uiqzdl$9i@$v5z!f$@m#2#_!7s'
 
-# SECURITY WARNING: don't run with debug turned on in production!
+# #TODO:  SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
@@ -33,7 +34,6 @@ ALLOWED_HOSTS = ["*"]
 INSTALLED_APPS = [
     'daphne',
     'channels',
-    
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 	'usermanagement',
+    'rest_framework',
 	'corsheaders',
     'live_chat',
 ]
@@ -71,7 +72,7 @@ ROOT_URLCONF = 'backend.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ['templates'],  # Your template directories here
+        'DIRS': [],  # Your template directories here
         'APP_DIRS': False,  # Changed to False
         'OPTIONS': {
             'context_processors': [
@@ -163,8 +164,6 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = 'static/'
-
 # For development only # To show the admin page correctly # TODO: Remove this in production
 
 STATIC_URL = "/static/"
@@ -181,5 +180,22 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "mediafiles")
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-#TODO: delete for deployment
+#TODO: change to specific cors
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWS_CREDENTIALS = True
+
+REST_FRAMEWORK = {
+	"DEFAULT_AUTHENTICATION_CLASSES": (
+		"rest_framework_simplejwt.authentication.JWTAuthentication",
+	),
+	"DEFAULT_PERMISSION_CLASSES": [
+		"rest_framework.permissions.IsAuthenticated",
+	],
+}
+
+SIMPLE_JWT = {
+	"ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+	"REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+}
+
+AUTH_USER_MODEL = 'usermanagement.CustomUser'
