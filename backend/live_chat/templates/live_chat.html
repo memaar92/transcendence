@@ -1,153 +1,185 @@
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        let url = "ws://" + window.location.host + "/ws/live_chat/";
-        var ws = new WebSocket(url);
-        var senderId = "{{ sender_id|escapejs }}";
-
-        ws.onopen = (e) => {
-            ws.send(JSON.stringify({ "loaded" : true }));
-        }
-
-        ws.onerror = (e) => {
-            console.log(e);
-        }
-
-        ws.onmessage = function(event) {
-            var content = JSON.parse(event.data);
-
-            switch (content.type) {
-                case 'chat_request_notification':
-                    displayChatRequest(content.sender_id);
-                    break;
-                case 'chat_message':
-                    var messages = document.getElementById('messages');
-                    var messageItem = document.createElement('li');
-                    messageItem.textContent = `${content.sender_id}: ${content.message}`;
-                    messages.appendChild(messageItem);
-                    break;
-                case 'user_list':
-                    displayUserList(content.users);
-                    break;
-                case 'chat_request_accepted':
-                    alert('Chat request accepted!');
-                    break;
-                case 'chat_request_denied':
-                    break;
-                case 'add_friend':
-                    ws.send(JSON.stringify({
-                        'type': 'add_friend',
-                        'receiver_id': document.getElementById("receiver-id").value
-                    }));
-                    break;
-                case 'chat_history':
-                    displayChatHistory(content.messages);
-                    break;
-            }
-        };
-
-        function displayChatRequest(senderId) {
-            var requests = document.getElementById('messages');
-            var requestItem = document.createElement('li');
-            requestItem.textContent = `Chat request from ${senderId}`;
-            var acceptButton = createButton('Accept', senderId, true);
-            var denyButton = createButton('Deny', senderId, false);
-            requestItem.appendChild(acceptButton);
-            requestItem.appendChild(denyButton);
-            requests.appendChild(requestItem);
-        }
-
-        function createButton(text, senderId, isAccept) {
-            var button = document.createElement('button');
-            button.textContent = text;
-            button.onclick = function() {
-                ws.send(JSON.stringify({
-                    'type': isAccept ? 'chat_request_accepted' : 'chat_request_denied',
-                    'sender_id': senderId,
-                    'receiver_id': document.getElementById("receiver-id").value
-                }));
-                button.parentNode.remove();
-            };
-            return button;
-        }
-
-        function displayUserList(users) {
-            var userListElement = document.getElementById('userList');
-            userListElement.innerHTML = '';
-            users.forEach(function(user) {
-                var userItem = document.createElement('li');
-                userItem.textContent = user;
-                userItem.onmouseover = function() {
-                    userItem.style.cursor = 'pointer';
-                    console.log('User ID: ' + senderId);
-                    onclick = function() {
-                        ws.send(JSON.stringify({
-                            'type': 'chat_history',
-                            'receiver_id': document.getElementById("receiver-id").value,
-                            'sender_id': senderId
-                        }));
-                    };
-                };
-                var requestButton = document.createElement('button');
-                requestButton.textContent = 'Request Chat';
-                requestButton.onclick = function() {
-                    sendChatRequest(user);
-                };
-                userItem.appendChild(requestButton);
-                userListElement.appendChild(userItem);
-            });
-        }
-
-        function sendChatRequest(receiverId) {
-            ws.send(JSON.stringify({
-                'type': 'chat_request',
-                'receiver_id': receiverId,
-                'sender_id': senderId 
-            }));
-        }
-
-        function displayChatHistory(messages) {
-            var chatWindow = document.getElementById('chat-window');
-            if (!chatWindow) {
-                chatWindow = document.createElement('div');
-                chatWindow.id = 'chat-window';
-                chatWindow.classList.add('chat-window');
-                document.body.appendChild(chatWindow);
-            }
-            chatWindow.innerHTML = '';
-
-            messages.forEach(function(message) {
-                var messageItem = document.createElement('div');
-                var messageText = document.createElement('span');
-                var messageTimestamp = document.createElement('span');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Live Chat</title>
+    <script>
+      async function obtainAuthToken() {
+        try {
+            const formData = new FormData();
+            formData.append('email', 'fredi.bhl@gmx.de');
+            formData.append('password', '123456789');
                 
-                messageText.textContent = message.content;
-                messageTimestamp.textContent = ` (${new Date(message.timestamp).toLocaleString()})`;
-                messageTimestamp.classList.add('timestamp');
+            const response = await fetch('/api/token/', {
+                method: 'POST',
+                body: formData
+            });
+        
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+        
+            const data = await response.json();
+            localStorage.setItem('authToken', data.access);
+            console.log('Token stored successfully');
+        } catch (error) {
+            console.error('Error during token fetch:', error);
+        }
+    }
 
-                if (message.sender_id === senderId) {
-                    messageText.classList.add('message-sender');
-                } else {
-                    messageText.classList.add('message-receiver');
+    document.addEventListener("DOMContentLoaded", function() {
+        obtainAuthToken().then(() => {
+            let authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                console.error('No auth token found in localStorage');
+                return;
+            }
+            console.log('Auth Token:', authToken);
+            let url = `ws://${window.location.host}/ws/live_chat/?token=${authToken}`;
+            console.log('WebSocket URL:', url);
+            var ws = new WebSocket(url);
+            var senderId = "{{ sender_id|escapejs }}";
+
+                ws.onopen = (e) => {
+                    ws.send(JSON.stringify({ "loaded" : true }));
                 }
 
-                messageItem.appendChild(messageText);
-                messageItem.appendChild(messageTimestamp);
-                chatWindow.appendChild(messageItem);
-            });
-        }
+                ws.onerror = (e) => {
+                    console.log(e);
+                }
 
-        document.getElementById("send").onclick = function() {
-            var message = document.getElementById("message-text").value;
-            var receiverId = document.getElementById("receiver-id").value;
-            ws.send(JSON.stringify({
-                'type': 'chat_message',
-                'message': message,
-                'sender_id': senderId,
-                'receiver_id': receiverId
-            }));
-        };
-    });
-</script>
+                ws.onmessage = function(event) {
+                    var content = JSON.parse(event.data);
+                    switch (content.type) {
+                        case 'chat_request_notification':
+                            displayChatRequest(content.sender_id);
+                            break;
+                        case 'chat_message':
+                            var messages = document.getElementById('messages');
+                            var messageItem = document.createElement('li');
+                            messageItem.textContent = `${content.sender_id}: ${content.message}`;
+                            messages.appendChild(messageItem);
+                            break;
+                        case 'user_list':
+                            displayUserList(content.users);
+                            break;
+                        case 'chat_request_accepted':
+                            alert('Chat request accepted!');
+                            break;
+                        case 'chat_request_denied':
+                            break;
+                        case 'add_friend':
+                            ws.send(JSON.stringify({
+                                'type': 'add_friend',
+                                'receiver_id': document.getElementById("receiver-id").value
+                            }));
+                            break;
+                        case 'chat_history':
+                            displayChatHistory(content.messages);
+                            break;
+                    }
+                };
+
+                function displayChatRequest(senderId) {
+                    var requests = document.getElementById('messages');
+                    var requestItem = document.createElement('li');
+                    requestItem.textContent = `Chat request from ${senderId}`;
+                    var acceptButton = createButton('Accept', senderId, true);
+                    var denyButton = createButton('Deny', senderId, false);
+                    requestItem.appendChild(acceptButton);
+                    requestItem.appendChild(denyButton);
+                    requests.appendChild(requestItem);
+                }
+
+                function createButton(text, senderId, isAccept) {
+                    var button = document.createElement('button');
+                    button.textContent = text;
+                    button.onclick = function() {
+                        ws.send(JSON.stringify({
+                            'type': isAccept ? 'chat_request_accepted' : 'chat_request_denied',
+                            'sender_id': senderId,
+                            'receiver_id': document.getElementById("receiver-id").value
+                        }));
+                        button.parentNode.remove();
+                    };
+                    return button;
+                }
+
+                function displayUserList(users) {
+                    var userListElement = document.getElementById('userList');
+                    userListElement.innerHTML = '';
+                    users.forEach(function(user) {
+                        var userItem = document.createElement('li');
+                        userItem.textContent = user;
+                        userItem.onmouseover = function() {
+                            userItem.style.cursor = 'pointer';
+                            console.log('User ID: ' + senderId);
+                            onclick = function() {
+                                ws.send(JSON.stringify({
+                                    'type': 'chat_history',
+                                    'receiver_id': document.getElementById("receiver-id").value,
+                                    'sender_id': senderId
+                                }));
+                            };
+                        };
+                        var requestButton = document.createElement('button');
+                        requestButton.textContent = 'Request Chat';
+                        requestButton.onclick = function() {
+                            sendChatRequest(user);
+                        };
+                        userItem.appendChild(requestButton);
+                        userListElement.appendChild(userItem);
+                    });
+                }
+
+                function sendChatRequest(receiverId) {
+                    ws.send(JSON.stringify({
+                        'type': 'chat_request',
+                        'receiver_id': receiverId,
+                        'sender_id': senderId 
+                    }));
+                }
+
+                function displayChatHistory(messages) {
+                    var chatWindow = document.getElementById('chat-window');
+                    if (!chatWindow) {
+                        chatWindow = document.createElement('div');
+                        chatWindow.id = 'chat-window';
+                        chatWindow.classList.add('chat-window');
+                        document.body.appendChild(chatWindow);
+                    }
+                    chatWindow.innerHTML = '';
+                    messages.forEach(function(message) {
+                        var messageItem = document.createElement('div');
+                        var messageText = document.createElement('span');
+                        var messageTimestamp = document.createElement('span');
+                        messageText.textContent = message.content;
+                        messageTimestamp.textContent = ` (${new Date(message.timestamp).toLocaleString()})`;
+                        messageTimestamp.classList.add('timestamp');
+                        if (message.sender_id === senderId) {
+                            messageText.classList.add('message-sender');
+                        } else {
+                            messageText.classList.add('message-receiver');
+                        }
+                        messageItem.appendChild(messageText);
+                        messageItem.appendChild(messageTimestamp);
+                        chatWindow.appendChild(messageItem);
+                    });
+                }
+
+                document.getElementById("send").onclick = function() {
+                    var message = document.getElementById("message-text").value;
+                    var receiverId = document.getElementById("receiver-id").value;
+                    ws.send(JSON.stringify({
+                        'type': 'chat_message',
+                        'message': message,
+                        'sender_id': senderId,
+                        'receiver_id': receiverId
+                    }));
+                };
+            });
+        });
+    </script>
 </head>
 <body>
     <div>
