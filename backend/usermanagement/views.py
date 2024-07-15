@@ -4,11 +4,16 @@ from django.conf import settings
 from .models import Games, CustomUser
 from rest_framework import generics, status
 from rest_framework.response import Response
-from .serializers import UserSerializer, GameHistorySerializer, UserNameSerializer, UserCreateSerializer
+from .serializers import UserSerializer, GameHistorySerializer, UserNameSerializer, UserCreateSerializer, TOTPSetupSerializer, TOTPVerifySerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework.exceptions import PermissionDenied
+from rest_framework_simplejwt.views import TokenObtainPairView
 from .permissions import IsSelf
+import pyotp
+import qrcode
+from io import BytesIO
+import base64
 
 class CreateUserView(generics.CreateAPIView):
 	queryset = CustomUser.objects.all()
@@ -48,26 +53,6 @@ class GameHistoryList(APIView):
 		games = Games.objects.all()
 		serializer = GameHistorySerializer(games, many=True)
 		return Response(serializer.data)
-
-# class ProfilePictureView(generics.UpdateAPIView):
-# 	serializer_class = ProfilePictureSerializer
-# 	permission_classes = [IsAuthenticated]
-
-# 	def get_object(self):
-# 		user = get_object_or_404(User, pk=self.kwargs['pk'])
-# 		if user != self.request.user:
-# 			raise PermissionDenied("You don't have permission to delete this profile picture.")
-# 		return user.profile
-
-# 	def perform_update(self, serializer):
-# 		instance = self.get_object()
-# 		if 'profile_picture' in self.request.data:
-# 			# Save the new profile picture
-# 			serializer.save()
-
-# class ProfilePictureDeleteView(generics.DestroyAPIView):
-# 	permission_classes = [IsAuthenticated]
-
 class ProfilePictureDeleteView(APIView):
 	permission_classes = [IsAuthenticated]
 
@@ -86,8 +71,59 @@ class ProfilePictureDeleteView(APIView):
 			if os.path.exists(profile_pic_path):
 				os.remove(profile_pic_path)  # Delete the file if it exists
 
-			# Update the profile picture to the default one
-			user.profile_picture.name = f'profile_pics/{default_picture}'
-			user.save()
+				# Update the profile picture to the default one
+				user.profile_picture.name = f'profile_pics/{default_picture}'
+				user.save()
 
 		return Response(status=status.HTTP_204_NO_CONTENT)
+
+class TOTPSetupView(APIView):
+	permission_classes = [IsAuthenticated]
+
+	def get(self, request):
+		user_profile = request.user
+		if not user_profile.totp_secret:
+			user_profile.totp_secret = pyotp.random_base32()
+			user_profile.save()
+
+		totp = pyotp.TOTP(user_profile.totp_secret)
+		uri = totp.provisioning_uri(request.user.displayname, issuer_name="Transcendence_Pongo")
+		qr = qrcode.make(uri)
+		buffered = BytesIO()
+		qr.save(buffered, format="PNG")
+		qr_code = base64.b64encode(buffered.getvalue()).decode()
+
+		return Response({'qr_code': qr_code}, status=status.HTTP_200_OK)
+	
+#TODO: delete verify view, just for debugging
+class TOTPVerifyView(APIView):
+	permission_classes = [AllowAny]
+
+	def post(self, request):
+		serializer = TOTPVerifySerializer(data=request.data)
+		serializer.is_valid(raise_exception=True)
+		user = CustomUser.objects.get(email=request.data['email'])
+		user_profile = get_object_or_404(CustomUser, email=user)
+		totp = pyotp.TOTP(user_profile.totp_secret)
+
+		if totp.verify(serializer.validated_data['token']):
+			return Response({'detail': '2FA verification successful'}, status=status.HTTP_200_OK)
+		return Response({'detail': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+	print("CustomTokenObtainPairView")
+	def post(self, request, *args, **kwargs):
+		response = super().post(request, *args, **kwargs)
+		user = CustomUser.objects.get(email=request.data['email'])
+		user_profile = get_object_or_404(CustomUser, email=user)
+		totp = pyotp.TOTP(user_profile.totp_secret)
+
+		if user_profile.totp_secret:
+			serializer = TOTPVerifySerializer(data=request.data)
+			serializer.is_valid(raise_exception=True)
+			print("2FA setup required")
+			if not totp.verify(serializer.validated_data['token']):
+				return Response({'detail': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+
+		return response
