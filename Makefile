@@ -51,6 +51,13 @@ dclean:
 	docker-compose -f docker-compose.yml down -v --rmi local
 	docker system prune --all --force --volumes
 
+# Usage: make createapp APP_NAME=appname
+createapp:
+ifndef APP_NAME
+    $(error APP_NAME is not set)
+endif
+	docker-compose exec backend python manage.py startapp $(APP_NAME)
+
 # Get Ip addresses and export them to the .dev_ips file
 get_ips:
 	@echo "WiFi IP: $$(ip addr show | grep inet | grep -E 'wlo|wlan|wla' | awk '{print $$2}' | cut -d/ -f1 | xargs)" && \
