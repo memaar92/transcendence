@@ -67,4 +67,4 @@ get_ips:
 
 re: fclean all
 
-.PHONY: up down build execbackend execnginx re_backend restart_backend fclean re dclean re_postgres re_nginx get_ips restart execpostgres
+.PHONY: up down build execbackend execnginx re_backend restart_backend fclean re dclean re_postgres re_nginx get_ips restart execpostgres createapp
