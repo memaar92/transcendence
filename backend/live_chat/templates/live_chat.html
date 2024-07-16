@@ -4,180 +4,219 @@
     <meta charset="UTF-8">
     <title>Live Chat</title>
     <script>
-      async function obtainAuthToken() {
-        try {
-            const formData = new FormData();
-            formData.append('email', 'fredi.bhl@gmx.de');
-            formData.append('password', '123456789');
-                
-            const response = await fetch('/api/token/', {
-                method: 'POST',
-                body: formData
-            });
-        
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-        
-            const data = await response.json();
-            localStorage.setItem('authToken', data.access);
-            console.log('Token stored successfully');
-        } catch (error) {
-            console.error('Error during token fetch:', error);
-        }
-    }
+        async function obtainAuthToken(email, password) {
+            try {
+                const formData = new FormData();
+                formData.append('email', email);
+                formData.append('password', password);
 
-    document.addEventListener("DOMContentLoaded", function() {
-        obtainAuthToken().then(() => {
-            let authToken = localStorage.getItem('authToken');
-            if (!authToken) {
-                console.error('No auth token found in localStorage');
-                return;
+                const response = await fetch('/api/token/', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const data = await response.json();
+                localStorage.setItem('authToken', data.access);
+                console.log('Token stored successfully');
+                return data.access;
+            } catch (error) {
+                console.error('Error during token fetch:', error);
+                alert('Error fetching token');
+                return null;
             }
-            console.log('Auth Token:', authToken);
+        }
+
+        function promptForCredentials() {
+            const email = prompt('Enter your email:');
+            const password = prompt('Enter your password:');
+            return { email, password };
+        }
+
+        async function setupWebSocket(authToken) {
             let url = `ws://${window.location.host}/ws/live_chat/?token=${authToken}`;
             console.log('WebSocket URL:', url);
             var ws = new WebSocket(url);
-            var senderId = "{{ sender_id|escapejs }}";
+            let senderId = null;
 
-                ws.onopen = (e) => {
-                    ws.send(JSON.stringify({ "loaded" : true }));
-                }
+            ws.onopen = (e) => {
+                ws.send(JSON.stringify({ "loaded": true }));
+            };
 
-                ws.onerror = (e) => {
-                    console.log(e);
-                }
+            ws.onerror = (e) => {
+                console.log(e);
+            };
 
-                ws.onmessage = function(event) {
-                    var content = JSON.parse(event.data);
-                    switch (content.type) {
-                        case 'chat_request_notification':
-                            displayChatRequest(content.sender_id);
-                            break;
-                        case 'chat_message':
-                            var messages = document.getElementById('messages');
-                            var messageItem = document.createElement('li');
-                            messageItem.textContent = `${content.sender_id}: ${content.message}`;
-                            messages.appendChild(messageItem);
-                            break;
-                        case 'user_list':
-                            displayUserList(content.users);
-                            break;
-                        case 'chat_request_accepted':
-                            alert('Chat request accepted!');
-                            break;
-                        case 'chat_request_denied':
-                            break;
-                        case 'add_friend':
-                            ws.send(JSON.stringify({
-                                'type': 'add_friend',
-                                'receiver_id': document.getElementById("receiver-id").value
-                            }));
-                            break;
-                        case 'chat_history':
-                            displayChatHistory(content.messages);
-                            break;
-                    }
-                };
-
-                function displayChatRequest(senderId) {
-                    var requests = document.getElementById('messages');
-                    var requestItem = document.createElement('li');
-                    requestItem.textContent = `Chat request from ${senderId}`;
-                    var acceptButton = createButton('Accept', senderId, true);
-                    var denyButton = createButton('Deny', senderId, false);
-                    requestItem.appendChild(acceptButton);
-                    requestItem.appendChild(denyButton);
-                    requests.appendChild(requestItem);
-                }
-
-                function createButton(text, senderId, isAccept) {
-                    var button = document.createElement('button');
-                    button.textContent = text;
-                    button.onclick = function() {
+            ws.onmessage = function(event) {
+                const content = JSON.parse(event.data);
+                switch (content.type) {
+                    case 'user_id':
+                        senderId = content.user_id;
+                        break;
+                    case 'chat_request_notification':
+                        displayChatRequest(content);
+                        break;
+                    case 'chat_message':
+                        var messages = document.getElementById('messages');
+                        var messageItem = document.createElement('li');
+                        messageItem.textContent = `${content.sender_id}: ${content.message}`;
+                        messages.appendChild(messageItem);
+                        break;
+                    case 'user_list':
+                        displayUserList(content.users);
+                        break;
+                    case 'chat_request_accepted':
+                        var messages = document.getElementById('messages');
+                        var messageItem = document.createElement('li');
+                        messageItem.textContent = `Chat request accepted by ${content.message}`;
+                        messages.appendChild(messageItem);
+                        break;
+                    case 'chat_request_denied':
+                        var messages = document.getElementById('messages');
+                        var messageItem = document.createElement('li');
+                        messageItem.textContent = `Chat request denied by ${content.message}`;
+                        messages.appendChild(messageItem);
+                        break;
+                    case 'add_friend':
                         ws.send(JSON.stringify({
-                            'type': isAccept ? 'chat_request_accepted' : 'chat_request_denied',
-                            'sender_id': senderId,
-                            'receiver_id': document.getElementById("receiver-id").value
+                            'type': 'add_friend',
+                            'receiver_id': content.receiver_id,
+                            'sender_id': content.sender_id
                         }));
-                        button.parentNode.remove();
-                    };
-                    return button;
+                        break;
+                    case 'chat_history':
+                        displayChatHistory(content.messages);
+                        break;
                 }
+            };
 
-                function displayUserList(users) {
-                    var userListElement = document.getElementById('userList');
-                    userListElement.innerHTML = '';
-                    users.forEach(function(user) {
-                        var userItem = document.createElement('li');
-                        userItem.textContent = user;
-                        userItem.onmouseover = function() {
-                            userItem.style.cursor = 'pointer';
-                            console.log('User ID: ' + senderId);
-                            onclick = function() {
-                                ws.send(JSON.stringify({
-                                    'type': 'chat_history',
-                                    'receiver_id': document.getElementById("receiver-id").value,
-                                    'sender_id': senderId
-                                }));
-                            };
-                        };
-                        var requestButton = document.createElement('button');
-                        requestButton.textContent = 'Request Chat';
-                        requestButton.onclick = function() {
-                            sendChatRequest(user);
-                        };
-                        userItem.appendChild(requestButton);
-                        userListElement.appendChild(userItem);
-                    });
-                }
-
-                function sendChatRequest(receiverId) {
-                    ws.send(JSON.stringify({
-                        'type': 'chat_request',
-                        'receiver_id': receiverId,
-                        'sender_id': senderId 
-                    }));
-                }
-
-                function displayChatHistory(messages) {
-                    var chatWindow = document.getElementById('chat-window');
-                    if (!chatWindow) {
-                        chatWindow = document.createElement('div');
-                        chatWindow.id = 'chat-window';
-                        chatWindow.classList.add('chat-window');
-                        document.body.appendChild(chatWindow);
-                    }
-                    chatWindow.innerHTML = '';
-                    messages.forEach(function(message) {
-                        var messageItem = document.createElement('div');
-                        var messageText = document.createElement('span');
-                        var messageTimestamp = document.createElement('span');
-                        messageText.textContent = message.content;
-                        messageTimestamp.textContent = ` (${new Date(message.timestamp).toLocaleString()})`;
-                        messageTimestamp.classList.add('timestamp');
-                        if (message.sender_id === senderId) {
-                            messageText.classList.add('message-sender');
-                        } else {
-                            messageText.classList.add('message-receiver');
+            ws.onclose = async function(event) {
+                if (event.code === 1006) {
+                    console.error('Token expired');
+                    const credentials = promptForCredentials();
+                    if (credentials) {
+                        const newToken = await obtainAuthToken(credentials.email, credentials.password);
+                        if (newToken) {
+                            setupWebSocket(newToken);
                         }
-                        messageItem.appendChild(messageText);
-                        messageItem.appendChild(messageTimestamp);
-                        chatWindow.appendChild(messageItem);
-                    });
+                    }
+                } else {
+                    console.error('WebSocket closed:', event);
                 }
+            };
 
-                document.getElementById("send").onclick = function() {
-                    var message = document.getElementById("message-text").value;
-                    var receiverId = document.getElementById("receiver-id").value;
+            function displayChatRequest(content) {
+                var requests = document.getElementById('messages');
+                var requestItem = document.createElement('li');
+                requestItem.textContent = `Chat request from ${content.sender_name}`;
+                console.log(content);
+                var acceptButton = createButton('Accept', content.sender_id, content.receiver_id, true);
+                var denyButton = createButton('Deny', content.sender_id, content.receiver_id, false);
+                requestItem.appendChild(acceptButton);
+                requestItem.appendChild(denyButton);
+                requests.appendChild(requestItem);
+            }
+
+            function createButton(text, senderId, receiverId, isAccept) {
+                var button = document.createElement('button');
+                button.textContent = text;
+                console.log(senderId, receiverId);
+                button.onclick = function() {
                     ws.send(JSON.stringify({
-                        'type': 'chat_message',
-                        'message': message,
+                        'type': isAccept ? 'chat_request_accepted' : 'chat_request_denied',
                         'sender_id': senderId,
                         'receiver_id': receiverId
                     }));
+                    button.parentNode.remove();
                 };
-            });
+                return button;
+            }
+
+            function displayUserList(users) {
+                var userListElement = document.getElementById('userList');
+                userListElement.innerHTML = '';
+                users.forEach(function(user) {
+                    var userItem = document.createElement('li');
+                    userItem.textContent = `${user.name}`;
+                    userItem.setAttribute('data-user-id', user.id);
+                    userItem.onmouseover = function() {
+                        userItem.style.cursor = 'pointer';
+                    };
+                    var requestButton = document.createElement('button');
+                    requestButton.textContent = 'Request Chat';
+                    requestButton.onclick = function() {
+                        sendChatRequest(user.id);
+                    };
+                    userItem.appendChild(requestButton);
+                    userListElement.appendChild(userItem);
+                });
+            }
+
+            function sendChatRequest(receiverId) {
+                ws.send(JSON.stringify({
+                    'type': 'chat_request',
+                    'receiver_id': receiverId,
+                    'sender_id': senderId
+                }));
+            }
+
+            function displayChatHistory(messages) {
+                var chatWindow = document.getElementById('chat-window');
+                if (!chatWindow) {
+                    chatWindow = document.createElement('div');
+                    chatWindow.id = 'chat-window';
+                    chatWindow.classList.add('chat-window');
+                    document.body.appendChild(chatWindow);
+                }
+                chatWindow.innerHTML = '';
+                messages.forEach(function(message) {
+                    var messageItem = document.createElement('div');
+                    var messageText = document.createElement('span');
+                    var messageTimestamp = document.createElement('span');
+                    messageText.textContent = message.content;
+                    messageTimestamp.textContent = ` (${new Date(message.timestamp).toLocaleString()})`;
+                    messageTimestamp.classList.add('timestamp');
+                    if (message.sender_id === senderId) {
+                        messageText.classList.add('message-sender');
+                    } else {
+                        messageText.classList.add('message-receiver');
+                    }
+                    messageItem.appendChild(messageText);
+                    messageItem.appendChild(messageTimestamp);
+                    chatWindow.appendChild(messageItem);
+                });
+            }
+
+            document.getElementById("send").onclick = function() {
+                var message = document.getElementById("message-text").value;
+                var receiverId = document.getElementById("receiver-id").value;
+                ws.send(JSON.stringify({
+                    'type': 'chat_message',
+                    'message': message,
+                    'sender_id': senderId,
+                    'receiver_id': receiverId
+                }));
+            };
+        }
+
+        document.addEventListener("DOMContentLoaded", async function() {
+            let authToken = localStorage.getItem('authToken');
+
+            if (!authToken) {
+                const credentials = promptForCredentials();
+                if (credentials) {
+                    authToken = await obtainAuthToken(credentials.email, credentials.password);
+                }
+            }
+
+            if (authToken) {
+                setupWebSocket(authToken);
+            } else {
+                console.error('No auth token found in localStorage and failed to obtain new one');
+            }
         });
     </script>
 </head>
