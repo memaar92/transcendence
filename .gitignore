@@ -3,3 +3,4 @@ backend/static/
 .dev_ips
 **/migrations/
 database/
+secrets/
