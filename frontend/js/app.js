@@ -8,6 +8,8 @@ const routes = [
   { path: '/register', templateUrl: '/routes/register.html' },
   { path: '/main_menu', templateUrl: '/routes/main_menu.html' },
   { path: '/404', templateUrl: '/routes/404.html' },
+  { path: '/game_menu', templateUrl: '/routes/game_menu.html' },
+  { path: '/play', templateUrl: '/routes/play.html' },
 ];
 
 const router = new Router(routes);
