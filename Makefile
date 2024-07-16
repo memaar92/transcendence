@@ -1,12 +1,12 @@
 SHELL := /bin/bash
 
-all: get_ips up
+all: get_ips build
 
 up:
 	docker-compose up -d
 
 build:
-	docker-compose up --build
+	docker-compose up -d --build
 
 it:
 	docker-compose up
