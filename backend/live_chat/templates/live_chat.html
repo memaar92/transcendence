@@ -3,6 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <title>Live Chat</title>
+    <style>
+        .message-sender {
+            font-weight: bold;
+            color: blue;
+        }
+        .message-receiver {
+            font-style: italic;
+            color: green;
+        }
+        .timestamp {
+            font-size: 0.8em;
+            color: #999;
+        }
+        .chat-window {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-top: 10px;
+            max-height: 300px;
+            overflow-y: scroll;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <h2>Messages</h2>
+        <ul id="messages"></ul>
+    </div>
+    <div>
+        <h2>Send a Message</h2>
+        <input type="text" id="message-text" placeholder="Write message...">
+        <input type="text" id="receiver-id" placeholder="Receiver ID...">
+        <button id="send">Send Message</button>
+    </div>
+    <hr>
+    <h2>Users</h2>
+    <ul id="userList"></ul>
+
+    <!-- Add UI for requesting chat history -->
+    <div>
+        <h2>Request Chat History</h2>
+        <input type="text" id="sender-username" placeholder="Your Username...">
+        <input type="text" id="receiver-username" placeholder="Receiver's Username...">
+        <button id="request-history">Request History</button>
+    </div>
+
     <script>
         async function obtainAuthToken(email, password) {
             try {
@@ -52,6 +97,7 @@
 
             ws.onmessage = function(event) {
                 const content = JSON.parse(event.data);
+                console.log('Received:', content);
                 switch (content.type) {
                     case 'user_id':
                         senderId = content.user_id;
@@ -201,6 +247,17 @@
                     'receiver_id': receiverId
                 }));
             };
+
+            document.getElementById("request-history").onclick = function() {
+                var sender_id = document.getElementById("sender-username").value;
+                var receiver_id = document.getElementById("receiver-username").value;
+                console.log(sender_id, receiver_id);
+                ws.send(JSON.stringify({
+                    'type': 'chat_history',
+                    'sender_id': sender_id,
+                    'receiver_id': receiver_id
+                }));
+            };
         }
 
         document.addEventListener("DOMContentLoaded", async function() {
@@ -220,20 +277,5 @@
             }
         });
     </script>
-</head>
-<body>
-    <div>
-        <h2>Messages</h2>
-        <ul id="messages"></ul>
-    </div>
-    <div>
-        <h2>Send a Message</h2>
-        <input type="text" id="message-text" placeholder="Write message...">
-        <input type="text" id="receiver-id" placeholder="Receiver ID...">
-        <button id="send">Send Message</button>
-    </div>
-    <hr>
-    <h2>Users</h2>
-    <ul id="userList"></ul>
 </body>
 </html>

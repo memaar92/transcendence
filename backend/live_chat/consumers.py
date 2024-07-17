@@ -56,6 +56,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'text': user_list_message
             })
 
+    async def send_pending_chat_notifications(self, user_id):
+        pending_requests = await self.get_pending_requests(user_id)
+        for request in pending_requests:
+            sender_id = request.user1_id
+            if user_id == request.user2_id:
+                sender_name = await self.get_user_displayname(sender_id)
+                await self.send_message_to_user(sender_id, "Pending chat request", 'chat_request_notification')
+
+
     async def connect(self):
         # Extract the token from the query string
         token = self.scope['query_string'].decode().split('=')[1]
@@ -72,6 +81,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     await self.broadcast_user_list()
                     await self.send(text_data=json.dumps({'type': 'user_id', 'user_id': self.user_id}))
                     print("Connected to chat")
+
+                    # Send notifications for pending chat requests
+                    await self.send_pending_chat_notifications(user_id)
                     return
 
         # Close the connection if no valid token is provided
@@ -107,10 +119,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
         print(f"Received message: {data}")
         match message_type:
             case 'chat_request':
-                if await self.get_status(data['sender_id'], data['receiver_id']) == RelationshipStatus.DEFAULT:
+                status = await self.get_status(data['sender_id'], data['receiver_id'])
+                if status == RelationshipStatus.DEFAULT:
                     await self.chat_request(data)
             case 'chat_message':
-                if await self.get_status(data['sender_id'], data['receiver_id']) == RelationshipStatus.BEFRIENDED:
+                status = await self.get_status(data['sender_id'], data['receiver_id'])
+                if status == RelationshipStatus.BEFRIENDED:
                     await self.chat_message(data)
                 else:
                     await self.send(text_data=json.dumps({
@@ -133,6 +147,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def chat_request(self, data):
         receiver_id = data['receiver_id']
         sender_id = data['sender_id']
+        print (f"Chat request from {sender_id} to {receiver_id}")
         if sender_id == receiver_id:
             return
         if receiver_id in ChatConsumer.user_id_to_channel_name:
@@ -162,9 +177,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
         receiver_id = data['receiver_id']
         sender_id = data['sender_id']
         message = data['message']
+        
+        print(f"Chat message received: {data}")
+    
         if receiver_id in ChatConsumer.user_id_to_channel_name:
             receiver_channel_name = ChatConsumer.user_id_to_channel_name[receiver_id]
-            print(f"Sending message to {receiver_id}")
+            print(f"Sending message to {receiver_id} at channel {receiver_channel_name}")
+    
             await self.channel_layer.send(
                 receiver_channel_name,
                 {
@@ -174,7 +193,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     'receiver_id': receiver_id
                 }
             )
+    
+        else:
+            print(f"Receiver {receiver_id} is offline. Message will be saved but not sent.")
+    
+        # Always save the message
         await self.save_message(sender_id, receiver_id, message)
+
 
     async def chat_request_accepted(self, data):
         sender_id = data['sender_id']
@@ -183,8 +208,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.update_status(receiver_id, sender_id, RelationshipStatus.BEFRIENDED)
 
         # Notify both users
-        await self.send_message_to_user(sender_id, f"You are now friends with {await self.get_user_displayname(receiver_id)}", 'chat_request_accepted')
-        await self.send_message_to_user(receiver_id, f"You are now friends with {await self.get_user_displayname(sender_id)}", 'chat_request_accepted')
+        await self.send_message_to_user(sender_id, f"You are now friends with {await self.get_user_displayname(receiver_id)}", 'chat_message')
+        await self.send_message_to_user(receiver_id, f"You are now friends with {await self.get_user_displayname(sender_id)}", 'chat_message')
 
     async def chat_request_denied(self, data):
         receiver_displayname = await self.get_user_displayname(data['receiver_id'])
@@ -206,23 +231,29 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def get_chat_history(self, sender_id, receiver_id):
         messages = Message.objects.filter(
-            (Q(sender_id=sender_id) & Q(receiver_id=receiver_id)) |
-            (Q(sender_id=receiver_id) & Q(receiver_id=sender_id))
+            Q(sender_id=sender_id, receiver_id=receiver_id) | Q(sender_id=receiver_id, receiver_id=sender_id)
         ).order_by('timestamp')
-        return [{'sender_id': msg.sender_id, 'content': msg.content, 'timestamp': msg.timestamp} for msg in messages]
+        return [
+            {
+                'sender_id': msg.sender_id,
+                'receiver_id': msg.receiver_id,
+                'message': msg.content,
+                'timestamp': msg.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+            } for msg in messages
+        ]
 
     @database_sync_to_async
     def save_message(self, sender_id, receiver_id, message):
         sender = get_user_model().objects.get(id=sender_id)
         receiver = get_user_model().objects.get(id=receiver_id)
-        Message.objects.create(sender=sender, receiver=receiver, content=message, timestamp=timezone.now())
+        msg = Message.objects.create(sender=sender, receiver=receiver, content=message, timestamp=timezone.now(), user=sender)
+        return msg
 
     @database_sync_to_async
     def get_status(self, user_id_1, user_id_2):
         try:
             relationship = Relationship.objects.get(
-                Q(user1_id=user_id_1, user2_id=user_id_2) |
-                Q(user1_id=user_id_2, user2_id=user_id_1)
+                Q(user1_id=user_id_1, user2_id=user_id_2)
             )
             return relationship.status
         except Relationship.DoesNotExist:
@@ -232,16 +263,22 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def update_status(self, user_id_1, user_id_2, status):
         try:
+            print(f"Updating status to {status} for {user_id_1} and {user_id_2}")
             relationship = Relationship.objects.get(
-                Q(user1_id=user_id_1, user2_id=user_id_2) |
-                Q(user1_id=user_id_2, user2_id=user_id_1)
+                Q(user1_id=user_id_1, user2_id=user_id_2)
             )
             relationship.status = status
             relationship.save()
         except Relationship.DoesNotExist:
             Relationship.objects.create(user1_id=user_id_1, user2_id=user_id_2, status=status)
 
-
+    @database_sync_to_async
+    def get_pending_requests(self, user_id):
+        pending_requests = Relationship.objects.filter(
+            Q(user2_id=user_id, status=RelationshipStatus.PENDING)
+        )
+        return list(pending_requests)
+        
     @database_sync_to_async
     def get_user_displayname(self, user_id):
         user = get_user_model().objects.get(id=user_id)
