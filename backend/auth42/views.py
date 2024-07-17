@@ -4,6 +4,7 @@ from rest_framework import generics, status
 from django.views import generic
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from usermanagement.models import CustomUser
 import requests
 
 # create more elegant way to get secrets as function is used in multiple places (e.g. settings.py)
@@ -19,8 +20,9 @@ def redirect42(request):
     return redirect(target_url)
 
 def auth42(request):
-    if (code := request.GET.get('code') is None):
+    if (code := request.GET.get('code')) is None:
         return HttpResponseBadRequest()
+    code = request.GET.get('code')
     oauth_response = requests.post('https://api.intra.42.fr/oauth/token', data={
         'code': code,
         'grant_type': 'authorization_code',
@@ -28,12 +30,20 @@ def auth42(request):
         'client_secret': get_secret('oauth_secret'),
         'redirect_uri': 'https://localhost/42auth'
     }).json()
+    print("oauth response: ", oauth_response)
     #error handling for oauth response
     user_info = requests.get('https://api.intra.42.fr/v2/me', headers={
         'Authorization': 'Bearer ' + oauth_response['access_token']
     }).json()
-    print("user info: ", user_info)
-    #check if user is already in database (based on 42_id)
+
+    #print("user info: ", user_info)
+    if CustomUser.objects.filter(email=user_info['email']).exists():
+        print("user is in database")
+    else:
+        print("user is not in database")
+    
+
+    #check if user is already in database (based on 42_id?)
     #if already in database, no need to register
     #else: create new database entry (can I call a function from usermanagement.views here?)
     return HttpResponse("Hello, world. You're at the 42 auth test2.") # create JWT access token and return it with JSON response (frontend as recipient) Should be same as with user registration
