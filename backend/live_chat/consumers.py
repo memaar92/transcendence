@@ -1,17 +1,19 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.contrib.auth import get_user_model
-from .models import Chat, Message
+from django.conf import settings
+from .models import Message, Relationship
 from django.utils import timezone
 from django.db.models import Q
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.tokens import UntypedToken
 import json
 
+RelationshipStatus = Relationship.RelationshipStatus
+
 class ChatConsumer(AsyncWebsocketConsumer):
-    
+
     user_id_to_channel_name = {}
-    friends = {}
 
     async def send_message_to_user(self, receiver_id, message, message_type):
         channel_name = ChatConsumer.user_id_to_channel_name.get(receiver_id, None)
@@ -23,7 +25,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 "text": json.dumps({
                     "type": message_type,
                     "message": message,
-                    "sender_id": self.user_id
+                    "sender_id": self.user_id,
+                    "receiver_id": receiver_id
                 }),
             })
 
@@ -33,7 +36,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             user = await self.get_user(user_id)
             users_info.append({'id': str(user.id), 'name': user.displayname})
         return users_info
-        
+
     async def send_websocket_message(self, event):
         await self.send(text_data=event['text'])
 
@@ -99,30 +102,33 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         data = json.loads(text_data)
-        message_type = data.get('type', None)   
+        message_type = data.get('type', None)
 
         print(f"Received message: {data}")
-        if message_type == 'chat_request':
-            await self.chat_request(data)
-        elif message_type == 'chat_message':
-            if data['sender_id'] in self.friends:
-                await self.chat_message(data)
-            else:
-                await self.send(text_data=json.dumps({
-                    'type': 'chat_message',
-                    'message': 'You are not friends with this user',
-                    'sender_id': 'Server',
-                    'receiver_id': data['sender_id']
-                }))
-        elif message_type == 'chat_request_accepted':
-            await self.chat_request_accepted(data)
-        elif message_type == 'chat_request_denied':
-            await self.chat_request_denied(data)
-        elif message_type == 'add_friend':
-            await self.add_friend(data)
-        elif message_type == 'chat_history':
-            await self.chat_history(data)
-
+        match message_type:
+            case 'chat_request':
+                if await self.get_status(data['sender_id'], data['receiver_id']) == RelationshipStatus.DEFAULT:
+                    await self.chat_request(data)
+            case 'chat_message':
+                if await self.get_status(data['sender_id'], data['receiver_id']) == RelationshipStatus.BEFRIENDED:
+                    await self.chat_message(data)
+                else:
+                    await self.send(text_data=json.dumps({
+                        'type': 'chat_message',
+                        'message': 'You are not friends with this user',
+                        'sender_id': 'Server',
+                        'receiver_id': data['sender_id']
+                    }))
+            case 'chat_request_accepted':
+                await self.chat_request_accepted(data)
+            case 'chat_request_denied':
+                await self.chat_request_denied(data)
+            case 'chat_history':
+                await self.chat_history(data)
+            case 'chat_request_notification':
+                await self.chat_request_notification(data)
+            case _:
+                print(f"Unknown message type: {message_type}")
 
     async def chat_request(self, data):
         receiver_id = data['receiver_id']
@@ -132,6 +138,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if receiver_id in ChatConsumer.user_id_to_channel_name:
             receiver_channel_name = ChatConsumer.user_id_to_channel_name[receiver_id]
             sender_name = await self.get_user_displayname(sender_id)
+            await self.update_status(sender_id, receiver_id, RelationshipStatus.PENDING)
             await self.channel_layer.send(
                 receiver_channel_name,
                 {
@@ -142,12 +149,22 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 }
             )
 
+    async def chat_request_notification(self, event):
+        await self.update_status(event['sender_id'], event['receiver_id'], RelationshipStatus.PENDING)
+        await self.send(text_data=json.dumps({
+            'type': 'chat_request_notification',
+            'sender_id': event['sender_id'],
+            'receiver_id': event['receiver_id'],
+            'sender_name': event['sender_name']
+        }))
+
     async def chat_message(self, data):
         receiver_id = data['receiver_id']
         sender_id = data['sender_id']
         message = data['message']
         if receiver_id in ChatConsumer.user_id_to_channel_name:
             receiver_channel_name = ChatConsumer.user_id_to_channel_name[receiver_id]
+            print(f"Sending message to {receiver_id}")
             await self.channel_layer.send(
                 receiver_channel_name,
                 {
@@ -159,12 +176,21 @@ class ChatConsumer(AsyncWebsocketConsumer):
             )
         await self.save_message(sender_id, receiver_id, message)
 
-
-    async def add_friend(self, data):
-        receiver_id = data['receiver_id']
+    async def chat_request_accepted(self, data):
         sender_id = data['sender_id']
-        self.friends[sender_id] = receiver_id
-        self.friends[receiver_id] = sender_id
+        receiver_id = data['receiver_id']
+        await self.update_status(sender_id, receiver_id, RelationshipStatus.BEFRIENDED)
+        await self.update_status(receiver_id, sender_id, RelationshipStatus.BEFRIENDED)
+
+        # Notify both users
+        await self.send_message_to_user(sender_id, f"You are now friends with {await self.get_user_displayname(receiver_id)}", 'chat_request_accepted')
+        await self.send_message_to_user(receiver_id, f"You are now friends with {await self.get_user_displayname(sender_id)}", 'chat_request_accepted')
+
+    async def chat_request_denied(self, data):
+        receiver_displayname = await self.get_user_displayname(data['receiver_id'])
+        await self.update_status(data['sender_id'], data['receiver_id'], RelationshipStatus.DEFAULT)
+        await self.update_status(data['receiver_id'], data['sender_id'], RelationshipStatus.DEFAULT)
+        await self.send_message_to_user(data['sender_id'], receiver_displayname, 'chat_request_denied')
 
     async def chat_history(self, data):
         sender_id = data['sender_id']
@@ -191,36 +217,30 @@ class ChatConsumer(AsyncWebsocketConsumer):
         receiver = get_user_model().objects.get(id=receiver_id)
         Message.objects.create(sender=sender, receiver=receiver, content=message, timestamp=timezone.now())
 
-    async def chat_request_notification(self, event):
-        await self.send(text_data=json.dumps({
-            'type': 'chat_request_notification',
-            'sender_id': event['sender_id'],
-            'receiver_id': event['receiver_id'],
-            'sender_name': event['sender_name']
-        }))
-
-    async def chat_message(self, event):
-        sender_displayname = await self.get_user_displayname(event['sender_id'])
-        await self.send_message_to_user(event['receiver_id'], event['message'], 'chat_message')
-
-    async def chat_request_accepted(self, event):
-        sender_id = event['sender_id']
-        receiver_id = event['receiver_id']
-        
-        self.friends[sender_id] = receiver_id
-        self.friends[receiver_id] = sender_id
-
-        await self.send_message_to_user(sender_id, receiver_id, 'add_friend')
-        await self.send_message_to_user(receiver_id, sender_id, 'add_friend')
-
-        # Notify both users
-        await self.send_message_to_user(sender_id, f"You are now friends with {await self.get_user_displayname(receiver_id)}", 'chat_request_accepted')
-        await self.send_message_to_user(receiver_id, f"You are now friends with {await self.get_user_displayname(sender_id)}", 'chat_request_accepted')
+    @database_sync_to_async
+    def get_status(self, user_id_1, user_id_2):
+        try:
+            relationship = Relationship.objects.get(
+                Q(user1_id=user_id_1, user2_id=user_id_2) |
+                Q(user1_id=user_id_2, user2_id=user_id_1)
+            )
+            return relationship.status
+        except Relationship.DoesNotExist:
+            return RelationshipStatus.DEFAULT
 
 
-    async def chat_request_denied(self, event):
-        receiver_displayname = await self.get_user_displayname(event['receiver_id'])
-        await self.send_message_to_user(event['sender_id'], receiver_displayname, 'chat_request_denied')
+    @database_sync_to_async
+    def update_status(self, user_id_1, user_id_2, status):
+        try:
+            relationship = Relationship.objects.get(
+                Q(user1_id=user_id_1, user2_id=user_id_2) |
+                Q(user1_id=user_id_2, user2_id=user_id_1)
+            )
+            relationship.status = status
+            relationship.save()
+        except Relationship.DoesNotExist:
+            Relationship.objects.create(user1_id=user_id_1, user2_id=user_id_2, status=status)
+
 
     @database_sync_to_async
     def get_user_displayname(self, user_id):
