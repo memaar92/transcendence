@@ -42,8 +42,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 	'usermanagement',
     'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',
 	'corsheaders',
     'live_chat',
+    'matchmaking',
+    'pong',
 ]
 
 ASGI_APPLICATION = "backend.asgi.application"
@@ -172,6 +175,13 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static")
 MEDIA_URL = "/mediafiles/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "mediafiles")
 
+CSRF_TRUSTED_ORIGINS = [
+     'https://localhost',
+     'http://localhost',
+     'http://127.0.0.1',
+     'https://127.0.0.1'
+]
+
 # Original STATIC_URL setting
 # STATIC_URL = 'static/'
 
@@ -186,7 +196,8 @@ CORS_ALLOWS_CREDENTIALS = True
 
 REST_FRAMEWORK = {
 	"DEFAULT_AUTHENTICATION_CLASSES": (
-		"rest_framework_simplejwt.authentication.JWTAuthentication",
+		#"rest_framework_simplejwt.authentication.JWTAuthentication",
+		'rest_framework_simplejwt.authentication.JWTStatelessUserAuthentication',
 	),
 	"DEFAULT_PERMISSION_CLASSES": [
 		"rest_framework.permissions.IsAuthenticated",
@@ -196,6 +207,8 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
 	"ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
 	"REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+	"ROTATE_REFRESH_TOKENS": True,
+	"BLACKLIST_AFTER_ROTATION": True,
 }
 
 AUTH_USER_MODEL = 'usermanagement.CustomUser'
