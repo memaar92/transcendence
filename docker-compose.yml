@@ -15,8 +15,6 @@ services:
       - psql_password
       - psql_user
       - psql_database
-      - django_admin_password
-      - django_admin_user
 
   nginx:
     container_name: nginx
