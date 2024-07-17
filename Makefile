@@ -1,12 +1,12 @@
 SHELL := /bin/bash
 
-all: get_ips up
+all: get_ips build
 
 up:
 	docker-compose up -d
 
 build:
-	docker-compose up --build
+	docker-compose up -d --build
 
 it:
 	docker-compose up
@@ -51,6 +51,13 @@ dclean:
 	docker-compose -f docker-compose.yml down -v --rmi local
 	docker system prune --all --force --volumes
 
+# Usage: make createapp APP_NAME=appname
+createapp:
+	ifndef APP_NAME
+		$(error APP_NAME is not set)
+	endif
+		docker-compose exec backend python manage.py startapp $(APP_NAME)
+
 # Get Ip addresses and export them to the .dev_ips file
 get_ips:
 	@echo "WiFi IP: $$(ip addr show | grep inet | grep -E 'wlo|wlan|wla' | awk '{print $$2}' | cut -d/ -f1 | xargs)" && \
@@ -60,4 +67,4 @@ get_ips:
 
 re: fclean all
 
-.PHONY: up down build execbackend execnginx re_backend restart_backend fclean re dclean re_postgres re_nginx get_ips restart execpostgres
+.PHONY: up down build execbackend execnginx re_backend restart_backend fclean re dclean re_postgres re_nginx get_ips restart execpostgres createapp

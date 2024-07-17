@@ -35,3 +35,9 @@ class GameHistorySerializer(serializers.ModelSerializer):
 		model = Games
 		fields = ["id", "home_id", "visitor_id", "visitor_score", "home_score", "created_at", "updated_at"]
 		read_only_fields = fields
+
+class TOTPSetupSerializer(serializers.Serializer):
+	qr_code = serializers.CharField()
+
+class TOTPVerifySerializer(serializers.Serializer):
+	token = serializers.CharField()
