@@ -44,6 +44,7 @@ INSTALLED_APPS = [
 	'usermanagement',
     'rest_framework',
 	'corsheaders',
+    'matchmaking',
     'pong',
 ]
 
@@ -172,6 +173,13 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
 MEDIA_URL = "/mediafiles/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "mediafiles")
+
+CSRF_TRUSTED_ORIGINS = [
+     'https://localhost',
+     'http://localhost',
+     'http://127.0.0.1',
+     'https://127.0.0.1'
+]
 
 # Original STATIC_URL setting
 # STATIC_URL = 'static/'
