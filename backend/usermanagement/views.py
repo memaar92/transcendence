@@ -53,6 +53,7 @@ class GameHistoryList(APIView):
 		games = Games.objects.all()
 		serializer = GameHistorySerializer(games, many=True)
 		return Response(serializer.data)
+	
 class ProfilePictureDeleteView(APIView):
 	permission_classes = [IsAuthenticated]
 
