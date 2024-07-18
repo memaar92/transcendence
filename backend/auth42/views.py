@@ -19,6 +19,11 @@ def redirect42(request):
     target_url = 'https://api.intra.42.fr/oauth/authorize?client_id=' + get_secret('oauth_client_id') + '&redirect_uri=https%3A%2F%2Flocalhost%2F42auth&response_type=code'
     return redirect(target_url)
 
+#shall we also use the picture from 42 as profile picture? 
+def register42User(email, nickname):
+    new_user = CustomUser(email=email, displayname=nickname, is_42_auth=True)
+    new_user.save()
+
 def auth42(request):
     if (code := request.GET.get('code')) is None:
         return HttpResponseBadRequest()
@@ -36,16 +41,16 @@ def auth42(request):
         'Authorization': 'Bearer ' + oauth_response['access_token']
     }).json()
 
-    #print("user info: ", user_info)
-    if CustomUser.objects.filter(email=user_info['email']).exists():
-        print("user is in database")
-    else:
-        print("user is not in database")
+    print("user info: ", user_info)
+    user = CustomUser.objects.filter(email=user_info['email']).values('email', 'is_42_auth') #use 42_id as identifier instead?
+    print("user: ", user)
+    if user.exists() and user.first()['is_42_auth'] == False:
+        return HttpResponse("Wrong authentication method")
+        #return Response({'detail': 'Wrong authentication method'}, status=status.HTTP_400_BAD_REQUEST)
+    elif not user.exists():
+        register42User(user_info['email'], user_info['login'])
+    #return JWT access token
     
-
-    #check if user is already in database (based on 42_id?)
-    #if already in database, no need to register
-    #else: create new database entry (can I call a function from usermanagement.views here?)
     return HttpResponse("Hello, world. You're at the 42 auth test2.") # create JWT access token and return it with JSON response (frontend as recipient) Should be same as with user registration
 
 
