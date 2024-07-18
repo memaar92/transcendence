@@ -1,11 +1,9 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect
 from django.http import HttpResponse
-from rest_framework import generics, status
-from django.views import generic
-from rest_framework.response import Response
-from rest_framework.views import APIView
 from usermanagement.models import CustomUser
+from rest_framework_simplejwt.tokens import RefreshToken
 import requests
+import json
 
 # create more elegant way to get secrets as function is used in multiple places (e.g. settings.py)
 def get_secret(secret_name):
@@ -24,9 +22,17 @@ def register42User(email, nickname):
     new_user = CustomUser(email=email, displayname=nickname, is_42_auth=True)
     new_user.save()
 
+def get_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
+
+    return {
+        'access': str(refresh.access_token),
+        'refresh': str(refresh),
+    }
+
 def auth42(request):
     if (code := request.GET.get('code')) is None:
-        return HttpResponseBadRequest()
+        return HttpResponseBadRequest("42auth failed: no code provided")
     code = request.GET.get('code')
     oauth_response = requests.post('https://api.intra.42.fr/oauth/token', data={
         'code': code,
@@ -35,25 +41,17 @@ def auth42(request):
         'client_secret': get_secret('oauth_secret'),
         'redirect_uri': 'https://localhost/42auth'
     }).json()
-    print("oauth response: ", oauth_response)
-    #error handling for oauth response
+    if (oauth_response.get('error')):
+        return HttpResponseBadRequest("42auth failed: " + oauth_response['error'])
     user_info = requests.get('https://api.intra.42.fr/v2/me', headers={
         'Authorization': 'Bearer ' + oauth_response['access_token']
     }).json()
 
-    print("user info: ", user_info)
     user = CustomUser.objects.filter(email=user_info['email']).values('email', 'is_42_auth') #use 42_id as identifier instead?
-    print("user: ", user)
     if user.exists() and user.first()['is_42_auth'] == False:
-        return HttpResponse("Wrong authentication method")
-        #return Response({'detail': 'Wrong authentication method'}, status=status.HTTP_400_BAD_REQUEST)
+        return HttpResponseBadRequest("Wrong authentication method")
     elif not user.exists():
         register42User(user_info['email'], user_info['login'])
-    #return JWT access token
     
-    return HttpResponse("Hello, world. You're at the 42 auth test2.") # create JWT access token and return it with JSON response (frontend as recipient) Should be same as with user registration
-
-
-#class AuthWith42(APIView):
-#    def get(self, request):
-#        return Response(status=status.HTTP_204_NO_CONTENT)
+    token = get_tokens_for_user(CustomUser.objects.get(email=user_info['email']))
+    return HttpResponse(json.dumps(token), content_type='application/json', status=200, headers={'Vary': 'Accept'})
