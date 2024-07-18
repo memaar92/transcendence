@@ -7,10 +7,12 @@
         .message-sender {
             font-weight: bold;
             color: blue;
+            text-align: right; /* Align sender's messages to the right */
         }
         .message-receiver {
             font-style: italic;
             color: green;
+            text-align: left; /* Align receiver's messages to the left */
         }
         .timestamp {
             font-size: 0.8em;
@@ -23,12 +25,15 @@
             max-height: 300px;
             overflow-y: scroll;
         }
+        .message-item {
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
     <div>
         <h2>Messages</h2>
-        <ul id="messages"></ul>
+        <div id="chat-window" class="chat-window"></div>
     </div>
     <div>
         <h2>Send a Message</h2>
@@ -61,7 +66,11 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                    if (response.status === 401) {
+                        throw new Error('Invalid credentials'); // Prompt for credentials again
+                    } else {
+                        throw new Error('Network response was not ok'); // Handle other errors
+                    }
                 }
 
                 const data = await response.json();
@@ -70,7 +79,7 @@
                 return data.access;
             } catch (error) {
                 console.error('Error during token fetch:', error);
-                alert('Error fetching token');
+                alert('Error fetching token: ' + error.message); // Alert user about the error
                 return null;
             }
         }
@@ -86,15 +95,15 @@
             console.log('WebSocket URL:', url);
             var ws = new WebSocket(url);
             let senderId = null;
-
+                
             ws.onopen = (e) => {
                 ws.send(JSON.stringify({ "loaded": true }));
             };
-
+        
             ws.onerror = (e) => {
                 console.log(e);
             };
-
+        
             ws.onmessage = function(event) {
                 const content = JSON.parse(event.data);
                 console.log('Received:', content);
@@ -106,58 +115,47 @@
                         displayChatRequest(content);
                         break;
                     case 'chat_message':
-                        var messages = document.getElementById('messages');
-                        var messageItem = document.createElement('li');
-                        messageItem.textContent = `${content.sender_id}: ${content.message}`;
-                        messages.appendChild(messageItem);
+                        displayChatMessage(content);
                         break;
                     case 'user_list':
                         displayUserList(content.users);
                         break;
                     case 'chat_request_accepted':
-                        var messages = document.getElementById('messages');
-                        var messageItem = document.createElement('li');
-                        messageItem.textContent = `${content.message}`;
-                        messages.appendChild(messageItem);
+                        displaySystemMessage(content.message);
                         break;
                     case 'chat_request_denied':
-                        var messages = document.getElementById('messages');
-                        var messageItem = document.createElement('li');
-                        messageItem.textContent = `${content.message}`;
-                        messages.appendChild(messageItem);
-                        break;
-                    case 'add_friend':
-                        console.log('Friend added:', content);
-                        ws.send(JSON.stringify({
-                            'type': 'add_friend',
-                            'receiver_id': content.receiver_id,
-                            'sender_id': content.sender_id
-                        }));
+                        displaySystemMessage(content.message);
                         break;
                     case 'chat_history':
                         displayChatHistory(content.messages);
                         break;
                 }
             };
-
+        
             ws.onclose = async function(event) {
                 if (event.code === 1006) {
-                    console.error('Token expired');
+                    console.error('Token expired or authentication error');
                     const credentials = promptForCredentials();
                     if (credentials) {
                         const newToken = await obtainAuthToken(credentials.email, credentials.password);
                         if (newToken) {
                             setupWebSocket(newToken);
+                        } else {
+                            // Handle failure to obtain new token (e.g., display error to user)
+                            console.error('Failed to obtain new token');
+                            displaySystemMessage('Failed to authenticate. Please try again.');
                         }
                     }
                 } else {
                     console.error('WebSocket closed:', event);
+                    // Handle other close codes if necessary
+                    displaySystemMessage(`WebSocket closed with code ${event.code}`);
                 }
             };
 
             function displayChatRequest(content) {
-                var requests = document.getElementById('messages');
-                var requestItem = document.createElement('li');
+                var requests = document.getElementById('chat-window');
+                var requestItem = document.createElement('div');
                 requestItem.textContent = `Chat request from ${content.sender_name}`;
                 console.log(content);
                 var acceptButton = createButton('Accept', content.sender_id, content.receiver_id, true);
@@ -210,34 +208,77 @@
                 }));
             }
 
+            function sendChatHistoryRequest(senderId, receiverId) {
+                ws.send(JSON.stringify({
+                    'type': 'chat_history',
+                    'sender_id': senderId,
+                    'receiver_id': receiverId
+                }));
+            }
+
+            function displayChatMessage(content) {
+                var messages = document.getElementById('chat-window');
+                var messageItem = document.createElement('div');
+                var messageText = document.createElement('span');
+                var messageTimestamp = document.createElement('span');
+                sendChatHistoryRequest(content.sender_id, content.receiver_id);
+                messageText.textContent = `${content.sender_name}: ${content.message}`;
+                messageTimestamp.textContent = ` (${new Date().toLocaleString()})`;
+                messageTimestamp.classList.add('timestamp');
+
+                // Determine alignment based on sender_id
+                messageItem.classList.add('message-item');
+                if (content.sender_id === senderId) {
+                    messageItem.classList.add('message-sender');
+                } else {
+                    messageItem.classList.add('message-receiver');
+                }
+
+                messageItem.appendChild(messageText);
+                messageItem.appendChild(messageTimestamp);
+                messages.appendChild(messageItem);
+                messages.scrollTop = messages.scrollHeight; // Scroll to bottom
+            }
+
+            function displaySystemMessage(message) {
+                var messages = document.getElementById('chat-window');
+                var messageItem = document.createElement('div');
+                messageItem.textContent = message;
+                messages.appendChild(messageItem);
+                messages.scrollTop = messages.scrollHeight; // Scroll to bottom
+            }
+
+            // Display chat history with updated alignment
             function displayChatHistory(messages) {
                 var chatWindow = document.getElementById('chat-window');
-                if (!chatWindow) {
-                    chatWindow = document.createElement('div');
-                    chatWindow.id = 'chat-window';
-                    chatWindow.classList.add('chat-window');
-                    document.body.appendChild(chatWindow);
-                }
-                chatWindow.innerHTML = '';
                 messages.forEach(function(message) {
                     var messageItem = document.createElement('div');
                     var messageText = document.createElement('span');
                     var messageTimestamp = document.createElement('span');
-                    messageText.textContent = message.content;
+                    messageText.textContent = message.sender_name + ': ' + message.message;
                     messageTimestamp.textContent = ` (${new Date(message.timestamp).toLocaleString()})`;
                     messageTimestamp.classList.add('timestamp');
+                    messageItem.classList.add('message-item');
+
+                    // Determine alignment based on sender_id
                     if (message.sender_id === senderId) {
-                        messageText.classList.add('message-sender');
+                        messageItem.classList.add('message-sender');
+                        messageItem.style.textAlign = 'right'; // Align sender's messages to the right
                     } else {
-                        messageText.classList.add('message-receiver');
+                        messageItem.classList.add('message-receiver');
+                        messageItem.style.textAlign = 'left'; // Align receiver's messages to the left
                     }
+
                     messageItem.appendChild(messageText);
                     messageItem.appendChild(messageTimestamp);
                     chatWindow.appendChild(messageItem);
                 });
+
+                chatWindow.scrollTop = chatWindow.scrollHeight; // Scroll to bottom
             }
 
-            document.getElementById("send").onclick = function() {
+            // Use a single event listener for the "send" button
+            document.getElementById("send").addEventListener('click', function() {
                 var message = document.getElementById("message-text").value;
                 var receiverId = document.getElementById("receiver-id").value;
                 ws.send(JSON.stringify({
@@ -246,18 +287,8 @@
                     'sender_id': senderId,
                     'receiver_id': receiverId
                 }));
-            };
-
-            document.getElementById("request-history").onclick = function() {
-                var sender_id = document.getElementById("sender-username").value;
-                var receiver_id = document.getElementById("receiver-username").value;
-                console.log(sender_id, receiver_id);
-                ws.send(JSON.stringify({
-                    'type': 'chat_history',
-                    'sender_id': sender_id,
-                    'receiver_id': receiver_id
-                }));
-            };
+                sendChatHistoryRequest(senderId, receiverId);
+            });
         }
 
         document.addEventListener("DOMContentLoaded", async function() {
