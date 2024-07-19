@@ -1,12 +1,11 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="english">
-  <head>
+<head>
     <title>exported project</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta charset="utf-8" />
     <meta property="twitter:card" content="summary_large_image" />
-
     <style data-tag="reset-style-sheet">
       html {  line-height: 1.15;}body {  margin: 0;}* {  box-sizing: border-box;  border-width: 0;  border-style: solid;}p,li,ul,pre,div,h1,h2,h3,h4,h5,h6,figure,blockquote,figcaption {  margin: 0;  padding: 0;}button {  background-color: transparent;}button,input,optgroup,select,textarea {  font-family: inherit;  font-size: 100%;  line-height: 1.15;  margin: 0;}button,select {  text-transform: none;}button,[type="button"],[type="reset"],[type="submit"] {  -webkit-appearance: button;}button::-moz-focus-inner,[type="button"]::-moz-focus-inner,[type="reset"]::-moz-focus-inner,[type="submit"]::-moz-focus-inner {  border-style: none;  padding: 0;}button:-moz-focus,[type="button"]:-moz-focus,[type="reset"]:-moz-focus,[type="submit"]:-moz-focus {  outline: 1px dotted ButtonText;}a {  color: inherit;  text-decoration: inherit;}input {  padding: 2px 4px;}img {  display: block;}html { scroll-behavior: smooth  }
     </style>
@@ -57,29 +56,66 @@
       rel="stylesheet"
       href="https://unpkg.com/@teleporthq/teleport-custom-scripts/dist/style.css"
     />
-  </head>
-  <body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.7.6/lottie.min.js"></script>
+    <style>
+        #animation-container {
+            width: 200px;
+            height: 200px;
+            cursor: pointer;
+            position: absolute; /* Positioning element absolutely */
+            top: 0; /* Align to top */
+            left: 0; /* Align to left */
+            margin: 0; /* Remove any default margin */
+        }
+    </style>
+</head>
+<body>
     <link rel="stylesheet" href="{% static 'live_chat/css/style.css' %}" />
     <div>
-      <link href="{% static 'live_chat/css/index.css' %}" rel="stylesheet" />
+        <link href="{% static 'live_chat/css/index.css' %}" rel="stylesheet" />
 
-      <div class="friendlist-container">
-        <div class="friendlist-friendlist">
-          <div class="friendlist-user-icon">
-            <div class="friendlist-group1">
-              <img
-                alt="image1011"
-                src="{% static 'live_chat/images/v0_11.png' %}"
-                class="friendlist-image1"
-              />
+        <div class="friendlist-container">
+            <div class="friendlist-friendlist">
+                <div class="friendlist-user-icon">
+                    <div class="friendlist-group1">
+                        <img
+                            alt="image1011"
+                            src="{% static 'live_chat/images/v0_11.png' %}"
+                            class="friendlist-image1"
+                        />
+                    </div>
+                    <span class="friendlist-text"><span>Guest</span></span>
+                </div>
+                <button class="friendlist-main-button">
+                    <span class="friendlist-text2"><span>Verify</span></span>
+                </button>
             </div>
-            <span class="friendlist-text"><span>Guest</span></span>
-          </div>
-          <button class="friendlist-main-button">
-            <span class="friendlist-text2"><span>Verify</span></span>
-          </button>
         </div>
-      </div>
+
+        <!-- Animation Container -->
+        <div id="animation-container"></div>
     </div>
-  </body>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var animationContainer = document.getElementById('animation-container');
+            var animationData = {
+                container: animationContainer,
+                renderer: 'svg',
+                loop: false,
+                autoplay: true,
+                path: '{% static "live_chat/animations/notification.json" %}' // Replace with the path to your JSON file
+            };
+
+            var animation = lottie.loadAnimation(animationData);
+
+            // Add click event listener immediately
+            animationContainer.addEventListener('click', function() {
+                // Add any action you want to perform on click
+            });
+        });
+    </script>
+</body>
 </html>
+
+
