@@ -19,6 +19,7 @@ def redirect42(request):
 
 #shall we also use the picture from 42 as profile picture? 
 def register42User(email, nickname):
+    #add check for nickname
     new_user = CustomUser(email=email, displayname=nickname, is_42_auth=True)
     new_user.save()
 
