@@ -15,6 +15,8 @@ services:
       - psql_password
       - psql_user
       - psql_database
+      - oauth_secret
+      - oauth_client_id
 
   nginx:
     container_name: nginx
@@ -64,3 +66,7 @@ secrets:
     file: ./secrets/django_admin_password.txt
   django_admin_user:
     file: ./secrets/django_admin_user.txt
+  oauth_secret:
+    file: ./secrets/oauth_secret.txt
+  oauth_client_id:
+    file: ./secrets/oauth_client_id.txt

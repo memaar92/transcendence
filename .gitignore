@@ -2,3 +2,5 @@ __pycache__/
 backend/static/
 .dev_ips
 **/migrations/
+database/
+secrets/
