@@ -19,7 +19,9 @@ def redirect42(request):
 
 #shall we also use the picture from 42 as profile picture? 
 def register42User(email, nickname):
-    #add check for nickname
+    if CustomUser.objects.filter(displayname=nickname).exists():
+        id = CustomUser.objects.filter(displayname__istartswith = nickname).count()
+        nickname = nickname + "_" + str(id)
     new_user = CustomUser(email=email, displayname=nickname, is_42_auth=True)
     new_user.save()
 
