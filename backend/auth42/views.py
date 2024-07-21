@@ -1,5 +1,5 @@
 from django.shortcuts import redirect
-from django.http import HttpResponse, HttpResponseBadRequest
+from django.http import JsonResponse, HttpResponseBadRequest
 from usermanagement.models import CustomUser
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
@@ -80,4 +80,4 @@ def auth42(request):
         register42User(user_info['email'], user_info['login'], user_info['image']['versions']['small'])
     
     token = get_tokens_for_user(CustomUser.objects.get(email=user_info['email']))
-    return HttpResponse(json.dumps(token), content_type='application/json', status=200, headers={'Vary': 'Accept'})
+    return JsonResponse(token, status=200)
