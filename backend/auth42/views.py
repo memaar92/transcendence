@@ -17,12 +17,19 @@ def redirect42(request):
     target_url = 'https://api.intra.42.fr/oauth/authorize?client_id=' + get_secret('oauth_client_id') + '&redirect_uri=https%3A%2F%2Flocalhost%2F42auth&response_type=code'
     return redirect(target_url)
 
+def generateUniqueUsername(username):
+    id = CustomUser.objects.filter(displayname__istartswith = username).count()
+    while CustomUser.objects.filter(displayname= username + "_" + str(id)).exists():
+        id += 1
+    username = username + "_" + str(id)
+    return username
+
+
 #shall we also use the picture from 42 as profile picture? 
-def register42User(email, nickname):
-    if CustomUser.objects.filter(displayname=nickname).exists():
-        id = CustomUser.objects.filter(displayname__istartswith = nickname).count()
-        nickname = nickname + "_" + str(id)
-    new_user = CustomUser(email=email, displayname=nickname, is_42_auth=True)
+def register42User(email, username):
+    if CustomUser.objects.filter(displayname=username).exists():
+        username = generateUniqueUsername(username)
+    new_user = CustomUser(email=email, displayname=username, is_42_auth=True)
     new_user.save()
 
 def get_tokens_for_user(user):
