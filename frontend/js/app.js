@@ -11,6 +11,7 @@ const routes = [
   { path: '/game_menu', templateUrl: '/routes/game_menu.html' },
   { path: '/play', templateUrl: '/routes/play.html' },
   { path: '/live_chat', templateUrl: '/routes/chat.html' },
+  { path: '/game', templateUrl: '/routes/game.html' },
 ];
 
 const router = new Router(routes);
