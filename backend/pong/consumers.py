@@ -2,7 +2,7 @@ import json
 import struct
 from asyncio import sleep
 import asyncio
-from .game_logic.player import Player
+from .game_logic.paddle import Player
 from .game_logic.ball import Ball
 from .utils.vector2 import Vector2
 from .utils.vector_utils import degree_to_vector

@@ -1,4 +1,3 @@
-from pong.game_logic.player import Player
 from pong.utils.vector2 import Vector2
 from pong.utils.vector_utils import degree_to_vector
 import copy
