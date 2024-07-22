@@ -13,17 +13,15 @@
 <body>
     <canvas id="gameCanvas" width="800" height="800"></canvas>
     <script>
-        
+        let retryCount = 0;
+        const maxRetries = 5;
+        const retryDelay = 2000; // Milliseconds
+
         let url = "ws://" + window.location.host + "/ws/pong/";
-        const gameSocket = new WebSocket(url);
-        let clickCount = 0; // Variable to keep track of the number of clicks
+        
         let move_up = false;
         let move_down = false;
-        
-        function sendMessageToServer(key, pressed) {
-            const message = { "type": "player_update", "payload": { key: key, pressed: pressed } };
-            gameSocket.send(JSON.stringify(message));
-        }
+        gameSocket = connectWebSocket(url);
 
         function sendPlayerState() {
             let message = {};
@@ -39,18 +37,47 @@
             gameSocket.send(JSON.stringify(message));
         }
 
-        gameSocket.onopen = function(e) {
-            console.log('WebSocket connection established.');
-        };
+        function sendSetup(socket) {
+            const message = { "type": "setup", "matchType": "onlineMM" };
+            // Check if the WebSocket connection is already open
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify(message));
+            } else {
+                // Wait for the connection to open
+                socket.addEventListener('open', function() {
+                    socket.send(JSON.stringify(message));
+                });
+            }
+        }
+        
+        function connectWebSocket(url) {
+            const gameSocket = new WebSocket(url);
+            
+            gameSocket.onopen = function(e) {
+                console.log('WebSocket connection established.');
+                retryCount = 0;
+            };
+            
+            gameSocket.onclose = function(e) {
+                console.error('WebSocket connection closed.');
+            };
+            
+            gameSocket.onerror = function(e) {
+                console.error('WebSocket error: ' + e);
+                if (retryCount < maxRetries) {
+                    setTimeout(() =>  {
+                        console.log(`Attempting to reconnect... (${retryCount + 1})`);
+                        connectWebsocket(url); // Try to reconnect
+                        retryCount++;
+                    }, retryDelay);
+                } else {
+                    console.error("Max retries reached. Unable to connect to WebSocket.");
+                }
+            };
 
-        gameSocket.onclose = function(e) {
-            console.error('WebSocket connection closed.');
-        };
-
-        gameSocket.onerror = function(e) {
-            console.error('WebSocket error: ' + e);
-        };
-
+            return gameSocket;
+        }
+    
         // Paddle properties
         const paddleWidth = 20;
         const paddleHeight = 100;
@@ -69,29 +96,51 @@
             radius: 10
         };
 
-        gameSocket.binaryType = 'arraybuffer'; // Set the binary type of the WebSocket to ArrayBuffer
+        // gameSocket.binaryType = 'arraybuffer'; // Set the binary type of the WebSocket to ArrayBuffer
+
+        // gameSocket.onmessage = function(e) {
+        //     const data = event.data;
+        //     const view = new DataView(data);
+
+        //     // Read the six floats from the DataView
+        //     // Assuming the data is little-endian; if not, set the second argument to false
+        //     const player1PosX = view.getFloat32(0, true);
+        //     const player1PosY = view.getFloat32(4, true);
+        //     const player2PosX = view.getFloat32(8, true);
+        //     const player2PosY = view.getFloat32(12, true);
+        //     const ballPosX = view.getFloat32(16, true);
+        //     const ballPosY = view.getFloat32(20, true);
+
+        //     // Update the paddles and ball
+        //     leftPaddle.x = player1PosX;
+        //     leftPaddle.y = player1PosY;
+        //     rightPaddle.x = player2PosX;
+        //     rightPaddle.y = player2PosY;
+        //     ball.x = ballPosX;
+        //     ball.y = ballPosY;
+        // };
 
         gameSocket.onmessage = function(e) {
-            const data = event.data;
-            const view = new DataView(data);
-
-            // Read the six floats from the DataView
-            // Assuming the data is little-endian; if not, set the second argument to false
-            const player1PosX = view.getFloat32(0, true);
-            const player1PosY = view.getFloat32(4, true);
-            const player2PosX = view.getFloat32(8, true);
-            const player2PosY = view.getFloat32(12, true);
-            const ballPosX = view.getFloat32(16, true);
-            const ballPosY = view.getFloat32(20, true);
-
-            // Update the paddles and ball
-            leftPaddle.x = player1PosX;
-            leftPaddle.y = player1PosY;
-            rightPaddle.x = player2PosX;
-            rightPaddle.y = player2PosY;
-            ball.x = ballPosX;
-            ball.y = ballPosY;
-        };
+            try {
+                // Attempt to parse the incoming message as JSON
+                const message = JSON.parse(e.data);
+        
+                // Handle the message based on its type
+                switch (message.type) {
+                    case 'gameUpdate':
+                        // Update game state
+                        break;
+                    case 'chatMessage':
+                        // Display chat message
+                        break;
+                    // Add cases for other message types as needed
+                    default:
+                        console.log('Received unknown message type:', message.type);
+                }
+            } catch (error) {
+                console.error('Error parsing message:', e.data, error);
+            }
+        }
 
     // Event listeners for key down
     document.addEventListener('keydown', (event) => {
@@ -197,8 +246,10 @@
             requestAnimationFrame(draw);
         }
 
+        sendSetup(gameSocket);
         // Start animation
         draw();
     </script>
+    <button onclick="sendSetup(gameSocket)">Send Setup</button>
 </body>
 </html>
