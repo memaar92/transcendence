@@ -1,0 +1,50 @@
+<div id="content">
+    <link rel="stylesheet" href="../css/index.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <h1>Chat</h1>
+    <div id="chat">
+        <div id="chat-messages"></div>
+        <form id="chat-form">
+            <div>
+                <div class="friendlist-container">
+                    <div class="friendlist-friendlist">
+                        <div class="friendlist-user-icon">
+                            <div class="friendlist-group1">
+                                <img alt="image1011" src="/images/v0_11.png" class="friendlist-image1" />
+                            </div>
+                            <span class="friendlist-text"><span>Guest</span></span>
+                        </div>
+                        <button class="friendlist-main-button">
+                            <span class="friendlist-text2"><span>Verify</span></span>
+                        </button>
+                    </div>
+                </div>
+                <div id="animation-container"></div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.7.13/lottie.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var animationContainer = document.getElementById('animation-container');
+        var animationData = {
+            container: animationContainer,
+            renderer: 'svg',
+            loop: false,
+            autoplay: true,
+            path: "/animations/notification.json"
+        };
+        // Load the animation
+        var animation = lottie.loadAnimation(animationData);
+
+        animationContainer.addEventListener('click', function() {
+            // Optional: Define click behavior
+        });
+
+        animation.addEventListener('error', function(e) {
+            console.error('Animation error:', e);
+        });
+    });
+</script>

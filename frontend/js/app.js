@@ -10,6 +10,7 @@ const routes = [
   { path: '/404', templateUrl: '/routes/404.html' },
   { path: '/game_menu', templateUrl: '/routes/game_menu.html' },
   { path: '/play', templateUrl: '/routes/play.html' },
+  { path: '/live_chat', templateUrl: '/routes/chat.html' },
 ];
 
 const router = new Router(routes);
@@ -17,3 +18,4 @@ const router = new Router(routes);
 document.addEventListener('DOMContentLoaded', () => {
   router.init(document.getElementById('app'));
 });
+
