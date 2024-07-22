@@ -1,0 +1,118 @@
+
+.friendlist-container {
+  width: 100%;
+  display: flex;
+  overflow: auto;
+  min-height: 100vh;
+  align-items: center;
+  flex-direction: column;
+}
+.friendlist-friendlist {
+  gap: 540px;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25) ;
+  align-items: center;
+  flex-shrink: 0;
+  justify-content: center;
+  background-color: rgba(32, 32, 33, 1);
+}
+.friendlist-user-icon {
+  gap: 10px;
+  top: 0px;
+  right: 0px;
+  width: 133px;
+  display: flex;
+  padding: 30px;
+  position: absolute;
+  align-items: flex-start;
+  justify-content: flex-end;
+}
+.friendlist-group1 {
+  width: 73px;
+  height: 73px;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+  align-items: flex-start;
+  flex-shrink: 1;
+  
+}
+.friendlist-image1 {
+  top: 0px;
+  left: 0px;
+  width: 73px;
+  height: 73px;
+  position: absolute;
+  filter: brightness(0) invert(1);
+  
+}
+.friendlist-text {
+  top: 103px;
+  left: 19px;
+  color: rgba(255, 255, 255, 1);
+  width: 96px;
+  height: auto;
+  z-index: 1;
+  position: absolute;
+  font-size: 32px;
+  font-style: Regular;
+  text-align: right;
+  font-family: Thabit;
+  font-weight: 400;
+  line-height: normal;
+  font-stretch: normal;
+  text-decoration: none;
+}
+.friendlist-main-button {
+  top: 488px;
+  left: 0px;
+  right: 0px;
+  width: 151px;
+  height: 48px;
+  margin: auto;
+  display: flex;
+  padding: 14px 24px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0px 4px 0px 0px rgba(100, 27, 220, 1) ;
+  box-sizing: content-box;
+  align-items: flex-end;
+  flex-shrink: 0;
+  border-radius: 8px;
+  justify-content: center;
+  background-color: rgba(122, 52, 235, 1);
+}
+.friendlist-text2 {
+  color: rgba(255, 255, 255, 1);
+  font-size: 20px;
+  align-self: center;
+  font-style: Bold;
+  text-align: center;
+  font-family: Thabit;
+  font-weight: 700;
+  line-height: 150%;
+  font-stretch: normal;
+  text-decoration: none;
+}
+
+#animation-container {
+  width: 200px;
+  height: 200px;
+  top: 0;
+  left: 0;
+  position:fixed;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+.animation-container svg {
+  width: 100%;
+  height: 100%;
+  display:flex;
+}
