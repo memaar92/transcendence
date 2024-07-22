@@ -10,6 +10,7 @@ const routes = [
   { path: '/404', templateUrl: '/routes/404.html' },
   { path: '/game_menu', templateUrl: '/routes/game_menu.html' },
   { path: '/play', templateUrl: '/routes/play.html' },
+  { path: '/game', templateUrl: '/routes/game.html' },
 ];
 
 const router = new Router(routes);
