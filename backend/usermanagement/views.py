@@ -53,6 +53,7 @@ class GameHistoryList(APIView):
 		games = Games.objects.all()
 		serializer = GameHistorySerializer(games, many=True)
 		return Response(serializer.data)
+	
 class ProfilePictureDeleteView(APIView):
 	permission_classes = [IsAuthenticated]
 
@@ -127,3 +128,11 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 				return Response({'detail': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
 
 		return response
+
+class CheckEmail(APIView):
+	permission_classes = [AllowAny]
+
+	def post(self, request):
+		if CustomUser.objects.filter(email=request.data['email']).exists():
+			return Response({'detail': 'User with this email exists'}, status=status.HTTP_200_OK)
+		return Response({'detail': 'User with this email does not exist'}, status=status.HTTP_400_BAD_REQUEST)

@@ -6,14 +6,17 @@ services:
     restart: unless-stopped
     volumes:
       - .:/app
+      - ./secrets/django_admin_email.txt:/run/secrets/django_admin_email
+      - ./secrets/django_admin_password.txt:/run/secrets/django_admin_password
+      - ./secrets/django_admin_user.txt:/run/secrets/django_admin_user
     depends_on:
       - postgresql
     secrets:
       - psql_password
       - psql_user
       - psql_database
-      - django_admin_password
-      - django_admin_user
+      - oauth_secret
+      - oauth_client_id
 
   nginx:
     container_name: nginx
@@ -63,3 +66,7 @@ secrets:
     file: ./secrets/django_admin_password.txt
   django_admin_user:
     file: ./secrets/django_admin_user.txt
+  oauth_secret:
+    file: ./secrets/oauth_secret.txt
+  oauth_client_id:
+    file: ./secrets/oauth_client_id.txt

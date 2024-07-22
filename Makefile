@@ -6,7 +6,7 @@ up:
 	docker-compose up -d
 
 build:
-	docker-compose up -d --build
+	docker-compose up --build
 
 it:
 	docker-compose up
@@ -53,10 +53,10 @@ dclean:
 
 # Usage: make createapp APP_NAME=appname
 createapp:
-ifndef APP_NAME
-    $(error APP_NAME is not set)
-endif
-	docker-compose exec backend python manage.py startapp $(APP_NAME)
+	ifndef APP_NAME
+		$(error APP_NAME is not set)
+	endif
+		docker-compose exec backend python manage.py startapp $(APP_NAME)
 
 # Get Ip addresses and export them to the .dev_ips file
 get_ips:

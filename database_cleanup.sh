@@ -34,4 +34,3 @@ docker image rm "$IMAGE_NAME"
 echo ':: Re-creating the initial directory'
 rm -rf "$FOLDER_TO_DELETE"
 mkdir "$FOLDER_TO_DELETE"
-touch "$FOLDER_TO_DELETE/.gitkeep"
