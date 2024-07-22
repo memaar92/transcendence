@@ -58,6 +58,31 @@
   border-radius: 4px;
   background-color: var(--dl-color-theme-neutral-light);
 }
+.message-sender {
+  font-weight: bold;
+  color: blue;
+  text-align: right; /* Align sender's messages to the right */
+}
+.message-receiver {
+  font-style: italic;
+  color: green;
+  text-align: left; /* Align receiver's messages to the left */
+}
+.timestamp {
+  font-size: 0.8em;
+  color: #999;
+}
+.chat-window {
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin-top: 10px;
+  max-height: 300px;
+  overflow-y: scroll;
+}
+.message-item {
+  margin-bottom: 10px;
+}
+
 .list {
   width: 100%;
   margin: 1em 0px 1em 0px;
