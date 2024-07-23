@@ -22,7 +22,10 @@ class Router {
     }
   
     async navigate(path, pushState = true) {
+        console.log(path);
+        console.log(this.routes);
         const route = this.routes.find(route => route.path === path);
+        console.log(route);
         if (route) {
             this.currentRoute = route;
             if (pushState) {
