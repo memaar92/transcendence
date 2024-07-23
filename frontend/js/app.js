@@ -16,7 +16,18 @@ const routes = [
 
 const router = new Router(routes);
 
+/* chat handler */
 document.addEventListener('DOMContentLoaded', () => {
   router.init(document.getElementById('app'));
+  console.log('App started');
+  console.log('Current path:', window.location.pathname);
+  if (window.location.pathname === '/live_chat') {
+    console.log('Initializing chat');
+    const authToken = localStorage.getItem('authToken');
+    if (authToken) {
+      ChatHandler.getInstance().init(authToken);
+    } else {
+      console.error('No auth token found in localStorage');
+    }
+  }
 });
-
