@@ -205,10 +205,18 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
+    "AUTH_COOKIE": 'access_token',
+    "AUTH_COOKIE_REFRESH": 'refresh_token',
+    "AUTH_COOKIE_DOMAIN": None,
+    "AUTH_COOKIE_SECURE": False, #TODO: change to True?
+    "AUTH_COOKIE_HTTP_ONLY": True,
+    "AUTH_COOKIE_PATH": '/',
+    "AUTH_COOKIE_SAMESITE": 'Strict',
 	"ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
 	"REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 	"ROTATE_REFRESH_TOKENS": True,
 	"BLACKLIST_AFTER_ROTATION": True,
+    #add additional settings, e.g. algo?
 }
 
 AUTH_USER_MODEL = 'usermanagement.CustomUser'

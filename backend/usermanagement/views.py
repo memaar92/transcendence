@@ -9,6 +9,8 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework.exceptions import PermissionDenied
 from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.middleware import csrf
 from .permissions import IsSelf
 import pyotp
 import qrcode
@@ -126,5 +128,58 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 			print("2FA setup required")
 			if not totp.verify(serializer.validated_data['token']):
 				return Response({'detail': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
-
+		
+		response.set_cookie(
+			key = settings.SIMPLE_JWT['AUTH_COOKIE'],
+			value = response.data['access'],
+			expires = settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'],
+			secure = settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
+			httponly = settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
+			samesite = settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
+		)
+		response.set_cookie(
+			key = settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH'],
+			value = response.data['refresh'],
+			expires = settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'],
+			secure = settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
+			httponly = settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
+			samesite = settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
+		)
+		del response.data['access']
+		del response.data['refresh']
+		csrf.get_token(request) #probably set by TokenObtainPairView or middleware already?
 		return response
+
+
+'''
+def get_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
+    return {
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+    }
+
+
+class LoginView(APIView)
+	def post(self, request):
+		data = request.data
+		response = Response()
+		username = data.get('username')
+		password = data.get('password')
+		user = authenticate(username=username, password=password)
+		if user is not None:
+			data = get_tokens_for_user(user)
+			response.set_cookie(
+								key = settings.SIMPLE_JWT['AUTH_COOKIE'],
+								value = data['access'],
+								expires = settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'],
+								secure = settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
+								httponly = settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
+								samesite = settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
+			)
+			csrf.get_token(request)
+			response.data = {"Success" : "Login successfully","data":data}
+			return response
+		else:
+			return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
+'''
