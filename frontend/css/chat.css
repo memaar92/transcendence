@@ -75,17 +75,30 @@
 .user-list-container {
   display: flex;
   overflow-x: auto;
-  white-space: nowrap;
-  padding: 1rem;
+  padding: 1rem 0;
   border-bottom: 1px solid #ddd;
   background-color: #f8f9fa; /* Light background for visibility */
+  scrollbar-width: thin;
+  scrollbar-color: #007bff #e0e0e0;
+}
+
+.user-list-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.user-list-container::-webkit-scrollbar-track {
+  background: #e0e0e0;
+}
+
+.user-list-container::-webkit-scrollbar-thumb {
+  background-color: #007bff;
+  border-radius: 10px;
 }
 
 .user-item {
   display: inline-block;
   text-align: center;
   margin-right: 1rem;
-  flex: 0 0 auto; /* Prevent flex items from shrinking */
 }
 
 .user-item img {
@@ -101,3 +114,5 @@
   font-size: 0.9rem;
   color: #333;
 }
+
+

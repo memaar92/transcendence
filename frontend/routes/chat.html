@@ -1,30 +1,37 @@
 <div id="content">
     <div>
-        <h2>Messages</h2>
-        <div id="chat-window" class="chat-window"></div>
+      <h2>Messages</h2>
+      <div id="chat-window" class="chat-window"></div>
     </div>
     <div>
-        <h2>Send a Message</h2>
-        <input type="text" id="message-text" placeholder="Write message...">
-        <input type="text" id="receiver-id" placeholder="Receiver ID...">
-        <button id="send">Send Message</button>
+      <h2>Send a Message</h2>
+      <input type="text" id="message-text" placeholder="Write message..." class="form-control">
+      <input type="text" id="receiver-id" placeholder="Receiver ID..." class="form-control mt-2">
+      <button id="send" class="btn btn-primary mt-2">Send Message</button>
     </div>
     <hr>
-    <!-- Button to trigger offcanvas -->
-    <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasScrolling" aria-controls="offcanvasScrolling">Show Users</button>
-
-    <!-- Offcanvas component -->
-    <div class="offcanvas offcanvas-start" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="offcanvasScrolling" aria-labelledby="offcanvasScrollingLabel">
-        <div class="offcanvas-header">
-            <h5 class="offcanvas-title" id="offcanvasScrollingLabel">User List</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-        </div>
-        <div class="offcanvas-body">
-            <!-- User list will be populated here -->
-            <ul id="userList"></ul>
-        </div>
+    <div class="container-fluid py-2">
+      <h2 class="font-weight-light">Active Users</h2>
+      <div class="d-flex flex-row flex-nowrap user-list-container" id="user-list">
+        <!-- Active users will be appended here -->
+      </div>
     </div>
-</div>
+    <hr>
+    <!-- Offcanvas element for additional content -->
+    <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasScrolling" aria-controls="offcanvasScrolling">Open Offcanvas</button>
+
+    <div class="offcanvas offcanvas-start" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="offcanvasScrolling" aria-labelledby="offcanvasScrollingLabel">
+      <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="offcanvasScrollingLabel">Offcanvas with body scrolling</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      </div>
+      <div class="offcanvas-body">
+        <p>Try scrolling the rest of the page to see this option in action.</p>
+        <!-- You can add more content here if needed -->
+      </div>
+    </div>
+  </div>
+
 
 
 <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.7.13/lottie.min.js"></script>
