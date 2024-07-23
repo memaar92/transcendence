@@ -40,6 +40,7 @@ class UserView(APIView):
 	permission_classes = [IsAuthenticated]
 
 	def get(self, request, pk):
+		print("request", request)
 		user = get_object_or_404(CustomUser, pk=pk)
 		# check if user is the same as the one requesting
 		if request.user.pk == user.pk:
@@ -112,6 +113,7 @@ class TOTPVerifyView(APIView):
 		if totp.verify(serializer.validated_data['token']):
 			return Response({'detail': '2FA verification successful'}, status=status.HTTP_200_OK)
 		return Response({'detail': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
