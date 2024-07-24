@@ -40,7 +40,7 @@ class UserView(APIView):
 	permission_classes = [IsAuthenticated]
 
 	def get(self, request, pk):
-		print("request", request)
+		print("request user view", request)
 		user = get_object_or_404(CustomUser, pk=pk)
 		# check if user is the same as the one requesting
 		if request.user.pk == user.pk:
@@ -142,6 +142,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 		response.set_cookie(
 			key = settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH'],
 			value = response.data['refresh'],
+			path = '/api/token/',
 			expires = settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'],
 			secure = settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
 			httponly = settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
