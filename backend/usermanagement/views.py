@@ -9,7 +9,6 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework.exceptions import PermissionDenied
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from rest_framework_simplejwt.tokens import RefreshToken #may not be needed
 from django.middleware import csrf
 from .permissions import IsSelf
 import pyotp
@@ -115,8 +114,30 @@ class TOTPVerifyView(APIView):
 		return Response({'detail': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
 
 
+class CookieCreationMixin:
+	def createCookies(self, response):
+		response.set_cookie(
+			key = settings.SIMPLE_JWT['AUTH_COOKIE'],
+			value = response.data['access'],
+			expires = settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'],
+			secure = settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
+			httponly = settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
+			samesite = settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
+		)
+		response.set_cookie(
+			key = settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH'],
+			value = response.data['refresh'],
+			path = settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH_PATH'],
+			expires = settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'],
+			secure = settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
+			httponly = settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
+			samesite = settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
+		)
+		del response.data['access']
+		del response.data['refresh']
+		
 
-class CustomTokenObtainPairView(TokenObtainPairView):
+class CustomTokenObtainPairView(TokenObtainPairView, CookieCreationMixin):
 	def post(self, request, *args, **kwargs):
 		response = super().post(request, *args, **kwargs)
 		user = CustomUser.objects.get(email=request.data['email'])
@@ -130,51 +151,17 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 			if not totp.verify(serializer.validated_data['token']):
 				return Response({'detail': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
 		
-		response.set_cookie(
-			key = settings.SIMPLE_JWT['AUTH_COOKIE'],
-			value = response.data['access'],
-			expires = settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'],
-			secure = settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
-			httponly = settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
-			samesite = settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
-		)
-		response.set_cookie(
-			key = settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH'],
-			value = response.data['refresh'],
-			path = settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH_PATH'],
-			expires = settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'],
-			secure = settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
-			httponly = settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
-			samesite = settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
-		)
-		del response.data['access']
-		del response.data['refresh']
+		self.createCookies(response)
 		csrf.get_token(request) #probably set by TokenObtainPairView or middleware already?
 		return response
 
 
-class CustomTokenRefreshView(TokenRefreshView):
+class CustomTokenRefreshView(TokenRefreshView, CookieCreationMixin):
 	def post(self, request, *args, **kwargs):
+		print("request data", request.data)
 		response = super().post(request, *args, **kwargs)
-		
-		response.set_cookie(
-			key = settings.SIMPLE_JWT['AUTH_COOKIE'],
-			value = response.data['access'],
-			expires = settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'],
-			secure = settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
-			httponly = settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
-			samesite = settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
-		)
-		response.set_cookie(
-			key = settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH'],
-			value = response.data['refresh'],
-			path = settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH_PATH'],
-			expires = settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'],
-			secure = settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
-			httponly = settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
-			samesite = settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
-		)
-		del response.data['access']
-		del response.data['refresh']
-
+		self.createCookies(response)
 		return response
+
+
+#TODO: add logout view
