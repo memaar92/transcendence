@@ -2,7 +2,6 @@ from django.http import HttpResponse
 import json
 
 # add checks for token validity?
-
 class AuthorizationMiddleware:
     def __init__(self, get_response=None):
         self.get_response = get_response
