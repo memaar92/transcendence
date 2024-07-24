@@ -8,7 +8,7 @@ class AuthorizationMiddleware:
     
     def __call__(self, request):
         print("request.META: ", request.META)
-        token = request.COOKIES.get('access_token') #do the same for refresh token?
+        token = request.COOKIES.get('access_token') #do the same for refresh token? --> this should be sent in the body of the request
         if token:
             request.META['HTTP_AUTHORIZATION'] = f'Bearer {token}'
         return self.get_response(request)

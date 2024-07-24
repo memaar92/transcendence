@@ -13,4 +13,5 @@ urlpatterns = [
 	path('2fa/verify/', views.TOTPVerifyView.as_view(), name='2fa_verify'),
 	path('2fa/setup/', views.TOTPSetupView.as_view(), name='2fa_setup'),
 	path('token/', views.CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
+	path('token/refresh/', views.CustomTokenRefreshView.as_view(), name='token_refresh'),
 ]

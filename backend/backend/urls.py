@@ -27,7 +27,7 @@ urlpatterns = [
 	path('admin/', admin.site.urls),
     path('pong/', include('pong.urls')),
     path('api/token2/', TokenObtainPairView.as_view(), name='get_token'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='refresh'),
+    path('api/token/refresh2/', TokenRefreshView.as_view(), name='refresh'),
     path('api/', include('usermanagement.urls')),
     path('42auth/', include('auth42.urls')),
 ]

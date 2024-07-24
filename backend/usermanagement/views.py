@@ -8,8 +8,8 @@ from .serializers import UserSerializer, GameHistorySerializer, UserNameSerializ
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework.exceptions import PermissionDenied
-from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.tokens import RefreshToken #may not be needed
 from django.middleware import csrf
 from .permissions import IsSelf
 import pyotp
@@ -117,7 +117,6 @@ class TOTPVerifyView(APIView):
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
-	print("CustomTokenObtainPairView")
 	def post(self, request, *args, **kwargs):
 		response = super().post(request, *args, **kwargs)
 		user = CustomUser.objects.get(email=request.data['email'])
@@ -142,7 +141,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 		response.set_cookie(
 			key = settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH'],
 			value = response.data['refresh'],
-			path = '/api/token/',
+			path = settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH_PATH'],
 			expires = settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'],
 			secure = settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
 			httponly = settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
@@ -154,35 +153,28 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 		return response
 
 
-'''
-def get_tokens_for_user(user):
-    refresh = RefreshToken.for_user(user)
-    return {
-        'refresh': str(refresh),
-        'access': str(refresh.access_token),
-    }
+class CustomTokenRefreshView(TokenRefreshView):
+	def post(self, request, *args, **kwargs):
+		response = super().post(request, *args, **kwargs)
+		
+		response.set_cookie(
+			key = settings.SIMPLE_JWT['AUTH_COOKIE'],
+			value = response.data['access'],
+			expires = settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'],
+			secure = settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
+			httponly = settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
+			samesite = settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
+		)
+		response.set_cookie(
+			key = settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH'],
+			value = response.data['refresh'],
+			path = settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH_PATH'],
+			expires = settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'],
+			secure = settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
+			httponly = settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
+			samesite = settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
+		)
+		del response.data['access']
+		del response.data['refresh']
 
-
-class LoginView(APIView)
-	def post(self, request):
-		data = request.data
-		response = Response()
-		username = data.get('username')
-		password = data.get('password')
-		user = authenticate(username=username, password=password)
-		if user is not None:
-			data = get_tokens_for_user(user)
-			response.set_cookie(
-								key = settings.SIMPLE_JWT['AUTH_COOKIE'],
-								value = data['access'],
-								expires = settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'],
-								secure = settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
-								httponly = settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
-								samesite = settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
-			)
-			csrf.get_token(request)
-			response.data = {"Success" : "Login successfully","data":data}
-			return response
-		else:
-			return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
-'''
+		return response
