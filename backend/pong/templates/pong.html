@@ -96,51 +96,68 @@
             radius: 10
         };
 
-        // gameSocket.binaryType = 'arraybuffer'; // Set the binary type of the WebSocket to ArrayBuffer
-
-        // gameSocket.onmessage = function(e) {
-        //     const data = event.data;
-        //     const view = new DataView(data);
-
-        //     // Read the six floats from the DataView
-        //     // Assuming the data is little-endian; if not, set the second argument to false
-        //     const player1PosX = view.getFloat32(0, true);
-        //     const player1PosY = view.getFloat32(4, true);
-        //     const player2PosX = view.getFloat32(8, true);
-        //     const player2PosY = view.getFloat32(12, true);
-        //     const ballPosX = view.getFloat32(16, true);
-        //     const ballPosY = view.getFloat32(20, true);
-
-        //     // Update the paddles and ball
-        //     leftPaddle.x = player1PosX;
-        //     leftPaddle.y = player1PosY;
-        //     rightPaddle.x = player2PosX;
-        //     rightPaddle.y = player2PosY;
-        //     ball.x = ballPosX;
-        //     ball.y = ballPosY;
-        // };
+        gameSocket.binaryType = 'arraybuffer'; // Set the binary type of the WebSocket to ArrayBuffer
 
         gameSocket.onmessage = function(e) {
-            try {
-                // Attempt to parse the incoming message as JSON
-                const message = JSON.parse(e.data);
-        
-                // Handle the message based on its type
-                switch (message.type) {
-                    case 'gameUpdate':
-                        // Update game state
-                        break;
-                    case 'chatMessage':
-                        // Display chat message
-                        break;
-                    // Add cases for other message types as needed
-                    default:
-                        console.log('Received unknown message type:', message.type);
+            const data = e.data;
+
+            if (typeof data === 'string') {
+                // Handle JSON data
+                try {
+                    const jsonData = JSON.parse(data);
+                    // Process JSON data
+                    console.log('Received JSON data:', jsonData);
+                    // Example: Update some game state based on JSON data
+                    // ...
+                } catch (error) {
+                    console.error('Failed to parse JSON data:', error);
                 }
-            } catch (error) {
-                console.error('Error parsing message:', e.data, error);
+            } else if (data instanceof ArrayBuffer) {
+                // Handle binary data
+                const view = new DataView(data);
+
+                // Read the six floats from the DataView
+                // Assuming the data is little-endian; if not, set the second argument to false
+                const player1PosX = view.getFloat32(0, true);
+                const player1PosY = view.getFloat32(4, true);
+                const player2PosX = view.getFloat32(8, true);
+                const player2PosY = view.getFloat32(12, true);
+                const ballPosX = view.getFloat32(16, true);
+                const ballPosY = view.getFloat32(20, true);
+
+                // Update the paddles and ball
+                leftPaddle.x = player1PosX;
+                leftPaddle.y = player1PosY;
+                rightPaddle.x = player2PosX;
+                rightPaddle.y = player2PosY;
+                ball.x = ballPosX;
+                ball.y = ballPosY;
+            } else {
+                console.error('Unsupported data type:', typeof data);
             }
-        }
+        };
+
+        // gameSocket.onmessage = function(e) {
+        //     try {
+        //         // Attempt to parse the incoming message as JSON
+        //         const message = JSON.parse(e.data);
+        
+        //         // Handle the message based on its type
+        //         switch (message.type) {
+        //             case 'gameUpdate':
+        //                 // Update game state
+        //                 break;
+        //             case 'chatMessage':
+        //                 // Display chat message
+        //                 break;
+        //             // Add cases for other message types as needed
+        //             default:
+        //                 console.log('Received unknown message type:', message.type);
+        //         }
+        //     } catch (error) {
+        //         console.error('Error parsing message:', e.data, error);
+        //     }
+        // }
 
     // Event listeners for key down
     document.addEventListener('keydown', (event) => {

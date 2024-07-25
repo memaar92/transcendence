@@ -1,9 +1,9 @@
 from pong.utils.vector2 import Vector2
 from pong.utils.vector_utils import degree_to_vector
 import copy
-
 import logging
-logger = logging.getLogger(__name__)
+
+logger = logging.getLogger("Ball")
 
 class Ball:
     def __init__(self,
@@ -12,9 +12,7 @@ class Ball:
                 speed: float = 20,
                 size: int = 20,
                 canvas_size: Vector2 = Vector2(10000, 10000),
-                tick_rate: int = 60,
                 collider_list: list = None):
-
         self.position: Vector2 = position
         self.direction: Vector2 = direction
         self.speed: float = speed
@@ -23,10 +21,9 @@ class Ball:
 
         # Game configuration
         self.canvas_size: Vector2 = canvas_size
-        self.tick_rate: int = tick_rate
 
         # List of colliders that the ball can collide with
-        self.collider_list: list = collider_list
+        self.collider_list: list = collider_list if collider_list is not None else []
         self.collided_with_list: list = []
 
     def move(self):
@@ -42,10 +39,9 @@ class Ball:
         self.position.y += self.speed * self.direction.y
 
     def reset(self):
+        """Reset the ball to its starting position."""
         self.position.x = self.start_pos.x
         self.position.y = self.start_pos.y
-        """Reset the ball to its starting position."""
-
 
     def is_colliding(self):
         """Check if the ball is colliding with a paddle."""
