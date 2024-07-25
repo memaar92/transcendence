@@ -97,7 +97,9 @@ class Router {
       if (window.location.pathname === '/live_chat') {
           console.log('Initializing chat');
           const authToken = localStorage.getItem('authToken');
-          ChatHandler.getInstance().init(authToken);
+          const chatHandler = ChatHandler.getInstance();
+          chatHandler.init(authToken);
+          chatHandler.initScrollHandling();
       }
   }
 }

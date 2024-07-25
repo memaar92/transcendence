@@ -24,8 +24,6 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 
 urlpatterns = [
-    # path('admin/', admin.site.urls),
-    # path('live_chat/', include('live_chat.urls')),
 	path('admin/', admin.site.urls),
     path('pong/', include('pong.urls')),
     path('api/token2/', TokenObtainPairView.as_view(), name='get_token'),

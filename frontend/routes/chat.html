@@ -1,36 +1,26 @@
 <div id="content">
-    <div>
-      <h2>Messages</h2>
-      <div id="chat-window" class="chat-window"></div>
-    </div>
-    <div>
-      <h2>Send a Message</h2>
-      <input type="text" id="message-text" placeholder="Write message..." class="form-control">
-      <input type="text" id="receiver-id" placeholder="Receiver ID..." class="form-control mt-2">
-      <button id="send" class="btn btn-primary mt-2">Send Message</button>
-    </div>
-    <hr>
-    <div class="container-fluid py-2">
-      <h2 class="font-weight-light">Active Users</h2>
-      <div class="d-flex flex-row flex-nowrap user-list-container" id="user-list">
-        <!-- Active users will be appended here -->
-      </div>
-    </div>
-    <hr>
-    <!-- Offcanvas element for additional content -->
-    <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasScrolling" aria-controls="offcanvasScrolling">Open Offcanvas</button>
-
-    <div class="offcanvas offcanvas-start" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="offcanvasScrolling" aria-labelledby="offcanvasScrollingLabel">
-      <div class="offcanvas-header">
-        <h5 class="offcanvas-title" id="offcanvasScrollingLabel">Offcanvas with body scrolling</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-      </div>
-      <div class="offcanvas-body">
-        <p>Try scrolling the rest of the page to see this option in action.</p>
-        <!-- You can add more content here if needed -->
-      </div>
+  <div class="button-container">
+    <button class="custom-button" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasScrolling" aria-controls="offcanvasScrolling">Notifications</button>
+  </div>
+  <div class="container-fluid py-2">
+    <h2 class="font-weight-light">Active Users</h2>
+    <div class="d-flex flex-row flex-nowrap user-list-container" id="user-list-container">
+      <!-- Active users will be appended here -->
     </div>
   </div>
+  <!-- Container for centering the button -->
+
+  <div class="offcanvas offcanvas-start" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="offcanvasScrolling" aria-labelledby="offcanvasScrollingLabel">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title" id="offcanvasScrollingLabel">Offcanvas with body scrolling</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+      <p>Try scrolling the rest of the page to see this option in action.</p>
+      <!-- You can add more content here if needed -->
+    </div>
+  </div>
+</div>
 
 
 

@@ -35,27 +35,31 @@ class ChatConsumer(AsyncWebsocketConsumer):
         users_info = []
         for user_id in ChatConsumer.user_id_to_channel_name:
             user = await self.get_user(user_id)
-            users_info.append({'id': str(user.id), 'name': user.displayname})
+            users_info.append({'id': str(user.id), 'name': user.displayname, 'profile_picture_url': user.profile_picture.url})
         return users_info
 
     async def send_websocket_message(self, event):
         await self.send(text_data=event['text'])
 
     async def broadcast_user_list(self):
-        users_info = await self.get_user_list()
-        for user_id, channel_name in ChatConsumer.user_id_to_channel_name.items():
-            modified_users_info = [
-                {'id': user['id'], 'name': f"{user['name']}(you)" if str(user['id']) == str(user_id) else user['name']}
-                for user in users_info
-            ]
-            user_list_message = json.dumps({
-                'type': 'user_list',
-                'users': modified_users_info
-            })
-            await self.channel_layer.send(channel_name, {
-                'type': 'send_websocket_message',
-                'text': user_list_message
-            })
+         users_info = await self.get_user_list()
+         for user_id, channel_name in ChatConsumer.user_id_to_channel_name.items():
+             modified_users_info = [
+                 {
+                     'id': user['id'],
+                     'name': user['name'],
+                     'profile_picture_url': user['profile_picture_url']
+                 }
+                 for user in users_info if str(user['id']) != str(user_id)
+             ]
+             user_list_message = json.dumps({
+                 'type': 'user_list',
+                 'users': modified_users_info
+             })
+             await self.channel_layer.send(channel_name, {
+                 'type': 'send_websocket_message',
+                 'text': user_list_message
+             })
 
     async def send_pending_chat_notifications(self, user_id):
         pending_requests = await self.get_pending_requests(user_id)
@@ -289,11 +293,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
             Q(user2_id=user_id, status=RelationshipStatus.PENDING)
         )
         return list(pending_requests)
-        
+
     @database_sync_to_async
-    def get_user_displayname(self, user_id):
-        user = get_user_model().objects.get(id=user_id)
-        if user and user.displayname:
-            return user.displayname
-        else:
+    def get_user_field(self, user_id, field_name):
+        try:
+            user = get_user_model().objects.get(id=user_id)
+            return getattr(user, field_name, None)
+        except get_user_model().DoesNotExist:
             return None

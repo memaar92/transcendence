@@ -26,12 +26,12 @@ class ChatHandler {
     this.ws.onmessage = this.onMessage.bind(this);
     this.ws.onclose = this.onClose.bind(this);
 
-    const sendButton = document.getElementById("send");
-    if (sendButton) {
-      sendButton.addEventListener('click', () => this.sendMessage());
-    } else {
-      console.error('Send button not found');
-    }
+    // const sendButton = document.getElementById("send");
+    // if (sendButton) {
+    //   sendButton.addEventListener('click', this.sendMessage.bind(this));
+    // } else {
+    //   console.error('Send button not found');
+    // }
   }
 
   async onClose(event) {
@@ -137,80 +137,73 @@ class ChatHandler {
   }
 
   displayUserList(users) {
-    const userListElement = document.getElementById('userList');
-    if (userListElement) {
-      userListElement.innerHTML = ''; // Clear existing user list
-  
-      users.forEach((user) => {
-        const userItem = document.createElement('li');
-        userItem.textContent = `${user.name}`;
-        userItem.style.marginBottom = '10px'; // Add spacing between items
-        userItem.style.display = 'flex';
-        userItem.style.justifyContent = 'space-between';
-        userItem.style.alignItems = 'center';
-  
-        const requestButton = document.createElement('button');
-        requestButton.textContent = 'Request Chat';
-        requestButton.style.marginLeft = '10px'; // Add spacing between name and button
-        requestButton.onclick = () => {
-          this.sendChatRequest(user.id);
-        };
-  
-        userItem.appendChild(requestButton);
-        userListElement.appendChild(userItem);
-      });
-    } else {
-      console.error('User list element not found');
+    const userListElement = document.getElementById('user-list-container');
+    
+    if (!userListElement) {
+      console.error('User list container not found');
+      return;
     }
-  }  
+  
+    userListElement.innerHTML = '';
+  
+    users.slice(0, 10).forEach((user) => {
+      const userItem = document.createElement('div');
+      userItem.className = 'user-item';
+  
+      const userImg = document.createElement('img');
+      userImg.src = user.profile_picture_url;
+      userImg.alt = user.name;
+  
+      const userName = document.createElement('div');
+      userName.className = 'username';
+      userName.textContent = user.name;
+  
+      userItem.appendChild(userImg);
+      userItem.appendChild(userName);
+  
+      userListElement.appendChild(userItem);
+    });
+  }
 
   sendChatRequest(receiverId) {
     if (this.ws && receiverId !== this.senderId) {
       this.ws.send(JSON.stringify({
         'type': 'chat_request',
-        'receiver_id': receiverId,
-        'sender_id': this.senderId
-      }));
-    } else {
-      console.warn('Receiver ID is the same as sender ID');
-    }
-  }
-
-  sendChatHistoryRequest(senderId, receiverId) {
-    if (this.ws) {
-      this.ws.send(JSON.stringify({
-        'type': 'chat_history',
-        'sender_id': senderId,
+        'sender_id': this.senderId,
         'receiver_id': receiverId
       }));
+    } else {
+      console.warn('Cannot send chat request to self or WebSocket is not initialized');
     }
   }
 
   displayChatMessage(content) {
     const messages = document.getElementById('chat-window');
-    if (messages) {
+    const messageItem = document.createElement('div');
+    const messageText = document.createElement('span');
+    const messageTimestamp = document.createElement('span');
+
+    messageText.textContent = `${content.sender_name}: ${content.message}`;
+    messageTimestamp.textContent = ` (${new Date().toLocaleTimeString()})`;
+
+    messageItem.appendChild(messageText);
+    messageItem.appendChild(messageTimestamp);
+    messages.appendChild(messageItem);
+  }
+
+  displayChatHistory(messages) {
+    const chatWindow = document.getElementById('chat-window');
+    chatWindow.innerHTML = '';
+    messages.forEach((message) => {
       const messageItem = document.createElement('div');
       const messageText = document.createElement('span');
       const messageTimestamp = document.createElement('span');
-      
-      messageText.textContent = `${content.sender_name}: ${content.message}`;
-      messageTimestamp.textContent = ` (${new Date().toLocaleString()})`;
-      messageTimestamp.classList.add('timestamp');
-
-      messageItem.classList.add('message-item');
-      if (content.sender_id === this.senderId) {
-        messageItem.classList.add('message-sender');
-      } else {
-        messageItem.classList.add('message-receiver');
-      }
-
+      messageText.textContent = `${message.sender_name}: ${message.message}`;
+      messageTimestamp.textContent = ` (${new Date(message.timestamp).toLocaleTimeString()})`;
       messageItem.appendChild(messageText);
       messageItem.appendChild(messageTimestamp);
-      messages.appendChild(messageItem);
-      messages.scrollTop = messages.scrollHeight; // Scroll to bottom
-    } else {
-      console.error('Chat window not found');
-    }
+      chatWindow.appendChild(messageItem);
+    });
   }
 
   displaySystemMessage(message) {
@@ -219,44 +212,42 @@ class ChatHandler {
       const messageItem = document.createElement('div');
       messageItem.textContent = message;
       messages.appendChild(messageItem);
-      messages.scrollTop = messages.scrollHeight;
     } else {
       console.error('Chat window not found');
     }
   }
 
-  displayChatHistory(messages) {
-    const chatWindow = document.getElementById('chat-window');
-    if (chatWindow) {
-      // Clear the chat window before appending new messages
-      chatWindow.innerHTML = '';
-
-      messages.forEach((message) => {
-        const messageItem = document.createElement('div');
-        const messageText = document.createElement('span');
-        const messageTimestamp = document.createElement('span');
-        
-        messageText.textContent = `${message.sender_name}: ${message.message}`;
-        messageTimestamp.textContent = ` (${new Date(message.timestamp).toLocaleString()})`;
-        messageTimestamp.classList.add('timestamp');
-
-        messageItem.classList.add('message-item');
-        if (message.sender_id === this.senderId) {
-          messageItem.classList.add('message-sender');
-          messageItem.style.textAlign = 'right'; 
-        } else {
-          messageItem.classList.add('message-receiver');
-          messageItem.style.textAlign = 'left';
-        }    
-
-        messageItem.appendChild(messageText);
-        messageItem.appendChild(messageTimestamp);
-        chatWindow.appendChild(messageItem);
-      });
-      
-      chatWindow.scrollTop = chatWindow.scrollHeight; // Scroll to bottom
+  sendChatHistoryRequest(senderId, receiverId) {
+    if (this.ws && senderId && receiverId) {
+      this.ws.send(JSON.stringify({
+        'type': 'chat_history_request',
+        'sender_id': senderId,
+        'receiver_id': receiverId
+      }));
     } else {
-      console.error('Chat window not found');
+      console.warn('Cannot request chat history, WebSocket is not initialized or IDs are missing');
+    }
+  }
+
+  initScrollHandling() {
+    const container = document.querySelector('.user-list-container');
+
+    if (container) {
+      container.addEventListener('wheel', (event) => {
+        // Check if Ctrl key is pressed
+        if (event.ctrlKey) {
+          // Allow browser default zoom behavior
+          return;
+        }
+
+        // Horizontal scrolling
+        if (event.deltaY !== 0) {
+          container.scrollLeft += event.deltaY;
+          event.preventDefault(); // Prevent the default vertical scroll behavior
+        }
+      });
+    } else {
+      console.error('User list container not found');
     }
   }
 }
@@ -292,12 +283,12 @@ async function obtainAuthToken(email, password) {
   }
 }
 
-// Function to prompt the user for credentials
 function promptForCredentials() {
   const email = prompt('Enter your email:');
   const password = prompt('Enter your password:');
   return { email, password };
 }
+
 
 const instance = new ChatHandler();
 export default {
@@ -305,3 +296,5 @@ export default {
     return instance;
   }
 };
+
+
