@@ -1,5 +1,7 @@
 import os
 from django.shortcuts import render, get_object_or_404
+from django.core.cache import cache
+from django.core.mail import send_mail
 from django.conf import settings
 from .models import Games, CustomUser
 from rest_framework import generics, status
@@ -9,17 +11,23 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework.exceptions import PermissionDenied
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.tokens import RefreshToken
 from django.middleware import csrf
 from .permissions import IsSelf
 import pyotp
 import qrcode
+import random
+import time
 from io import BytesIO
 import base64
+
+#MAX_OTP_ATTEMPTS = 5
 
 class CreateUserView(generics.CreateAPIView):
 	queryset = CustomUser.objects.all()
 	serializer_class = UserCreateSerializer
 	permission_classes = [AllowAny]
+	
 
 class EditUserView(generics.RetrieveUpdateDestroyAPIView):
 	serializer_class = UserSerializer
@@ -158,7 +166,6 @@ class CustomTokenObtainPairView(TokenObtainPairView, CookieCreationMixin):
 
 class CustomTokenRefreshView(TokenRefreshView, CookieCreationMixin):
 	def post(self, request, *args, **kwargs):
-		print("request data", request.data)
 		response = super().post(request, *args, **kwargs)
 		self.createCookies(response)
 		return response
@@ -170,3 +177,73 @@ class CheckEmail(APIView):
 		if CustomUser.objects.filter(email=request.data['email']).exists():
 			return Response({'detail': 'User with this email exists'}, status=status.HTTP_200_OK)
 		return Response({'detail': 'User with this email does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+		# add another state for when users have started the registration but not completed email verification
+
+
+class GenerateOTPView(APIView):
+	permission_classes = [AllowAny]
+
+	def post(self, request):
+		user = CustomUser.objects.filter(email=request.data['email']).values('email', 'email_verified')
+		if not user.exists():
+			return  Response({'detail': 'User does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+		if user.first()['email_verified'] == True:
+			return Response({'detail': 'User already verified'}, status=status.HTTP_400_BAD_REQUEST)
+		
+		'''
+		otp_attempts_key = f'{request.data["email"]}_otp_attempts'
+		otp_attempts = cache.get(otp_attempts_key, 0)
+
+		if otp_attempts >= MAX_OTP_ATTEMPTS:
+			return Response({'detail': 'Exceeded maximum OTP attempts. Please try again later.'}, status=429) 
+		'''
+
+
+		otp = random.randint(100000, 999999)
+		otp_cache_key = f'{request.data["email"]}_otp'
+		cache.set(otp_cache_key, otp, timeout=300)
+		#cache.incr(otp_attempts_key)
+		#send email with otp
+		print("send email with otp", otp)
+		
+		return Response({'status': 'success', 'message': 'OTP generated successfully', 'email': request.data['email']}, status=200)
+		
+
+#add a class view that is routed to when user enters email token and click on "verify"
+#should create access token and refresh token and set them as cookies
+class ValidateEmailView(APIView, CookieCreationMixin):
+	permission_classes = [AllowAny]
+
+	def post(self, request):
+		user = CustomUser.objects.get(email=request.data['email'])
+		otp_provided = int(request.data['otp'])
+
+		#check if user is locked due to too many attempts
+
+		otp_cache_key = f'{request.data["email"]}_otp'
+		stored_otp = cache.get(otp_cache_key)
+
+		if not stored_otp:
+			return Response({'detail': 'OTP expired. Please request a new one.'}, status=status.HTTP_400_BAD_REQUEST)
+		if stored_otp != otp_provided:
+			#increment attempts
+			return Response({'detail': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST)
+		if stored_otp == otp_provided:
+			cache.delete(otp_cache_key)
+			#cache.delete(f'{request.data["email"]}_otp_attempts')
+			user.email_verified = True
+			user.save()
+			#generate access token and refresh token
+			token = get_tokens_for_user(user)
+			#set them as cookies
+			response = Response(token, status=status.HTTP_200_OK)
+			self.createCookies(response)
+			return response
+
+def get_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
+
+    return {
+        'access': str(refresh.access_token),
+        'refresh': str(refresh),
+    }
