@@ -1,3 +1,4 @@
+import { handleButtonClick } from './loginHandlers.js'
 class Router {
     constructor(routes) {
       this.routes = routes;
@@ -85,6 +86,13 @@ class Router {
                 } else {
                   console.error('No content div found in the loaded HTML');
                 }
+                console.log("ADDING EVENTS");
+                const buttons = document.querySelectorAll('button');
+                console.log(buttons);
+                buttons.forEach(button => {
+                  console.log(button);
+                  button.addEventListener('click', handleButtonClick);
+                });
               } catch (error) {
                 console.error('Error loading template:', error);
                 this.app.innerHTML = '<p>Error loading content</p>';
