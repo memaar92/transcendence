@@ -1,14 +1,16 @@
+
 body {
     background-color: #202021;
-    font-family: Thabit;
+    font-family: 'Thabit';
+    font-style: normal;
     color: white;
 }
 
 :root {
     --color-text: #fff;
     --color-background: #202021;
+    --color-accent: #7A35EC;
 }
-
 
 h1 {
     color: white;
@@ -17,6 +19,23 @@ h1 {
 h2 {
     font-size: 24px;
     font-weight: bold;
+}
+
+.mainButton {
+    background-color: var(--color-accent);
+    color: var(--color-text);
+    border: none;
+    padding-top: 9px;
+    padding-bottom: 9px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    border-radius: 8px;
+}
+
+input[type=email] {
+    border-radius: 8px;
 }
 
 .menu {
@@ -42,4 +61,31 @@ h2 {
     text-decoration: none;
     color: var(--color-text);
     font-size: 64px;
-  }
+}
+
+.middle-line-text {
+    display: flex;
+    align-items: center;
+    text-align: center;
+}
+
+.middle-line-text::before {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #ffffff;
+    margin-right: 10px;
+}
+
+.middle-line-text::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #ffffff;
+    margin-left: 10px;
+}
+
+.login {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+} 
