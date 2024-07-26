@@ -59,7 +59,8 @@ CHANNEL_LAYERS = {
 
 
 MIDDLEWARE = [
-	'corsheaders.middleware.CorsMiddleware',
+    'backend.middleware.AuthorizationMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -205,10 +206,21 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
+    "AUTH_COOKIE": 'access_token',
+    "AUTH_COOKIE_REFRESH": 'refresh_token',
+    "AUTH_COOKIE_DOMAIN": None,
+    "AUTH_COOKIE_SECURE": True,
+    "AUTH_COOKIE_HTTP_ONLY": True,
+    "AUTH_COOKIE_PATH": '/',
+    "AUTH_COOKIE_REFRESH_PATH": '/api/token/',
+    "AUTH_COOKIE_SAMESITE": 'Strict',
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
 	"ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
 	"REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 	"ROTATE_REFRESH_TOKENS": True,
 	"BLACKLIST_AFTER_ROTATION": True,
+    #add additional settings, e.g. algo?
 }
 
 AUTH_USER_MODEL = 'usermanagement.CustomUser'

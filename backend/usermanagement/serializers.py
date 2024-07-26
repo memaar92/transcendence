@@ -17,14 +17,14 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
 	class Meta:
 		model = CustomUser
-		fields = ['id', 'email', 'password', 'displayname', 'profile_picture']
+		fields = ['id', 'email', 'password', 'displayname', 'profile_picture'] #rm displayname and profile_picture
 		extra_kwargs = {"password": {"write_only": True}}
 
 	def create(self, validated_data):
 		user = CustomUser(
 			email=validated_data['email'],
-			displayname=validated_data['displayname'],
-			profile_picture=validated_data.get('profile_picture', 'profile_pics/default.png')
+			displayname=validated_data['displayname'], # here a random displayname should be generated instead of using the one provided by the user
+			profile_picture=validated_data.get('profile_picture', 'profile_pics/default.png') # here the defaault profile picture should be generated instead of using the one provided by the user
 		)
 		user.set_password(validated_data['password'])
 		user.save()
