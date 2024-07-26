@@ -2,6 +2,8 @@ class ChatHandler {
   constructor() {
     this.ws = null;
     this.senderId = null;
+    this.currentReceiverId = null;
+    this.friendsList = [];
   }
 
   async init(authToken) {
@@ -26,12 +28,9 @@ class ChatHandler {
     this.ws.onmessage = this.onMessage.bind(this);
     this.ws.onclose = this.onClose.bind(this);
 
-    // const sendButton = document.getElementById("send");
-    // if (sendButton) {
-    //   sendButton.addEventListener('click', this.sendMessage.bind(this));
-    // } else {
-    //   console.error('Send button not found');
-    // }
+    document.getElementById('send-message').addEventListener('click', () => this.sendMessage());
+
+    this.initScrollHandling();
   }
 
   async onClose(event) {
@@ -65,7 +64,9 @@ class ChatHandler {
         this.displayChatRequest(content);
         break;
       case 'chat_message':
-        this.displayChatMessage(content);
+        if (content.receiver_id === this.currentReceiverId) {
+          this.displayChatMessage(content);
+        }
         break;
       case 'user_list':
         this.displayUserList(content.users);
@@ -79,25 +80,26 @@ class ChatHandler {
       case 'chat_history':
         this.displayChatHistory(content.messages);
         break;
+      case 'friends_list':
+        this.displayFriendsList(content.friends);
       default:
         console.error('Unknown message type:', content.type);
         break;
     }
   }
 
-  sendMessage() {
-    const message = document.getElementById("message-text").value;
-    const receiverId = document.getElementById("receiver-id").value;
+  sendMessage(receiverId) {
+    const messageInput = document.getElementById('message-input');
+    const message = messageInput.value.trim();
 
-    if (this.ws && message.trim() && receiverId.trim() && receiverId !== this.senderId) {
+    if (this.ws && message && receiverId && receiverId !== this.senderId) {
       this.ws.send(JSON.stringify({
         'type': 'chat_message',
         'message': message,
         'sender_id': this.senderId,
         'receiver_id': receiverId
       }));
-      this.sendChatHistoryRequest(this.senderId, receiverId);
-      document.getElementById("message-text").value = ''; // Clear message input
+      messageInput.value = ''; // Clear input field
     } else {
       console.warn('Message, receiver ID is empty, or sender and receiver are the same');
     }
@@ -153,6 +155,7 @@ class ChatHandler {
       const userImg = document.createElement('img');
       userImg.src = user.profile_picture_url;
       userImg.alt = user.name;
+      userImg.className = 'user-avatar';
   
       const userName = document.createElement('div');
       userName.className = 'username';
@@ -161,49 +164,139 @@ class ChatHandler {
       userItem.appendChild(userImg);
       userItem.appendChild(userName);
   
+      userItem.onclick = () => this.openChatModal(user.id, user.name);
+  
       userListElement.appendChild(userItem);
     });
   }
+  
 
-  sendChatRequest(receiverId) {
-    if (this.ws && receiverId !== this.senderId) {
-      this.ws.send(JSON.stringify({
-        'type': 'chat_request',
-        'sender_id': this.senderId,
-        'receiver_id': receiverId
-      }));
+  displayFriendsList(friends) {
+    const friendListElement = document.getElementById('friends-list-container');
+    
+    if (!friendListElement) {
+      console.error('Friend list container not found');
+      return;
+    }
+  
+    friendListElement.innerHTML = '';
+  
+    friends.forEach((friend) => {
+      const friendItem = document.createElement('div');
+      friendItem.className = 'friend-item';
+  
+      const friendImg = document.createElement('img');
+      friendImg.src = friend.profile_picture_url;
+      friendImg.alt = friend.name;
+      friendImg.className = 'friend-avatar';
+  
+      const friendName = document.createElement('div');
+      friendName.className = 'friend-name';
+      friendName.textContent = friend.name;
+  
+      friendItem.appendChild(friendImg);
+      friendItem.appendChild(friendName);
+  
+      friendItem.onclick = () => this.openChatWindow(friend.id, friend.name);
+  
+      friendListElement.appendChild(friendItem);
+    });
+  }
+
+  openChatWindow(friendId, friendName) {
+    const chatWindow = document.getElementById('chat-window');
+    const friendsListContainer = document.getElementById('friends-list-container');
+    const chatTitle = document.getElementById('chat-title');
+    const closeButton = document.getElementById('close-chat');
+    const sendButton = document.getElementById('send-message');
+    const messageInput = document.getElementById('message-input');
+  
+    chatTitle.textContent = `Chat with ${friendName}`;
+  
+    chatWindow.classList.add('open');
+    friendsListContainer.classList.add('chat-open');
+  
+    const messagesContainer = document.getElementById('chat-messages');
+    messagesContainer.innerHTML = '';
+  
+    messageInput.value = '';
+  
+    this.currentReceiverId = friendId;
+  
+    this.sendChatHistoryRequest(this.senderId, friendId);
+  
+    closeButton.onclick = () => this.closeChatWindow();
+    sendButton.onclick = () => this.sendMessage(friendId);
+    messageInput.onkeypress = (e) => {
+      if (e.key === 'Enter') {
+        this.sendMessage(friendId);
+      }
+    };
+  }
+  
+  closeChatWindow() {
+    const chatWindow = document.getElementById('chat-window');
+    const friendsListContainer = document.getElementById('friends-list-container');
+    const messageInput = document.getElementById('message-input');
+  
+    chatWindow.classList.remove('open');
+    friendsListContainer.classList.remove('chat-open');
+  
+    messageInput.value = '';
+  
+    this.currentReceiverId = null;
+  }
+  
+
+  displayChatMessage(content) {
+    const messages = document.getElementById('chat-messages');
+    if (messages) {
+      const messageItem = document.createElement('div');
+      messageItem.className = 'chat-message';
+
+      const messageText = document.createElement('span');
+      messageText.className = 'message-text';
+      messageText.textContent = `${content.sender_name}: ${content.message}`;
+
+      const messageTimestamp = document.createElement('span');
+      messageTimestamp.className = 'message-timestamp';
+      messageTimestamp.textContent = ` (${new Date().toLocaleTimeString()})`;
+
+      messageItem.appendChild(messageText);
+      messageItem.appendChild(messageTimestamp);
+      
+      messages.appendChild(messageItem);
+      messages.scrollTop = messages.scrollHeight; // Auto-scroll to bottom
     } else {
-      console.warn('Cannot send chat request to self or WebSocket is not initialized');
+      console.error('Chat messages container not found');
     }
   }
 
-  displayChatMessage(content) {
-    const messages = document.getElementById('chat-window');
-    const messageItem = document.createElement('div');
-    const messageText = document.createElement('span');
-    const messageTimestamp = document.createElement('span');
-
-    messageText.textContent = `${content.sender_name}: ${content.message}`;
-    messageTimestamp.textContent = ` (${new Date().toLocaleTimeString()})`;
-
-    messageItem.appendChild(messageText);
-    messageItem.appendChild(messageTimestamp);
-    messages.appendChild(messageItem);
-  }
-
   displayChatHistory(messages) {
-    const chatWindow = document.getElementById('chat-window');
-    chatWindow.innerHTML = '';
-    messages.forEach((message) => {
-      const messageItem = document.createElement('div');
-      const messageText = document.createElement('span');
-      const messageTimestamp = document.createElement('span');
-      messageText.textContent = `${message.sender_name}: ${message.message}`;
-      messageTimestamp.textContent = ` (${new Date(message.timestamp).toLocaleTimeString()})`;
-      messageItem.appendChild(messageText);
-      messageItem.appendChild(messageTimestamp);
-      chatWindow.appendChild(messageItem);
-    });
+    const chatMessages = document.getElementById('chat-messages');
+    if (chatMessages) {
+      chatMessages.innerHTML = '';
+      messages.forEach((message) => {
+        const messageItem = document.createElement('div');
+        messageItem.className = 'chat-message';
+  
+        const messageText = document.createElement('span');
+        messageText.className = 'message-text';
+        messageText.textContent = `${message.sender_name}: ${message.message}`;
+  
+        const messageTimestamp = document.createElement('span');
+        messageTimestamp.className = 'message-timestamp';
+        messageTimestamp.textContent = ` (${new Date(message.timestamp).toLocaleTimeString()})`;
+  
+        messageItem.appendChild(messageText);
+        messageItem.appendChild(messageTimestamp);
+        
+        chatMessages.appendChild(messageItem);
+      });
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    } else {
+      console.error('Chat messages container not found');
+    }
   }
 
   displaySystemMessage(message) {
@@ -289,12 +382,9 @@ function promptForCredentials() {
   return { email, password };
 }
 
-
 const instance = new ChatHandler();
 export default {
   getInstance() {
     return instance;
   }
 };
-
-

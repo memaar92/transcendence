@@ -31,6 +31,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 }),
             })
 
+    async def send_friends_list(self, user_id):
+        friends_list = await self.get_friends_list(user_id)
+        await self.send(text_data=json.dumps({
+            'type': 'friends_list',
+            'friends': friends_list
+        }))
+
     async def get_user_list(self):
         users_info = []
         for user_id in ChatConsumer.user_id_to_channel_name:
@@ -84,6 +91,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     await self.accept()
                     await self.broadcast_user_list()
                     await self.send(text_data=json.dumps({'type': 'user_id', 'user_id': self.user_id}))
+                    await self.send_friends_list(self.user_id)  # Add this line
+                    await self.send_pending_chat_notifications(user_id)
                     print("Connected to chat")
 
                     await self.send_pending_chat_notifications(user_id)
@@ -221,9 +230,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.update_status(sender_id, receiver_id, RelationshipStatus.BEFRIENDED)
         await self.update_status(receiver_id, sender_id, RelationshipStatus.BEFRIENDED)
 
-        # Notify both users
         await self.send_message_to_user(sender_id, f"You are now friends with {await self.get_user_displayname(receiver_id)}", 'chat_message')
         await self.send_message_to_user(receiver_id, f"You are now friends with {self.scope['user'].displayname}", 'chat_message')
+
+        await self.send_friends_list(sender_id)
+        await self.send_friends_list(receiver_id)
 
     async def chat_request_denied(self, data):
         receiver_displayname = await self.get_user_displayname(data['receiver_id'])
@@ -301,3 +312,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return getattr(user, field_name, None)
         except get_user_model().DoesNotExist:
             return None
+
+    @database_sync_to_async
+    def get_friends_list(self, user_id):
+        friends = Relationship.objects.filter(
+            (Q(user1_id=user_id) | Q(user2_id=user_id)),
+            status=RelationshipStatus.BEFRIENDED
+        )
+        friend_list = []
+        for friend in friends:
+            friend_id = friend.user2_id if friend.user1_id == user_id else friend.user1_id
+            friend_user = get_user_model().objects.get(id=friend_id)
+            friend_list.append({
+                'id': str(friend_user.id),
+                'name': friend_user.displayname,
+                'profile_picture_url': friend_user.profile_picture.url if friend_user.profile_picture else None
+            })
+        return friend_list

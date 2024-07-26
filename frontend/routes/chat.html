@@ -1,15 +1,38 @@
-<div id="content">
+<div id="content" class="d-flex flex-column vh-100">
   <div class="button-container">
     <button class="custom-button" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasScrolling" aria-controls="offcanvasScrolling">Notifications</button>
   </div>
+  
   <div class="container-fluid py-2">
     <h2 class="font-weight-light">Active Users</h2>
     <div class="d-flex flex-row flex-nowrap user-list-container" id="user-list-container">
       <!-- Active users will be appended here -->
     </div>
   </div>
-  <!-- Container for centering the button -->
+  
+  <!-- Main Content Area -->
+  <div class="main-content d-flex flex-grow-1 position-relative overflow-hidden">
+    <!-- Friends List Container -->
+    <div class="container-fluid py-2 friends-list-container transition-width" id="friends-list-container">
+      <h2 class="font-weight-light">Friends</h2>
+      <!-- Friends will be appended here -->
+    </div>
 
+    <!-- Chat window (initially hidden) -->
+    <div id="chat-window" class="chat-window">
+      <div class="chat-header">
+        <h3 id="chat-title">Chat</h3>
+        <button id="close-chat" class="btn btn-sm btn-secondary">Close</button>
+      </div>
+      <div id="chat-messages" class="chat-messages"></div>
+      <div class="chat-input">
+        <input type="text" id="message-input" class="form-control" placeholder="Type a message...">
+        <button id="send-message" class="btn btn-primary">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Offcanvas Notifications -->
   <div class="offcanvas offcanvas-start" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="offcanvasScrolling" aria-labelledby="offcanvasScrollingLabel">
     <div class="offcanvas-header">
       <h5 class="offcanvas-title" id="offcanvasScrollingLabel">Offcanvas with body scrolling</h5>
@@ -21,29 +44,3 @@
     </div>
   </div>
 </div>
-
-
-
-<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.7.13/lottie.min.js"></script>
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        var animationContainer = document.getElementById('animation-container');
-        var animationData = {
-            container: animationContainer,
-            renderer: 'svg',
-            loop: false,
-            autoplay: true,
-            path: "/animations/notification.json"
-        };
-        // Load the animation
-        var animation = lottie.loadAnimation(animationData);
-
-        animationContainer.addEventListener('click', function() {
-            // Optional: Define click behavior
-        });
-
-        animation.addEventListener('error', function(e) {
-            console.error('Animation error:', e);
-        });
-    });
-</script> -->

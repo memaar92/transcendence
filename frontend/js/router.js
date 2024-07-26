@@ -99,7 +99,6 @@ class Router {
           const authToken = localStorage.getItem('authToken');
           const chatHandler = ChatHandler.getInstance();
           chatHandler.init(authToken);
-          chatHandler.initScrollHandling();
       }
   }
 }
