@@ -43,8 +43,11 @@ class TOTPVerifySerializer(serializers.Serializer):
 	token = serializers.CharField()
 
 class GenerateOTPSerializer(serializers.Serializer):
-	email = serializers.EmailField()
+	id = serializers.IntegerField()
 
 class ValidateEmailSerializer(serializers.Serializer):
-	email = serializers.EmailField()
+	id = serializers.IntegerField()
 	otp = serializers.IntegerField(min_value=100000, max_value=999999)
+
+class CheckEmailSerializer(serializers.Serializer):
+	email = serializers.EmailField()
