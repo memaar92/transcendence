@@ -6,10 +6,11 @@ from django.conf import settings
 from .models import Games, CustomUser
 from rest_framework import generics, status
 from rest_framework.response import Response
-from .serializers import UserSerializer, GameHistorySerializer, UserNameSerializer, UserCreateSerializer, TOTPSetupSerializer, TOTPVerifySerializer
+from .serializers import UserSerializer, GameHistorySerializer, UserNameSerializer, UserCreateSerializer, TOTPSetupSerializer, TOTPVerifySerializer, GenerateOTPSerializer, ValidateEmailSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.renderers import HTMLFormRenderer, JSONRenderer, BrowsableAPIRenderer
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.middleware import csrf
@@ -180,15 +181,16 @@ class CheckEmail(APIView):
 		# add another state for when users have started the registration but not completed email verification
 
 
-class GenerateOTPView(APIView):
+class GenerateOTPView(APIView): 
 	permission_classes = [AllowAny]
 
 	def post(self, request):
-		user = CustomUser.objects.filter(email=request.data['email']).values('email', 'email_verified')
-		if not user.exists():
-			return  Response({'detail': 'User does not exist'}, status=status.HTTP_400_BAD_REQUEST)
-		if user.first()['email_verified'] == True:
-			return Response({'detail': 'User already verified'}, status=status.HTTP_400_BAD_REQUEST)
+		serializer = GenerateOTPSerializer(data=request.data) #alternatively we could use user-id instead of email to identify the user
+		serializer.is_valid(raise_exception=True)
+		user = CustomUser.objects.get(email=request.data['email'])
+		user_profile = get_object_or_404(CustomUser, email=user)
+		if user_profile.email_verified == True:
+			return Response({'detail': 'User already verified'}, status=404) #what should be the status code here?
 		
 		'''
 		otp_attempts_key = f'{request.data["email"]}_otp_attempts'
@@ -198,43 +200,43 @@ class GenerateOTPView(APIView):
 			return Response({'detail': 'Exceeded maximum OTP attempts. Please try again later.'}, status=429) 
 		'''
 
-
 		otp = random.randint(100000, 999999)
-		otp_cache_key = f'{request.data["email"]}_otp'
+		otp_cache_key = f'{user_profile.email}_otp'
 		cache.set(otp_cache_key, otp, timeout=300)
 		#cache.incr(otp_attempts_key)
 		#send email with otp
 		print("send email with otp", otp)
 		
-		return Response({'status': 'success', 'message': 'OTP generated successfully', 'email': request.data['email']}, status=200)
+		return Response({'status': 'success', 'message': 'OTP generated successfully', 'email': user_profile.email}, status=200)
 		
 
-#add a class view that is routed to when user enters email token and click on "verify"
-#should create access token and refresh token and set them as cookies
-class ValidateEmailView(APIView, CookieCreationMixin):
+class ValidateEmailView(APIView, CookieCreationMixin): 
 	permission_classes = [AllowAny]
 
 	def post(self, request):
-		user = CustomUser.objects.get(email=request.data['email'])
-		otp_provided = int(request.data['otp'])
+		serializer = ValidateEmailSerializer(data=request.data)
+		serializer.is_valid(raise_exception=True)
+		user = CustomUser.objects.get(email=request.data['email']) #alternatively we could use user-id instead of email to identify the user
+		user_profile = get_object_or_404(CustomUser, email=user)
+		otp_provided = request.data['otp']
 
 		#check if user is locked due to too many attempts
 
-		otp_cache_key = f'{request.data["email"]}_otp'
+		otp_cache_key = f'{user_profile.email}_otp'
 		stored_otp = cache.get(otp_cache_key)
 
 		if not stored_otp:
-			return Response({'detail': 'OTP expired. Please request a new one.'}, status=status.HTTP_400_BAD_REQUEST)
+			return Response({'detail': 'OTP expired. Please request a new one.'}, status=status.HTTP_400_BAD_REQUEST) #status code?
 		if stored_otp != otp_provided:
 			#increment attempts
-			return Response({'detail': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST)
+			return Response({'detail': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST) #status code?
 		if stored_otp == otp_provided:
 			cache.delete(otp_cache_key)
 			#cache.delete(f'{request.data["email"]}_otp_attempts')
-			user.email_verified = True
-			user.save()
+			user_profile.email_verified = True
+			user_profile.save()
 			#generate access token and refresh token
-			token = get_tokens_for_user(user)
+			token = get_tokens_for_user(user_profile)
 			#set them as cookies
 			response = Response(token, status=status.HTTP_200_OK)
 			self.createCookies(response)
