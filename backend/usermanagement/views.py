@@ -340,7 +340,7 @@ class ValidateEmailView(APIView, CookieCreationMixin):
 		serializer = ValidateEmailSerializer(data=request.data)
 		serializer.is_valid(raise_exception=True)
 		user_profile = get_object_or_404(CustomUser, pk=request.data['id'])
-		otp_provided = request.data['otp']
+		otp_provided = int(request.data['otp'])
 
 		otp_attempts_key = f'{user_profile.id}_otp_attempts'
 		otp_cache_key = f'{user_profile.id}_otp'
