@@ -13,6 +13,8 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.middleware import csrf
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
+from drf_spectacular.types import OpenApiTypes
 from .permissions import IsSelf
 import pyotp
 import qrcode
@@ -190,7 +192,11 @@ class CheckEmail(APIView):
 
 class GenerateOTPView(APIView): 
 	permission_classes = [AllowAny]
+	serializer_class = GenerateOTPSerializer
 
+	@extend_schema(
+		responses={200: "id"},
+		)
 	def post(self, request):
 		serializer = GenerateOTPSerializer(data=request.data)
 		serializer.is_valid(raise_exception=True)
@@ -227,6 +233,7 @@ class GenerateOTPView(APIView):
 
 class ValidateEmailView(APIView, CookieCreationMixin): 
 	permission_classes = [AllowAny]
+	serializer_class = ValidateEmailSerializer
 
 	def post(self, request):
 		serializer = ValidateEmailSerializer(data=request.data)
