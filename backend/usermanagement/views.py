@@ -12,8 +12,9 @@ from rest_framework.views import APIView
 from rest_framework.exceptions import PermissionDenied
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework import serializers
 from django.middleware import csrf
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, inline_serializer
 from drf_spectacular.types import OpenApiTypes
 from .permissions import IsSelf
 import pyotp
@@ -152,6 +153,17 @@ class CookieCreationMixin:
 		
 
 class CustomTokenObtainPairView(TokenObtainPairView, CookieCreationMixin):
+
+	@extend_schema(
+		responses={
+			(200, 'application/json'): {
+				'type': 'object',
+				'properties': {
+				},
+			},
+		},
+	)
+
 	def post(self, request, *args, **kwargs):
 		response = super().post(request, *args, **kwargs)
 		user = CustomUser.objects.get(email=request.data['email'])
@@ -171,6 +183,17 @@ class CustomTokenObtainPairView(TokenObtainPairView, CookieCreationMixin):
 
 
 class CustomTokenRefreshView(TokenRefreshView, CookieCreationMixin):
+
+	@extend_schema(
+		responses={
+			(200, 'application/json'): {
+				'type': 'object',
+				'properties': {
+				},
+			},
+		},
+	)
+
 	def post(self, request, *args, **kwargs):
 		response = super().post(request, *args, **kwargs)
 		self.createCookies(response)
@@ -178,6 +201,25 @@ class CustomTokenRefreshView(TokenRefreshView, CookieCreationMixin):
 
 class CheckEmail(APIView):
 	permission_classes = [AllowAny]
+	serializer_class = CheckEmailSerializer
+
+	@extend_schema(
+		responses={
+			(200, 'application/json'): {
+				'type': 'object',
+				'properties': {
+					'detail': {'type': 'string', 'enum': ['User with this email exists OR User with this email exists but email not verified']},
+					'id': {'type': 'integer'}
+				},
+			},
+			(400, 'application/json'): {
+				'type': 'object',
+				'properties': {
+					'detail': {'type': 'string', 'enum': ['TBD. User with this email does not exist']}
+				},
+			},
+		},
+	)
 
 	def post(self, request):
 		serializer = CheckEmailSerializer(data=request.data)
@@ -186,7 +228,7 @@ class CheckEmail(APIView):
 		if user.exists() and user.first()['email_verified'] == True:
 			return Response({'detail': 'User with this email exists'}, status=status.HTTP_200_OK)
 		elif user.exists() and user.first()['email_verified'] == False:
-			return Response({'detail': 'User with this email exists but email not verified', 'id': user.first()['id']}, status=400) #status code?
+			return Response({'detail': 'User with this email exists but email not verified', 'id': user.first()['id']}, status=200) #status code?
 		return Response({'detail': 'User with this email does not exist'}, status=status.HTTP_400_BAD_REQUEST) #tstaus code?
 
 
@@ -195,8 +237,36 @@ class GenerateOTPView(APIView):
 	serializer_class = GenerateOTPSerializer
 
 	@extend_schema(
-		responses={200: "id"},
-		)
+		responses={
+			(200, 'application/json'): {
+				'type': 'object',
+				'properties': {
+					'message': {'type': 'string', 'enum': ['OTP generated successfully']},
+					'id': {'type': 'integer'},
+					'email': {'type': 'string', 'format': 'email'}
+				},
+			},
+			(400, 'application/json'): {
+				'type': 'object',
+				'properties': {
+					'detail': {'type': 'string', 'enum': ['TBD. User already verified']}
+				},
+			},
+			(404, 'application/json'): {
+				'type': 'object',
+				'properties': {
+					'detail': {'type': 'string', 'enum': ['TBD. User not found']}
+				},
+			},
+			(429, 'application/json'): {
+				'description': 'TBD. Maximum OTP attempts or generations exceeded',
+				'type': 'object',
+				'properties': {
+					'detail': {'type': 'string'}
+				},
+			},
+		},
+	)
 	def post(self, request):
 		serializer = GenerateOTPSerializer(data=request.data)
 		serializer.is_valid(raise_exception=True)
@@ -234,6 +304,37 @@ class GenerateOTPView(APIView):
 class ValidateEmailView(APIView, CookieCreationMixin): 
 	permission_classes = [AllowAny]
 	serializer_class = ValidateEmailSerializer
+
+	@extend_schema(
+		responses={
+			(200, 'application/json'): {
+				'type': 'object',
+				'properties': {
+					'message': {'type': 'string', 'enum': ['TBD. THis returns access and refresh tokens as cookies']},
+				},
+			},
+			(400, 'application/json'): {
+				'type': 'object',
+				'properties': {
+					'detail': {'type': 'string', 'enum': ['TBD. OTP expired. Please request a new one.']},
+					'message': {'type': 'string', 'enum': ['TBD. Invalid OTP']},
+				},
+			},
+			(404, 'application/json'): {
+				'type': 'object',
+				'properties': {
+					'detail': {'type': 'string', 'enum': ['TBD. User not found']}
+				},
+			},
+			(429, 'application/json'): {
+				'description': 'TBD. Exceeded maximum OTP attempts. Please try again later.',
+				'type': 'object',
+				'properties': {
+					'detail': {'type': 'string'}
+				},
+			},
+		},
+	)
 
 	def post(self, request):
 		serializer = ValidateEmailSerializer(data=request.data)
