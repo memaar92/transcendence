@@ -1,8 +1,8 @@
 
 body {
     background-color: #202021;
-    font-family: 'Thabit';
-    font-style: normal;
+    font-family: 'Glegoo';
+    font-weight: 700;
     color: white;
 }
 
@@ -10,6 +10,7 @@ body {
     --color-text: #fff;
     --color-background: #202021;
     --color-accent: #7A35EC;
+    --color-accent-shadow: #651BDD;
 }
 
 h1 {
@@ -17,11 +18,14 @@ h1 {
 }
 
 h2 {
-    font-size: 24px;
+    align-self: center;
+    font-size: 26px;
     font-weight: bold;
+    margin-bottom: 28px;
 }
 
 .mainButton {
+    margin-bottom: 21px;
     background-color: var(--color-accent);
     color: var(--color-text);
     border: none;
@@ -29,13 +33,17 @@ h2 {
     padding-bottom: 9px;
     text-align: center;
     text-decoration: none;
-    display: inline-block;
     font-size: 16px;
     border-radius: 8px;
+    font-weight: 700;
+    box-shadow: 0 4px 0px 0px var(--color-accent-shadow);
 }
 
 input[type=email] {
+    margin-bottom: 17px;
     border-radius: 8px;
+    padding: 12px;
+    font-family: 'Inter';
 }
 
 .menu {
