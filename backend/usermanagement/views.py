@@ -1,24 +1,40 @@
 import os
 from django.shortcuts import render, get_object_or_404
+from django.core.cache import cache
+from django.core.mail import send_mail
 from django.conf import settings
 from .models import Games, CustomUser
 from rest_framework import generics, status
 from rest_framework.response import Response
-from .serializers import UserSerializer, GameHistorySerializer, UserNameSerializer, UserCreateSerializer, TOTPSetupSerializer, TOTPVerifySerializer
+from .serializers import UserSerializer, GameHistorySerializer, UserNameSerializer, UserCreateSerializer, TOTPSetupSerializer, TOTPVerifySerializer, GenerateOTPSerializer, ValidateEmailSerializer, CheckEmailSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework.exceptions import PermissionDenied
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework import serializers
+from django.middleware import csrf
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, inline_serializer
+from drf_spectacular.types import OpenApiTypes
 from .permissions import IsSelf
 import pyotp
 import qrcode
+import random
+import time
 from io import BytesIO
 import base64
 
+MAX_OTP_ATTEMPTS = 5
+OTP_LOCK_TIME = 300
+
+
+#TO DO: add a cron job that regularly deletes users that have not verified their email within a certain time frame
+#TO DO: add a cron job that regularly deletes expired tokens from the blacklist
 class CreateUserView(generics.CreateAPIView):
 	queryset = CustomUser.objects.all()
 	serializer_class = UserCreateSerializer
 	permission_classes = [AllowAny]
+	
 
 class EditUserView(generics.RetrieveUpdateDestroyAPIView):
 	serializer_class = UserSerializer
@@ -38,6 +54,7 @@ class UserView(APIView):
 	permission_classes = [IsAuthenticated]
 
 	def get(self, request, pk):
+		print("request user view", request)
 		user = get_object_or_404(CustomUser, pk=pk)
 		# check if user is the same as the one requesting
 		if request.user.pk == user.pk:
@@ -112,8 +129,41 @@ class TOTPVerifyView(APIView):
 		return Response({'detail': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class CustomTokenObtainPairView(TokenObtainPairView):
-	print("CustomTokenObtainPairView")
+class CookieCreationMixin:
+	def createCookies(self, response):
+		response.set_cookie(
+			key = settings.SIMPLE_JWT['AUTH_COOKIE'],
+			value = response.data['access'],
+			expires = settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'],
+			secure = settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
+			httponly = settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
+			samesite = settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
+		)
+		response.set_cookie(
+			key = settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH'],
+			value = response.data['refresh'],
+			path = settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH_PATH'],
+			expires = settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'],
+			secure = settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
+			httponly = settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
+			samesite = settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
+		)
+		del response.data['access']
+		del response.data['refresh']
+		
+
+class CustomTokenObtainPairView(TokenObtainPairView, CookieCreationMixin):
+
+	@extend_schema(
+		responses={
+			(200, 'application/json'): {
+				'type': 'object',
+				'properties': {
+				},
+			},
+		},
+	)
+
 	def post(self, request, *args, **kwargs):
 		response = super().post(request, *args, **kwargs)
 		user = CustomUser.objects.get(email=request.data['email'])
@@ -126,13 +176,202 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 			print("2FA setup required")
 			if not totp.verify(serializer.validated_data['token']):
 				return Response({'detail': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+		
+		self.createCookies(response)
+		csrf.get_token(request) #probably set by TokenObtainPairView or middleware already?
+		return response
 
+
+class CustomTokenRefreshView(TokenRefreshView, CookieCreationMixin):
+
+	@extend_schema(
+		responses={
+			(200, 'application/json'): {
+				'type': 'object',
+				'properties': {
+				},
+			},
+		},
+	)
+
+	def post(self, request, *args, **kwargs):
+		response = super().post(request, *args, **kwargs)
+		self.createCookies(response)
 		return response
 
 class CheckEmail(APIView):
 	permission_classes = [AllowAny]
+	serializer_class = CheckEmailSerializer
+
+	@extend_schema(
+		responses={
+			(200, 'application/json'): {
+				'type': 'object',
+				'properties': {
+					'detail': {'type': 'string', 'enum': ['User with this email exists OR User with this email exists but email not verified']},
+					'id': {'type': 'integer'}
+				},
+			},
+			(400, 'application/json'): {
+				'type': 'object',
+				'properties': {
+					'detail': {'type': 'string', 'enum': ['TBD. User with this email does not exist']}
+				},
+			},
+		},
+	)
 
 	def post(self, request):
-		if CustomUser.objects.filter(email=request.data['email']).exists():
+		serializer = CheckEmailSerializer(data=request.data)
+		serializer.is_valid(raise_exception=True)
+		user = CustomUser.objects.filter(email=request.data['email']).values('email', 'email_verified', 'id')
+		if user.exists() and user.first()['email_verified'] == True:
 			return Response({'detail': 'User with this email exists'}, status=status.HTTP_200_OK)
-		return Response({'detail': 'User with this email does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+		elif user.exists() and user.first()['email_verified'] == False:
+			return Response({'detail': 'User with this email exists but email not verified', 'id': user.first()['id']}, status=200) #status code?
+		return Response({'detail': 'User with this email does not exist'}, status=status.HTTP_400_BAD_REQUEST) #tstaus code?
+
+
+class GenerateOTPView(APIView): 
+	permission_classes = [AllowAny]
+	serializer_class = GenerateOTPSerializer
+
+	@extend_schema(
+		responses={
+			(200, 'application/json'): {
+				'type': 'object',
+				'properties': {
+					'message': {'type': 'string', 'enum': ['OTP generated successfully']},
+					'id': {'type': 'integer'},
+					'email': {'type': 'string', 'format': 'email'}
+				},
+			},
+			(400, 'application/json'): {
+				'type': 'object',
+				'properties': {
+					'detail': {'type': 'string', 'enum': ['TBD. User already verified']}
+				},
+			},
+			(404, 'application/json'): {
+				'type': 'object',
+				'properties': {
+					'detail': {'type': 'string', 'enum': ['TBD. User not found']}
+				},
+			},
+			(429, 'application/json'): {
+				'description': 'TBD. Maximum OTP attempts or generations exceeded',
+				'type': 'object',
+				'properties': {
+					'detail': {'type': 'string'}
+				},
+			},
+		},
+	)
+	def post(self, request):
+		serializer = GenerateOTPSerializer(data=request.data)
+		serializer.is_valid(raise_exception=True)
+		user_profile = get_object_or_404(CustomUser, pk=request.data['id'])
+		if user_profile.email_verified == True:
+			return Response({'detail': 'User already verified'}, status=400) #what should be the status code here?
+		
+		otp_lock_key = f'{user_profile.id}_otp_lock'
+		otp_attempts_key = f'{user_profile.id}_otp_attempts'
+		otp_attempts = cache.get(otp_attempts_key)
+		if not otp_attempts:
+			cache.set(otp_attempts_key, 0)
+			otp_attempts = cache.get(otp_attempts_key)
+
+		#protect against brute force otp guessing
+		if cache.get(otp_lock_key):
+			return Response({'detail': 'Exceeded maximum OTP attempts or generations. Please try again later.'}, status=429)
+		#protect against infinte otp generation
+		if otp_attempts >= MAX_OTP_ATTEMPTS:
+			cache.set(otp_lock_key, True, timeout=OTP_LOCK_TIME)
+			cache.set(otp_attempts_key, 0)
+			return Response({'detail': 'Exceeded maximum OTP generations. Please try again later.'}, status=429)
+
+		otp = random.randint(100000, 999999)
+		otp_cache_key = f'{user_profile.id}_otp'
+		cache.set(otp_cache_key, otp, timeout=300)
+		cache.incr(otp_attempts_key)
+
+		#send email with otp
+		print("send email with otp", otp)
+		
+		return Response({'message': 'OTP generated successfully', 'id': user_profile.id, 'email': user_profile.email}, status=200)
+		
+
+class ValidateEmailView(APIView, CookieCreationMixin): 
+	permission_classes = [AllowAny]
+	serializer_class = ValidateEmailSerializer
+
+	@extend_schema(
+		responses={
+			(200, 'application/json'): {
+				'type': 'object',
+				'properties': {
+					'message': {'type': 'string', 'enum': ['TBD. THis returns access and refresh tokens as cookies']},
+				},
+			},
+			(400, 'application/json'): {
+				'type': 'object',
+				'properties': {
+					'detail': {'type': 'string', 'enum': ['TBD. OTP expired. Please request a new one.']},
+					'message': {'type': 'string', 'enum': ['TBD. Invalid OTP']},
+				},
+			},
+			(404, 'application/json'): {
+				'type': 'object',
+				'properties': {
+					'detail': {'type': 'string', 'enum': ['TBD. User not found']}
+				},
+			},
+			(429, 'application/json'): {
+				'description': 'TBD. Exceeded maximum OTP attempts. Please try again later.',
+				'type': 'object',
+				'properties': {
+					'detail': {'type': 'string'}
+				},
+			},
+		},
+	)
+
+	def post(self, request):
+		serializer = ValidateEmailSerializer(data=request.data)
+		serializer.is_valid(raise_exception=True)
+		user_profile = get_object_or_404(CustomUser, pk=request.data['id'])
+		otp_provided = int(request.data['otp'])
+
+		otp_attempts_key = f'{user_profile.id}_otp_attempts'
+		otp_cache_key = f'{user_profile.id}_otp'
+		stored_otp = cache.get(otp_cache_key)
+
+		if not stored_otp:
+			return Response({'detail': 'OTP expired. Please request a new one.'}, status=status.HTTP_400_BAD_REQUEST) #status code?
+
+		if stored_otp != otp_provided:
+			if cache.get(otp_attempts_key) >= MAX_OTP_ATTEMPTS:
+				otp_lock_key = f'{user_profile.id}_otp_lock'
+				cache.set(otp_lock_key, True, timeout=OTP_LOCK_TIME)
+				cache.set(otp_attempts_key, 0)
+				return Response({'detail': 'Exceeded maximum OTP attempts. Please try again later.'}, status=429)
+			cache.incr(otp_attempts_key)
+			return Response({'detail': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST) #status code?
+		
+		if stored_otp == otp_provided:
+			cache.delete(otp_cache_key)
+			cache.delete(otp_attempts_key)
+			user_profile.email_verified = True
+			user_profile.save()
+			token = get_tokens_for_user(user_profile)
+			response = Response(token, status=status.HTTP_200_OK)
+			self.createCookies(response)
+			return response
+
+def get_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
+
+    return {
+        'access': str(refresh.access_token),
+        'refresh': str(refresh),
+    }

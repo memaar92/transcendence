@@ -13,5 +13,8 @@ urlpatterns = [
 	path('2fa/verify/', views.TOTPVerifyView.as_view(), name='2fa_verify'),
 	path('2fa/setup/', views.TOTPSetupView.as_view(), name='2fa_setup'),
 	path('token/', views.CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
+	path('token/refresh/', views.CustomTokenRefreshView.as_view(), name='token_refresh'),
 	path('email/', views.CheckEmail.as_view(), name='check_email'),
+	path('email/validate/', views.ValidateEmailView.as_view(), name='validate_email'),
+	path('email/otp/', views.GenerateOTPView.as_view(), name='email_otp'),
 ]
