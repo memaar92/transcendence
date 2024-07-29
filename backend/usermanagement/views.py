@@ -54,7 +54,6 @@ class UserView(APIView):
 	permission_classes = [IsAuthenticated]
 
 	def get(self, request, pk):
-		print("request user view", request)
 		user = get_object_or_404(CustomUser, pk=pk)
 		# check if user is the same as the one requesting
 		if request.user.pk == user.pk:
@@ -152,6 +151,7 @@ class CookieCreationMixin:
 		del response.data['refresh']
 		
 
+#check if email is verified? (kinda already done when frontend checks if email is verified, but still if someone manages to call the login endpoint directly...)
 class CustomTokenObtainPairView(TokenObtainPairView, CookieCreationMixin):
 
 	@extend_schema(
