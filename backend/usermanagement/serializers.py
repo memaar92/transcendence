@@ -17,7 +17,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
 	class Meta:
 		model = CustomUser
-		fields = ['id', 'email', 'password', 'displayname', 'profile_picture'] #rm displayname and profile_picture
+		fields = ['id', 'email', 'password', 'displayname', 'profile_picture'] #rm displayname and profile_picture?
 		extra_kwargs = {"password": {"write_only": True}}
 
 	def create(self, validated_data):
@@ -41,3 +41,13 @@ class TOTPSetupSerializer(serializers.Serializer):
 
 class TOTPVerifySerializer(serializers.Serializer):
 	token = serializers.CharField()
+
+class GenerateOTPSerializer(serializers.Serializer):
+	id = serializers.IntegerField()
+
+class ValidateEmailSerializer(serializers.Serializer):
+	id = serializers.IntegerField()
+	otp = serializers.IntegerField(min_value=100000, max_value=999999)
+
+class CheckEmailSerializer(serializers.Serializer):
+	email = serializers.EmailField()
