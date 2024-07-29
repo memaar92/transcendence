@@ -82,6 +82,7 @@ class ChatHandler {
         break;
       case 'friends_list':
         this.displayFriendsList(content.friends);
+        break;
       default:
         console.error('Unknown message type:', content.type);
         break;
@@ -93,13 +94,21 @@ class ChatHandler {
     const message = messageInput.value.trim();
 
     if (this.ws && message && receiverId && receiverId !== this.senderId) {
-      this.ws.send(JSON.stringify({
+      const newMessage = {
         'type': 'chat_message',
         'message': message,
         'sender_id': this.senderId,
-        'receiver_id': receiverId
-      }));
-      messageInput.value = ''; // Clear input field
+        'receiver_id': receiverId,
+        'timestamp': new Date().toISOString()
+      };
+  
+      this.ws.send(JSON.stringify(newMessage));
+  
+      const storedMessages = JSON.parse(localStorage.getItem(`chat_history_${this.senderId}_${receiverId}`) || '[]');
+      storedMessages.push(newMessage);
+      localStorage.setItem(`chat_history_${this.senderId}_${receiverId}`, JSON.stringify(storedMessages));
+  
+      messageInput.value = '';
     } else {
       console.warn('Message, receiver ID is empty, or sender and receiver are the same');
     }
@@ -172,7 +181,7 @@ class ChatHandler {
   
 
   displayFriendsList(friends) {
-    const friendListElement = document.getElementById('friends-list-container');
+    const friendListElement = document.querySelector('.friends-scroll-container');
     
     if (!friendListElement) {
       console.error('Friend list container not found');
@@ -181,23 +190,30 @@ class ChatHandler {
   
     friendListElement.innerHTML = '';
   
+    console.log(friends);
     friends.forEach((friend) => {
       const friendItem = document.createElement('div');
       friendItem.className = 'friend-item';
+      friendItem.setAttribute('data-id', friend.id); // Set user ID as data attribute
   
       const friendImg = document.createElement('img');
       friendImg.src = friend.profile_picture_url;
       friendImg.alt = friend.name;
       friendImg.className = 'friend-avatar';
+      friendImg.onclick = () => this.openChatWindow(friend.id, friend.name); // Open chat on image click
   
       const friendName = document.createElement('div');
       friendName.className = 'friend-name';
       friendName.textContent = friend.name;
   
+      const removeButton = document.createElement('button');
+      removeButton.textContent = "Remove";
+      removeButton.className = 'remove-button';
+      removeButton.onclick = () => this.removeFriend(friend.id);
+  
       friendItem.appendChild(friendImg);
       friendItem.appendChild(friendName);
-  
-      friendItem.onclick = () => this.openChatWindow(friend.id, friend.name);
+      friendItem.appendChild(removeButton);
   
       friendListElement.appendChild(friendItem);
     });
@@ -206,6 +222,7 @@ class ChatHandler {
   openChatWindow(friendId, friendName) {
     const chatWindow = document.getElementById('chat-window');
     const friendsListContainer = document.getElementById('friends-list-container');
+    const mainContent = document.querySelector('.main-content');
     const chatTitle = document.getElementById('chat-title');
     const closeButton = document.getElementById('close-chat');
     const sendButton = document.getElementById('send-message');
@@ -213,6 +230,7 @@ class ChatHandler {
   
     chatTitle.textContent = `Chat with ${friendName}`;
   
+    mainContent.classList.add('chat-open');
     chatWindow.classList.add('open');
     friendsListContainer.classList.add('chat-open');
   
@@ -222,12 +240,17 @@ class ChatHandler {
     messageInput.value = '';
   
     this.currentReceiverId = friendId;
-  
-    this.sendChatHistoryRequest(this.senderId, friendId);
+    
+    const storedMessages = localStorage.getItem(`chat_history_${this.senderId}_${friendId}`);
+    if (storedMessages) {
+      this.displayChatHistory(JSON.parse(storedMessages));
+    } else {
+      this.sendChatHistoryRequest(this.senderId, friendId);
+    }
   
     closeButton.onclick = () => this.closeChatWindow();
     sendButton.onclick = () => this.sendMessage(friendId);
-    messageInput.onkeypress = (e) => {
+    messageInput.onkeypress= (e) => {
       if (e.key === 'Enter') {
         this.sendMessage(friendId);
       }
@@ -237,8 +260,10 @@ class ChatHandler {
   closeChatWindow() {
     const chatWindow = document.getElementById('chat-window');
     const friendsListContainer = document.getElementById('friends-list-container');
+    const mainContent = document.querySelector('.main-content');
     const messageInput = document.getElementById('message-input');
   
+    mainContent.classList.remove('chat-open');
     chatWindow.classList.remove('open');
     friendsListContainer.classList.remove('chat-open');
   
@@ -292,6 +317,8 @@ class ChatHandler {
         messageItem.appendChild(messageTimestamp);
         
         chatMessages.appendChild(messageItem);
+
+        localStorage.setItem(`chat_history_${this.senderId}_${this.currentReceiverId}`, JSON.stringify(messages));
       });
       chatMessages.scrollTop = chatMessages.scrollHeight;
     } else {
@@ -307,6 +334,20 @@ class ChatHandler {
       messages.appendChild(messageItem);
     } else {
       console.error('Chat window not found');
+    }
+  }
+
+  removeFriend(friendId) {
+    if (this.ws && friendId) {
+      this.ws.send(JSON.stringify({
+        'type': 'update_status',
+        'user_id_1': friendId,
+        'user_id_2': this.senderId,
+        'status': 'DF'
+
+      }));
+    } else {
+      console.warn('Cannot remove friend, WebSocket is not initialized or friend ID is missing');
     }
   }
 

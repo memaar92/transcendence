@@ -33,6 +33,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def send_friends_list(self, user_id):
         friends_list = await self.get_friends_list(user_id)
+        print(f"Sending friends list for user {user_id}: {friends_list}")  # Debugging line
         await self.send(text_data=json.dumps({
             'type': 'friends_list',
             'friends': friends_list
@@ -143,6 +144,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     await self.chat_history(data)
                 case 'chat_request_notification':
                     await self.chat_request_notification(data)
+                case 'update_status':
+                    await self.update_status(data['user_id_1'], data['user_id_2'], data['status'])
+                    await self.send_friends_list(data['user_id_1'])
                 case _:
                     await self.send(text_data=json.dumps({
                         'type': 'error',
@@ -228,7 +232,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         sender_id = data['sender_id']
         receiver_id = data['receiver_id']
         await self.update_status(sender_id, receiver_id, RelationshipStatus.BEFRIENDED)
-        await self.update_status(receiver_id, sender_id, RelationshipStatus.BEFRIENDED)
 
         await self.send_message_to_user(sender_id, f"You are now friends with {await self.get_user_displayname(receiver_id)}", 'chat_message')
         await self.send_message_to_user(receiver_id, f"You are now friends with {self.scope['user'].displayname}", 'chat_message')
@@ -239,7 +242,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def chat_request_denied(self, data):
         receiver_displayname = await self.get_user_displayname(data['receiver_id'])
         await self.update_status(data['sender_id'], data['receiver_id'], RelationshipStatus.DEFAULT)
-        await self.update_status(data['receiver_id'], data['sender_id'], RelationshipStatus.DEFAULT)
         await self.send_message_to_user(data['sender_id'], receiver_displayname, 'chat_request_denied')
 
     async def chat_history(self, data):
@@ -279,7 +281,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     def get_status(self, user_id_1, user_id_2):
         try:
             relationship = Relationship.objects.get(
-                Q(user1_id=user_id_1, user2_id=user_id_2)
+                Q(user1_id=user_id_1, user2_id=user_id_2) | Q(user1_id=user_id_2, user2_id=user_id_1)
             )
             return relationship.status
         except Relationship.DoesNotExist:
@@ -291,7 +293,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         try:
             print(f"Updating status to {status} for {user_id_1} and {user_id_2}")
             relationship = Relationship.objects.get(
-                Q(user1_id=user_id_1, user2_id=user_id_2)
+                Q(user1_id=user_id_1, user2_id=user_id_2) | Q(user1_id=user_id_2, user2_id=user_id_1)
             )
             relationship.status = status
             relationship.save()
@@ -301,7 +303,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def get_pending_requests(self, user_id):
         pending_requests = Relationship.objects.filter(
-            Q(user2_id=user_id, status=RelationshipStatus.PENDING)
+            Q(user2_id=user_id, status=RelationshipStatus.PENDING) | Q(user1_id=user_id, status=RelationshipStatus.PENDING)
         )
         return list(pending_requests)
 
@@ -320,12 +322,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
             status=RelationshipStatus.BEFRIENDED
         )
         friend_list = []
+        user_model = get_user_model()
+
         for friend in friends:
-            friend_id = friend.user2_id if friend.user1_id == user_id else friend.user1_id
-            friend_user = get_user_model().objects.get(id=friend_id)
+            if friend.user1_id == user_id:
+                friend_id = friend.user2_id
+            else:
+                friend_id = friend.user1_id
+
+            friend_user = user_model.objects.get(id=friend_id)
             friend_list.append({
                 'id': str(friend_user.id),
                 'name': friend_user.displayname,
                 'profile_picture_url': friend_user.profile_picture.url if friend_user.profile_picture else None
             })
+
         return friend_list

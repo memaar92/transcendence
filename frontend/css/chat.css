@@ -1,3 +1,4 @@
+/* Maintain existing styles */
 .button {
   color: var(--dl-color-theme-neutral-dark);
   display: inline-block;
@@ -7,6 +8,7 @@
   border-radius: 4px;
   background-color: var(--dl-color-theme-neutral-light);
 }
+
 .input {
   color: var(--dl-color-theme-neutral-dark);
   cursor: auto;
@@ -16,6 +18,7 @@
   border-radius: 4px;
   background-color: var(--dl-color-theme-neutral-light);
 }
+
 .list {
   width: 100%;
   margin: 1em 0px 1em 0px;
@@ -24,17 +27,21 @@
   list-style-type: none;
   list-style-position: outside;
 }
+
 .list-item {
   display: list-item;
 }
+
 .offcanvas {
   background-color: #f8f9fa;
   color: white;
 }
+
 .offcanvas-header {
   background-color: #7A35EC;
   color: white;
 }
+
 .offcanvas-body {
   background-color: #343a40;
 }
@@ -45,7 +52,7 @@
   align-items: center;
   overflow-x: auto;
   padding: 1rem 0;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 3px solid #7A35EC;
   background-color: transparent;
   white-space: nowrap;
   pointer-events: auto;
@@ -88,10 +95,15 @@
   border-style: solid;
 }
 
+.user-item img:hover {
+  transform: translateY(-5px);
+  transition: all 0.3s ease-in-out;
+}
+
 .user-item .username, .friend-item .friend-name {
   font-size: 1.2rem;
   font-weight: bold;
-  color: #7A35EC;
+  color: white;
 }
 
 .button-container {
@@ -99,6 +111,7 @@
   align-items: flex-start;
   margin-top: 1rem;
 }
+
 .custom-button {
   background-color: #7A35EC;
   color: white;
@@ -114,28 +127,47 @@
   flex-direction: column;
 }
 
+.main-content {
+  height: 100%; /* Occupy full height */
+  display: flex;
+  flex-grow: 1;
+  position: relative;
+  overflow: hidden;
+}
+
 .friends-list-container {
   flex-grow: 1;
   overflow-y: auto;
-  transition: width 0.3s ease-in-out;
+  transition: all 0.3s ease-in-out;
   padding: 1rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.friends-scroll-container {
+  overflow-y: hidden;
+  width: 100%;
+  max-width: 600px;
 }
 
 .chat-window {
   position: absolute;
-  top: 0;
-  right: -50%;
+  top: 50px; /* Adjust based on the height of the user list container */
+  right: 0;
   width: 50%;
-  height: 100%;
+  height: calc(100% - 50px); /* Adjust based on the height of the user list container */
   background-color: white;
   border-left: 1px solid #ddd;
-  transition: right 0.3s ease-in-out;
+  transition: transform 0.3s ease-in-out;
   display: flex;
   flex-direction: column;
+  transform: translateX(100%);
 }
 
 .chat-window.open {
-  right: 0;
+  transform: translateX(0);
 }
 
 .friends-list-container.chat-open {
@@ -179,6 +211,8 @@
   align-items: center;
   padding: 10px;
   border-bottom: 1px solid #e9ecef;
+  width: 100%;
+  justify-content: space-between;
 }
 
 .friend-item:last-child {
@@ -186,11 +220,69 @@
 }
 
 .friend-item img {
-  width: 100px;
-  height: 100px;
+  width: 65px;
+  height: 65px;
+  border-radius: 50%;
   margin-right: 15px;
+  cursor: pointer; /* Add cursor pointer to indicate clickability */
 }
 
-.friend-item .friend-name {
+.friend-item img:hover {
+  transform: scale(1.05);
+  transition:ease-in-out;
+}
+
+.friend-name {
   font-size: 1rem;
+  flex-grow: 1;
+}
+
+.remove-button {
+  background-color: #ff4d4d;
+  color: white;
+  border: none;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.remove-button:hover {
+  background-color: #ff3333;
+}
+
+.chat-message {
+  margin-bottom: 10px;
+}
+
+.message-text {
+  background-color: #f1f1f1;
+  padding: 8px 12px;
+  border-radius: 18px;
+  display: inline-block;
+  max-width: 80%;
+}
+
+.message-timestamp {
+  font-size: 0.8rem;
+  color: #888;
+  margin-left: 10px;
+}
+
+/* Ensuring the friends list is scrollable */
+.main-content {
+  display: flex;
+}
+
+.friends-list-container {
+  transition: width 0.3s ease-in-out;
+  overflow-y: auto; /* Make the container scrollable */
+}
+
+.friends-list-container.chat-open {
+  width: 50%;
+}
+
+.chat-window {
+  transition: all 0.3s ease-in-out;
+  height: calc(100% - 50px); /* Adjust based on the height of the user list container */
 }
