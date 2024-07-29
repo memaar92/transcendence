@@ -23,7 +23,6 @@ class Paddle:
 
     def to_dict(self):
         return {
-            "player": self.player,
             "x": self.position.x,
             "y": self.position.y
         }

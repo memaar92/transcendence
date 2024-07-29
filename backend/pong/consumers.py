@@ -3,6 +3,7 @@ import struct
 import asyncio
 from enum import Enum, auto
 from pong.matchmaking.MatchHandler import MatchHandler
+from django.contrib.auth.models import AnonymousUser
 import uuid
 
 import logging
@@ -37,7 +38,16 @@ class ClientConsumer(AsyncWebsocketConsumer):
         self._closed = False
 
     async def connect(self):
-        await self.accept()
+        # Check if user is authenticated
+        if self.scope['user'] and not isinstance(self.scope['user'], AnonymousUser):
+            print(f"Client connected: {self.scope['user']}")
+            print(f"User ID: {self.scope['user'].id}")
+            await self.accept()
+        else:
+            print("Client not authenticated")
+            await self.close()
+            return
+        # await self.accept()
         self.match_handler.register_client(self)
         logger.info(f"Client connected: {self.channel_name}, ID: {self.id}")
 
