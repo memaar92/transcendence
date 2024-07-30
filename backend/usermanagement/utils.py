@@ -19,7 +19,7 @@ def generateUsername():
     config = apps.get_app_config('usermanagement')
     adjective = random.choice(config.adjectives)
     noun = random.choice(config.nouns)
-    num = randomDigits(MAX_LENGTH_DISPLAYNAME - len(str(adjective)) - len(str(noun))) # 20 is the max length of a displayname--make global constant
+    num = randomDigits(MAX_LENGTH_DISPLAYNAME - len(str(adjective)) - len(str(noun)))
     username = adjective + noun + str(num)
     return username
 

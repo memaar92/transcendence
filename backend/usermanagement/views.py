@@ -9,10 +9,10 @@ from rest_framework.response import Response
 from .serializers import UserSerializer, GameHistorySerializer, UserNameSerializer, UserCreateSerializer, TOTPSetupSerializer, TOTPVerifySerializer, GenerateOTPSerializer, ValidateEmailSerializer, CheckEmailSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
-from rest_framework.exceptions import PermissionDenied
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import serializers
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError, AuthenticationFailed, NotAuthenticated, Throttled
 from django.middleware import csrf
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, inline_serializer
 from drf_spectacular.types import OpenApiTypes
@@ -24,16 +24,26 @@ import time
 from io import BytesIO
 import base64
 
+
+
 MAX_OTP_ATTEMPTS = 5
 OTP_LOCK_TIME = 300
 
 
 #TO DO: add a cron job that regularly deletes users that have not verified their email within a certain time frame
 #TO DO: add a cron job that regularly deletes expired tokens from the blacklist
+
+# everywhere were access token is sent, if expired --> 401 / description (token expired)
+
 class CreateUserView(generics.CreateAPIView):
+	# 1. user successfully created: 201 / id, email
+	# 2. error messages (currently coming from Django): 400 / error messages
+	# (maybe differntiate between email and pw error)
+
 	queryset = CustomUser.objects.all()
 	serializer_class = UserCreateSerializer
 	permission_classes = [AllowAny]
+	#TO DO: backend library for pw checking --> discord
 	
 
 class EditUserView(generics.RetrieveUpdateDestroyAPIView):
@@ -154,6 +164,10 @@ class CookieCreationMixin:
 #check if email is verified? (kinda already done when frontend checks if email is verified, but still if someone manages to call the login endpoint directly...)
 class CustomTokenObtainPairView(TokenObtainPairView, CookieCreationMixin):
 
+	# 1. Successful login --> 200 / access and refresh tokens as cookies
+	# 2. User not found --> 404 / description (user not found)
+	# 3. Invalid credentials --> 401 / (Invalid credentials)
+
 	@extend_schema(
 		responses={
 			(200, 'application/json'): {
@@ -183,6 +197,10 @@ class CustomTokenObtainPairView(TokenObtainPairView, CookieCreationMixin):
 
 
 class CustomTokenRefreshView(TokenRefreshView, CookieCreationMixin):
+
+	# 1. Successful refresh --> 200 / access and refresh tokens as cookies
+	# 2. Invalid refresh token --> 401 / description (Invalid refresh token)
+
 
 	@extend_schema(
 		responses={
@@ -221,6 +239,12 @@ class CheckEmail(APIView):
 		},
 	)
 
+	# Methode: GET (email als query parameter)
+	# 1. Falsche Anfrage --> 400
+	# 2. Email existiert nicht --> 404 / description in response (Email not found)
+	# 3. Email existiert, aber nicht verifiziert --> 200 / user_id + bool email_verified
+	# 4. Email existiert und verifiziert --> 200 / user_id + bool email_verified
+
 	def post(self, request):
 		serializer = CheckEmailSerializer(data=request.data)
 		serializer.is_valid(raise_exception=True)
@@ -236,6 +260,11 @@ class GenerateOTPView(APIView):
 	permission_classes = [AllowAny]
 	serializer_class = GenerateOTPSerializer
 
+	# 1. Successful genaration --> 200 / id, email
+	# 2. User already verified --> 400 / description (user already verified)
+	# 3. User not found --> 404 / description (user not found)
+	# 4. Too many request / locked --> 429 / description (too many requests)
+	'''
 	@extend_schema(
 		responses={
 			(200, 'application/json'): {
@@ -267,12 +296,16 @@ class GenerateOTPView(APIView):
 			},
 		},
 	)
+	'''
 	def post(self, request):
 		serializer = GenerateOTPSerializer(data=request.data)
 		serializer.is_valid(raise_exception=True)
 		user_profile = get_object_or_404(CustomUser, pk=request.data['id'])
 		if user_profile.email_verified == True:
-			return Response({'detail': 'User already verified'}, status=400) #what should be the status code here?
+			raise NotFound("User already verified", code="not_found")
+			#raise ValidationError("User already verified", code="404")
+			#return Response(status=404)
+			#return Response({'detail': 'User already verified'}, status=400) #what should be the status code here?
 		
 		otp_lock_key = f'{user_profile.id}_otp_lock'
 		otp_attempts_key = f'{user_profile.id}_otp_attempts'
@@ -283,7 +316,8 @@ class GenerateOTPView(APIView):
 
 		#protect against brute force otp guessing
 		if cache.get(otp_lock_key):
-			return Response({'detail': 'Exceeded maximum OTP attempts or generations. Please try again later.'}, status=429)
+			return HTTP_429_TOO_MANY_REQUESTS('Exceeded maximum OTP attempts or generations. Please try again later.')
+			#return Response({'detail': 'Exceeded maximum OTP attempts or generations. Please try again later.'}, status=429)
 		#protect against infinte otp generation
 		if otp_attempts >= MAX_OTP_ATTEMPTS:
 			cache.set(otp_lock_key, True, timeout=OTP_LOCK_TIME)
@@ -304,6 +338,12 @@ class GenerateOTPView(APIView):
 class ValidateEmailView(APIView, CookieCreationMixin): 
 	permission_classes = [AllowAny]
 	serializer_class = ValidateEmailSerializer
+
+	# 1. Successful validation --> 200 / access and refresh tokens as cookies (description: successfully verified?)
+	# 2. OTP expired --> 401 / body mit suberror code: 905 description (OTP expired. Please request a new one.)
+	# 3. Invalid OTP --> 401 / body mit suberror code: 904 / description (Invalid OTP)
+	# 4. Too many request / locked --> 429 / description (too many requests)
+	# 5. User not found --> 404 / description (user not found)
 
 	@extend_schema(
 		responses={
