@@ -4,6 +4,10 @@ body {
     font-family: 'Glegoo';
     font-weight: 700;
     color: white;
+    width: 100%;
+    position: absolute;
+    top: 0;
+    bottom: 0;
 }
 
 :root {
@@ -25,6 +29,7 @@ h2 {
 }
 
 .mainButton {
+    margin-top: 16px;
     margin-bottom: 21px;
     background-color: var(--color-accent);
     color: var(--color-text);
@@ -39,8 +44,16 @@ h2 {
     box-shadow: 0 4px 0px 0px var(--color-accent-shadow);
 }
 
-input[type=email] {
-    margin-bottom: 17px;
+.mainButton:hover {
+    background-color: #9565e3;
+}
+
+.mainButton:active {
+    box-shadow: none;
+    transform: translateY(4px);
+}
+
+input {
     border-radius: 8px;
     padding: 12px;
     font-family: 'Inter';

@@ -1,13 +1,14 @@
 <div id="content">
     <span class="d-flex justify-content-center">
-        <span class="login d-inline-flex justify-content-center flex-column">
-            <h2>Sign in or create account</h2>
-            <input type="password" id="password" autocomplete="email" size="30" required  placeholder="enter your email address"/>
+        <form class="login d-inline-flex justify-content-center flex-column">
+            <h2>Register now</h2>
+            <label for="password">Password</label>
+            <input type="password" id="password" autocomplete="password" size="30" required autofocus placeholder="Password"/>
             <button class="mainButton" id="register">Register</button>
             <div class="middle-line-text">
-                <span>or use on of these options</span>
+                <span>or</span>
             </div>
-            <button class="mainButton" type="submit" id="42login" formaction="https://profile.intra.42.fr">42</button>
-        </span>
+            <p style="text-align: center;">back to <a class="link" href="/home" data-router-link>login</a></p> 
+        </form>
     </span>
 </div>
