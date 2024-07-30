@@ -7,8 +7,6 @@ export const api = {
   },
   
   post: async (endpoint, data) => {
-    console.log(JSON.stringify(data));
-    console.log(`${API_BASE_URL}${endpoint}`);
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'POST',
       headers: {
@@ -16,7 +14,6 @@ export const api = {
       },
       body: JSON.stringify(data),
     });
-    console.log(response.status);
     return response;
   },
 

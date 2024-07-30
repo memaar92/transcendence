@@ -23,10 +23,7 @@ class Router {
     }
   
     async navigate(path, pushState = true) {
-        console.log(path);
-        console.log(this.routes);
         const route = this.routes.find(route => route.path === path);
-        console.log(route);
         if (route) {
             this.currentRoute = route;
             if (pushState) {
@@ -86,11 +83,8 @@ class Router {
                 } else {
                   console.error('No content div found in the loaded HTML');
                 }
-                console.log("ADDING EVENTS");
                 const buttons = document.querySelectorAll('button');
-                console.log(buttons);
                 buttons.forEach(button => {
-                  console.log(button);
                   button.addEventListener('click', handleButtonClick);
                 });
               } catch (error) {
