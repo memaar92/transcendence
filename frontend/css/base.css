@@ -44,6 +44,10 @@ h2 {
     box-shadow: 0 4px 0px 0px var(--color-accent-shadow);
 }
 
+.invalid-feedback {
+    color: var(--color-text);
+}
+
 .mainButton:hover {
     background-color: #9565e3;
 }
