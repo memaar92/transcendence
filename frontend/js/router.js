@@ -29,7 +29,10 @@ class Router {
             if (pushState) {
                 this.currentHistoryPosition++;
                 this.maxHistoryPosition = this.currentHistoryPosition;
+                const title_temp = document.title;
+                document.title = route.path.slice(1).replace('_', "-");
                 history.pushState({ position: this.currentHistoryPosition }, '', path);
+                document.title = title_temp;
             }
             await this.updateView();
         }
