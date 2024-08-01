@@ -229,7 +229,7 @@ class CheckEmail(APIView):
 			return Response({'detail': 'User with this email exists'}, status=status.HTTP_200_OK)
 		elif user.exists() and user.first()['email_verified'] == False:
 			return Response({'detail': 'User with this email exists but email not verified', 'id': user.first()['id']}, status=200) #status code?
-		return Response({'detail': 'User with this email does not exist'}, status=status.HTTP_400_BAD_REQUEST) #tstaus code?
+		return Response({'detail': 'User with this email does not exist'}, status=status.HTTP_404_NOT_FOUND) #tstaus code?
 
 
 class GenerateOTPView(APIView): 
