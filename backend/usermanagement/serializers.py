@@ -1,6 +1,7 @@
 from .models import Games
 from rest_framework import serializers
 from .models import CustomUser
+from .utils import generateUsername
 
 class UserSerializer(serializers.ModelSerializer):
 	class Meta:
@@ -17,14 +18,17 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
 	class Meta:
 		model = CustomUser
-		fields = ['id', 'email', 'password', 'displayname', 'profile_picture'] #rm displayname and profile_picture?
+		fields = ['id', 'email', 'password']
 		extra_kwargs = {"password": {"write_only": True}}
 
 	def create(self, validated_data):
+		username = generateUsername()
+		while CustomUser.objects.filter(displayname=username).exists():
+			username = generateUsername()
 		user = CustomUser(
 			email=validated_data['email'],
-			displayname=validated_data['displayname'], # here a random displayname should be generated instead of using the one provided by the user
-			profile_picture=validated_data.get('profile_picture', 'profile_pics/default.png') # here the defaault profile picture should be generated instead of using the one provided by the user
+			displayname=username,
+			profile_picture='profile_pics/default.png'
 		)
 		user.set_password(validated_data['password'])
 		user.save()

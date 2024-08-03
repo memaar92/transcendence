@@ -54,7 +54,6 @@ class UserView(APIView):
 	permission_classes = [IsAuthenticated]
 
 	def get(self, request, pk):
-		print("request user view", request)
 		user = get_object_or_404(CustomUser, pk=pk)
 		# check if user is the same as the one requesting
 		if request.user.pk == user.pk:
@@ -152,6 +151,7 @@ class CookieCreationMixin:
 		del response.data['refresh']
 		
 
+#check if email is verified? (kinda already done when frontend checks if email is verified, but still if someone manages to call the login endpoint directly...)
 class CustomTokenObtainPairView(TokenObtainPairView, CookieCreationMixin):
 
 	@extend_schema(
@@ -229,7 +229,7 @@ class CheckEmail(APIView):
 			return Response({'detail': 'User with this email exists'}, status=status.HTTP_200_OK)
 		elif user.exists() and user.first()['email_verified'] == False:
 			return Response({'detail': 'User with this email exists but email not verified', 'id': user.first()['id']}, status=200) #status code?
-		return Response({'detail': 'User with this email does not exist'}, status=status.HTTP_400_BAD_REQUEST) #tstaus code?
+		return Response({'detail': 'User with this email does not exist'}, status=status.HTTP_404_NOT_FOUND) #tstaus code?
 
 
 class GenerateOTPView(APIView): 
