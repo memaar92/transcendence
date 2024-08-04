@@ -4,3 +4,5 @@ backend/static/
 **/migrations/
 database/
 secrets/
+backend/mediafiles/profile_pics/
+.venv/
