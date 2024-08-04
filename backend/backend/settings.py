@@ -52,12 +52,28 @@ INSTALLED_APPS = [
 
 ASGI_APPLICATION = "backend.asgi.application"
 
-CHANNEL_LAYERS = { 
-    "default": {
-        "BACKEND": "channels.layers.InMemoryChannelLayer"
-    }   
+REDIS_HOST = 'redis' # Redis server address
+REDIS_PORT = 6379    # or your Redis server port
+
+# Redis cache configuration
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/1',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
 }
 
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [(REDIS_HOST, REDIS_PORT)],
+        },
+    },
+}
 
 MIDDLEWARE = [
     'backend.middleware.AuthorizationMiddleware',

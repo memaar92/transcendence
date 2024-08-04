@@ -1,15 +1,12 @@
-import uuid
 from pong.utils.vector2 import Vector2
 
-class Player:
-    def __init__(self, player: int, position: Vector2 = Vector2(0, 0), size: Vector2 = Vector2(20, 100), speed: float = 10.0, world_size: Vector2 = Vector2(10000, 10000)):
-        self.player: int = player
+class Paddle:
+    def __init__(self, position: Vector2 = Vector2(0, 0), size: Vector2 = Vector2(20, 100), speed: float = 10.0, world_size: Vector2 = Vector2(10000, 10000)):
         self.position: Vector2 = position
         self.size: Vector2 = size
         self.speed: float = speed
         self.direction: int = 0 # -1, 0, 1
         self.world_size: Vector2 = world_size
-        self.connection_id = None # Websocket connection id
 
     def move(self):
         if self.direction == 0:
@@ -26,7 +23,6 @@ class Player:
 
     def to_dict(self):
         return {
-            "player": self.player,
             "x": self.position.x,
             "y": self.position.y
         }
