@@ -42,6 +42,10 @@
                     console.log('Match found! Game ID: ' + data.game_id);
                     const gameId = data.game_id;
                     connectToGame(gameId);
+                } else if (data.state === "reconnect") {
+                    console.log('Reconnecting to game...');
+                    const gameId = data.game_id;
+                    connectToGame(gameId);
                 }
             }
     

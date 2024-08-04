@@ -7,6 +7,7 @@ from enum import Enum, auto
 from pong.matchmaking.MatchHandler import MatchHandler
 from django.contrib.auth.models import AnonymousUser
 from channels.generic.websocket import AsyncWebsocketConsumer
+from asgiref.sync import sync_to_async
 
 import logging
 logger = logging.getLogger("PongConsumer")
@@ -171,34 +172,88 @@ class MatchType(Enum):
 
 class GameSessionConsumer(AsyncWebsocketConsumer):
 
-    broadcast_task = None
-    broadcast_lock = asyncio.Lock()
+    broadcast_tasks = {}
+    broadcast_locks = {}
+    game_states = {}
+
+    def __init__(self):
+        super().__init__()
+        self.groups = []
+        self.game_id = None
+        self.user_id = None
+        self.pubsub = None
+        self.current_state = None
+        self.disconnect_timer_task = None
 
     async def connect(self):
         # Extracting the game_id from the URL route parameters
         self.game_id = self.scope['url_route']['kwargs']['game_id']
         self.user_id = self.scope["user"].id
+
+        # Initialize pubsub connection
+        self.pubsub = redis_instance.pubsub()
+        
+        # Subscribe to the game state channel
+        await self.subscribe_to_game_state()
+
+        # Check if user is authenticated
+        if self.user_id is None:
+            await self.close()
+            logger.error("User not authenticated")
+            return
         
         # Set user state to 'playing' in Redis
-        redis_instance.set(f"user:{self.user_id}:state", "playing", ex=3600)
+        await self.set_user_state("playing")
+        await self.set_user_match_id(self.game_id)
+
+        # Increment the connection count for the game
+        await self.increment_connection_count()
 
         # Add the connection to the channel group for this game
         await self.channel_layer.group_add(self.game_id, self.channel_name)
+
+        # Accept the WebSocket connection
         await self.accept()
 
         logger.info(f"User {self.user_id} connected to game {self.game_id}")
+
+        # Set user_id, match_id and online status in Redis
         await save_user_info(user_id=self.user_id, online_status="playing", current_match_id=self.game_id, ttl=3600)
 
-        async with GameSessionConsumer.broadcast_lock:
-            if GameSessionConsumer.broadcast_task is None:
-                GameSessionConsumer.broadcast_task = asyncio.create_task(self.broadcast_game_data())
+        # Initialize lock for the game_id if not already present
+        if self.game_id not in GameSessionConsumer.broadcast_locks:
+            GameSessionConsumer.broadcast_locks[self.game_id] = asyncio.Lock()
 
+        # Create a broadcast task for the game if not already present
+        async with GameSessionConsumer.broadcast_locks[self.game_id]:
+            if self.game_id not in GameSessionConsumer.broadcast_tasks:
+                GameSessionConsumer.broadcast_tasks[self.game_id] = asyncio.create_task(self.broadcast_game_data())
+                GameSessionConsumer.game_states[self.game_id] = asyncio.create_task(self.state_change_listener())
+            else:
+                await self.set_game_state("running")
 
     async def disconnect(self, close_code):
+        # Decrement the connection count for the game
+        redis_instance.decr(f"game:{self.game_id}:connections")
+
         # Handle user disconnecting from the game
         redis_instance.set(f"user:{self.user_id}:state", "online", ex=3600)
         logger.info(f"User {self.user_id} disconnected from game {self.game_id}")
         await self.channel_layer.group_discard(self.game_id, self.channel_name)
+    
+        # Check if there are any listeners left
+        if not await self.has_listeners(self.game_id):
+            # Perform necessary cleanup
+            logger.info(f"No listeners left for game {self.game_id}")
+            async with GameSessionConsumer.broadcast_locks[self.game_id]:
+                if self.game_id in GameSessionConsumer.broadcast_tasks:
+                    GameSessionConsumer.broadcast_tasks[self.game_id].cancel()
+                    del GameSessionConsumer.broadcast_tasks[self.game_id]
+                    del GameSessionConsumer.game_states[self.game_id]
+                # Delete the lock for the game_id
+                del GameSessionConsumer.broadcast_locks[self.game_id]
+        else:
+            await self.set_game_state("paused")
 
     async def receive(self, text_data):
         # data = json.loads(text_data)
@@ -221,25 +276,98 @@ class GameSessionConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps(event['data']))
 
     async def broadcast_game_data(self):
+        previos_state = None
         while True:
-            # game_state = redis_instance.get(f"game:{self.game_id}:state")
-            # if game_state:
-            #     await self.channel_layer.group_send(
-            #         self.game_id,
-            #         {
-            #             'type': 'game_update',
-            #             'data': json.loads(game_state)
-            #         }
-            #     )
-
-            await self.channel_layer.group_send(
-                self.game_id,
-                {
-                    'type': 'game_update',
-                    'data': {'state': 'running'}
-                }
-            )
+            if self.current_state == "running":
+                if previos_state != "running":
+                    if previos_state == "paused" and self.disconnect_timer_task:
+                        self.disconnect_timer_task.cancel()
+                        self.disconnect_timer_task = None
+                    previos_state = "running"
+                    await self.channel_layer.group_send(
+                        self.game_id,
+                        {
+                            'type': 'game_update',
+                            'data': {'state': 'running'}
+                        }
+                    )
+            elif self.current_state == "paused":
+                if previos_state != "paused":
+                    previos_state = "paused"
+                    await self.channel_layer.group_send(
+                        self.game_id,
+                        {
+                            'type': 'game_update',
+                            'data': {'state': 'paused'}
+                        }
+                    )
+                    await self.handle_player_disconnect()
+            elif self.current_state == "finished":
+                if previos_state != "finished":
+                    previos_state = "finished"
+                    await self.channel_layer.group_send(
+                        self.game_id,
+                        {
+                            'type': 'game_update',
+                            'data': {'state': 'finished'}
+                        }
+                    )           
             await asyncio.sleep(0.1)
+
+    async def set_game_state(self, state):
+        await sync_to_async(redis_instance.publish)(f"game:{self.game_id}:channel", state)
+
+    async def subscribe_to_game_state(self):
+        await sync_to_async(self.pubsub.subscribe)(f"game:{self.game_id}:channel")
+
+    async def unsubscribe_from_game_state(self):
+        await sync_to_async(self.pubsub.unsubscribe)(f"game:{self.game_id}:channel")
+    
+    async def increment_connection_count(self):
+        await sync_to_async(redis_instance.incr)(f"game:{self.game_id}:connections")
+
+    async def decrement_connection_count(self):
+        await sync_to_async(redis_instance.decr)(f"game:{self.game_id}:connections")
+
+    async def set_user_state(self, state):
+        await sync_to_async(redis_instance.set)(f"user:{self.user_id}:state", state)
+
+    async def set_user_match_id(self, match_id):
+        await sync_to_async(redis_instance.set)(f"user:{self.user_id}:current_match_id", match_id)
+
+    async def state_change_listener(self):
+        loop = asyncio.get_event_loop()
+        while True:
+            message = await loop.run_in_executor(None, self.pubsub.get_message, True, 0.1)
+            if message:
+                logger.info(f"Received message: {message}")
+                if message['type'] == 'message':
+                    self.current_state = message['data'].decode('utf-8')
+                        
+    async def handle_player_disconnect(self):
+        if self.disconnect_timer_task:
+            self.disconnect_timer_task.cancel()
+        
+        self.disconnect_timer_task = asyncio.create_task(self.start_disconnect_timer())
+
+    async def start_disconnect_timer(self):
+        try:
+            await asyncio.sleep(5)  # 30-second timer
+            await self.handle_disconnect_timeout()
+        except asyncio.CancelledError:
+            logger.info("Disconnect timer cancelled")
+
+    async def handle_disconnect_timeout(self):
+        logger.info("Player did not reconnect in time. Declaring the other player as the winner.")
+        logger.info(f"Player {self.user_id} is declared as the winner.")
+        await sync_to_async(redis_instance.delete)(f"game:{self.game_id}:channel")
+        # Implement logic to declare the other player as the winner
+        # For example, you might update the game state and notify the players
+
+    async def has_listeners(self, game_id):
+        # Check the connection count in Redis
+        connection_count = int(redis_instance.get(f"game:{game_id}:connections") or 0)
+        return connection_count > 0
 
 
 class MatchmakingConsumer(AsyncWebsocketConsumer):
@@ -258,6 +386,8 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
         )
 
         await self.accept()
+
+        await self.reconnect_to_game()
 
     async def disconnect(self, close_code):
         if self.user_id is None:
@@ -326,3 +456,18 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             'state': 'match_assigned',
             'game_id': event['game_id']
         }))
+
+    # TEST FUNCTION FOR RECONNECTING TO GAME
+    async def reconnect_to_game(self):
+        current_match = redis_instance.get(f"user:{self.user_id}:current_match_id")
+        logger.info(f"Reconnecting to game: {current_match}")
+        if current_match:
+            current_match = current_match.decode('utf-8')
+            logger.info(f"Current match: {current_match}")
+            does_match_exist = redis_instance.exists(f"game:{current_match}:state")
+            logger.info(f"Match exists: {does_match_exist}")
+            if does_match_exist:
+                await self.send(text_data=json.dumps({
+                    'state': 'reconnect',
+                    'game_id': current_match
+                }))
