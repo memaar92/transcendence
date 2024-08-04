@@ -55,8 +55,12 @@ services:
       - PGDATA=/var/lib/postgresql/data/pgdata
   
   redis:
-    container_name: redis
     image: redis:latest
+    container_name: redis
+    restart: unless-stopped
+    volumes:
+      - ./docker/redis/config/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
 
 secrets:
   psql_password:
