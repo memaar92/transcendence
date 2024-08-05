@@ -5,8 +5,16 @@
   
   <div class="container-fluid py-2">
     <h2 class="font-weight-light">Active Users</h2>
-    <div class="d-flex flex-row flex-nowrap user-list-container" id="user-list-container">
-      <!-- Active users will be appended here -->
+    <div id="user-list-container" class="user-list-container">
+      <div class="user-list-wrapper">
+        <!-- User items will be appended here -->
+      </div>
+    </div>
+    
+    <div id="vertical-user-list-container" class="user-list-container vertical" style="display: none;">
+      <div class="user-list-wrapper">
+        <!-- User items will be appended here for vertical layout -->
+      </div>
     </div>
   </div>
   
@@ -14,7 +22,7 @@
   <div class="main-content d-flex flex-grow-1 position-relative overflow-hidden">
     <!-- Friends List Container -->
     <div class="container-fluid py-2 friends-list-container transition-width" id="friends-list-container">
-      <h2 class="font-weight-light text-center">Friends</h2>
+      <h2 class="font-weight-light text-center">Chat History</h2>
       <div class="friends-scroll-container">
         <!-- Friends will be appended here -->
       </div>

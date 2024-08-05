@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.conf import settings
 from .models import Message, Relationship
 from django.utils import timezone
+from django.db import models
 from django.db.models import Q
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.tokens import UntypedToken
@@ -92,11 +93,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     await self.accept()
                     await self.broadcast_user_list()
                     await self.send(text_data=json.dumps({'type': 'user_id', 'user_id': self.user_id}))
-                    await self.send_friends_list(self.user_id)  # Add this line
-                    await self.send_pending_chat_notifications(user_id)
+                    await self.send_friends_list(self.user_id)
+                    await self.send_unread_messages_count(self.user_id)
                     print("Connected to chat")
-
-                    await self.send_pending_chat_notifications(user_id)
                     return
 
         await self.close()
@@ -147,6 +146,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 case 'update_status':
                     await self.update_status(data['user_id_1'], data['user_id_2'], data['status'])
                     await self.send_friends_list(data['user_id_1'])
+                case 'message_read':
+                    await self.update_messages_status(data['sender_id'], data['receiver_id'])
                 case _:
                     await self.send(text_data=json.dumps({
                         'type': 'error',
@@ -192,41 +193,48 @@ class ChatConsumer(AsyncWebsocketConsumer):
         sender_id = data.get('sender_id')
         message = data.get('message')
 
-        if not receiver_id or not sender_id or not message:
-            await self.send(text_data=json.dumps({
-                'type': 'error',
-                'message': 'Invalid message format.'
-            }))
-            return
-
-        status = await self.get_status(sender_id, receiver_id)
-        if status != RelationshipStatus.BEFRIENDED:
-            await self.send(text_data=json.dumps({
-                'type': 'error',
-                'message': 'You are not friends with this user.'
-            }))
-            return
-        elif receiver_id in ChatConsumer.user_id_to_channel_name:
-            receiver_channel_name = ChatConsumer.user_id_to_channel_name[receiver_id]
-            if (self.user_id == sender_id):
-                await self.send_message_to_user(receiver_id, message, 'chat_message')
-            else:
-                await self.send_websocket_message({
-                    'type': 'send_websocket_message',
-                    'sender_id': sender_id,
-                    'receiver_id': receiver_id,
-                    'text': json.dumps({
-                        'type': 'chat_message',
-                        'message': message,
+        try:
+            if not receiver_id or not sender_id or not message:
+                await self.send(text_data=json.dumps({
+                    'type': 'error',
+                    'message': 'Invalid message format.'
+                }))
+                return
+            status = await self.get_status(sender_id, receiver_id)
+            if status != RelationshipStatus.BEFRIENDED:
+                await self.send(text_data=json.dumps({
+                    'type': 'error',
+                    'message': 'You are not friends with this user.'
+                }))
+                return
+            elif receiver_id in ChatConsumer.user_id_to_channel_name:
+                receiver_channel_name = ChatConsumer.user_id_to_channel_name[receiver_id]
+                if (self.user_id == sender_id):
+                    await self.send_message_to_user(receiver_id, message, 'chat_message')
+                else:
+                    await self.send_websocket_message({
+                        'type': 'send_websocket_message',
                         'sender_id': sender_id,
-                        'receiver_id': receiver_id
+                        'receiver_id': receiver_id,
+                        'text': json.dumps({
+                            'type': 'chat_message',
+                            'message': message,
+                            'sender_id': sender_id,
+                            'receiver_id': receiver_id
+                        })
                     })
-                })
-        else:
-            print(f"Receiver {receiver_id} is offline. Message will be saved but not sent.")
-        
-        if (self.user_id == sender_id):
-            await self.save_message(sender_id, receiver_id, message)
+            else:
+                print(f"Receiver {receiver_id} is offline. Message will be saved but not sent.")
+
+            if (self.user_id == sender_id):
+                await self.save_message(sender_id, receiver_id, message)
+
+        except Exception as e:
+            await self.send(text_data=json.dumps({
+                'type': 'error',
+                'message': f'Failed to send message: {str(e)}',
+                'original_message': data
+        }))
 
     async def chat_request_accepted(self, data):
         sender_id = data['sender_id']
@@ -254,6 +262,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'sender_id': sender_id,
             'receiver_id': receiver_id
         }))
+
+    async def send_unread_messages_count(self, user_id):
+        print(f"Sending unread messages count for user {user_id}")
+        unread_messages = await self.get_unread_messages_count(user_id)
+        await self.send(text_data=json.dumps({
+            'type': 'unread_counts',
+            'unread_messages': unread_messages
+        }))
+
+    @database_sync_to_async
+    def update_messages_status(self, sender_id, receiver_id):
+        Message.objects.filter(Q(sender_id=sender_id, receiver_id=receiver_id)).update(status='read')
 
     @database_sync_to_async
     def get_chat_history(self, sender_id, receiver_id):
@@ -323,18 +343,26 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
         friend_list = []
         user_model = get_user_model()
-
+    
         for friend in friends:
-            if friend.user1_id == user_id:
+            if str(friend.user1_id) == str(user_id):
                 friend_id = friend.user2_id
             else:
                 friend_id = friend.user1_id
-
+    
             friend_user = user_model.objects.get(id=friend_id)
             friend_list.append({
                 'id': str(friend_user.id),
                 'name': friend_user.displayname,
                 'profile_picture_url': friend_user.profile_picture.url if friend_user.profile_picture else None
             })
-
+    
         return friend_list
+
+    @database_sync_to_async
+    def get_unread_messages_count(self, user_id):
+        unread_messages = Message.objects.filter(
+            receiver_id=user_id, status='unread'
+        ).values('sender_id').annotate(count=models.Count('id'))
+        unread_messages_dict = {msg['sender_id']: min(msg['count'], 99) for msg in unread_messages}
+        return unread_messages_dict

@@ -11,25 +11,18 @@ class ChatHandler {
       console.warn('WebSocket already initialized');
       return;
     }
-
     const url = `ws://${window.location.host}/ws/live_chat/?token=${authToken}`;
     console.log('WebSocket URL:', url);
-
     this.ws = new WebSocket(url);
-
     this.ws.onopen = () => {
       this.ws.send(JSON.stringify({ "loaded": true }));
     };
-
     this.ws.onerror = (e) => {
       console.error('WebSocket error:', e);
     };
-
     this.ws.onmessage = this.onMessage.bind(this);
     this.ws.onclose = this.onClose.bind(this);
-
     document.getElementById('send-message').addEventListener('click', () => this.sendMessage());
-
     this.initScrollHandling();
   }
 
@@ -55,7 +48,6 @@ class ChatHandler {
   onMessage(event) {
     const content = JSON.parse(event.data);
     console.log('Received:', content);
-
     switch (content.type) {
       case 'user_id':
         this.senderId = content.user_id;
@@ -63,11 +55,12 @@ class ChatHandler {
       case 'chat_request_notification':
         this.displayChatRequest(content);
         break;
-      case 'chat_message':
-        if (content.receiver_id === this.currentReceiverId) {
-          this.displayChatMessage(content);
-        }
-        break;
+        case 'chat_message':
+          if (content.sender_id === this.currentReceiverId || content.receiver_id === this.currentReceiverId)
+            this.displayChatMessage(content);
+          else
+            this.updateUnreadMessages(content);
+          break;
       case 'user_list':
         this.displayUserList(content.users);
         break;
@@ -79,12 +72,18 @@ class ChatHandler {
         break;
       case 'chat_history':
         this.displayChatHistory(content.messages);
+        // this.updateLatestMessage(content.messages);
         break;
       case 'friends_list':
         this.displayFriendsList(content.friends);
         break;
+      case 'unread_counts':
+        this.updateUnreadMessages(content);
+        break;
+      case 'error':
+        this.displaySystemMessage(content.message);
       default:
-        console.error('Unknown message type:', content.type);
+        console.error('Error:', content.type);
         break;
     }
   }
@@ -92,7 +91,6 @@ class ChatHandler {
   sendMessage(receiverId) {
     const messageInput = document.getElementById('message-input');
     const message = messageInput.value.trim();
-
     if (this.ws && message && receiverId && receiverId !== this.senderId) {
       const newMessage = {
         'type': 'chat_message',
@@ -101,18 +99,40 @@ class ChatHandler {
         'receiver_id': receiverId,
         'timestamp': new Date().toISOString()
       };
-  
       this.ws.send(JSON.stringify(newMessage));
-  
-      const storedMessages = JSON.parse(localStorage.getItem(`chat_history_${this.senderId}_${receiverId}`) || '[]');
-      storedMessages.push(newMessage);
-      localStorage.setItem(`chat_history_${this.senderId}_${receiverId}`, JSON.stringify(storedMessages));
-  
       messageInput.value = '';
     } else {
       console.warn('Message, receiver ID is empty, or sender and receiver are the same');
     }
   }
+
+  updateUnreadMessages(content) {
+    const friendItems = document.querySelectorAll('.friend-item');
+    friendItems.forEach(friendItem => {
+        const senderId = friendItem.getAttribute('data-id');
+        let unreadIndicator = friendItem.querySelector('.unread-indicator');
+        if (!unreadIndicator) {
+            unreadIndicator = document.createElement('div');
+            unreadIndicator.className = 'unread-indicator';
+        }
+
+        const unreadCount = content.unread_messages[senderId] || 0;
+        if (unreadCount > 0) {
+            unreadIndicator.textContent = unreadCount;
+            if (!friendItem.contains(unreadIndicator)) {
+                friendItem.appendChild(unreadIndicator);
+            }
+        } else {
+            if (friendItem.contains(unreadIndicator)) {
+                unreadIndicator.remove();
+            }
+        }
+    });
+}
+
+  // showMessageNotification(content) {
+  //   this.updateUnreadMessageIndicator(content.sender_id);
+  // }
 
   displayChatRequest(content) {
     const requests = document.getElementById('chat-window');
@@ -148,16 +168,17 @@ class ChatHandler {
   }
 
   displayUserList(users) {
-    const userListElement = document.getElementById('user-list-container');
+    const userListContainer = document.getElementById('user-list-container');
+    const userListWrapper = userListContainer.querySelector('.user-list-wrapper');
     
-    if (!userListElement) {
-      console.error('User list container not found');
+    if (!userListWrapper) {
+      console.error('User list wrapper not found');
       return;
     }
   
-    userListElement.innerHTML = '';
+    userListWrapper.innerHTML = ''; // Clear previous items
   
-    users.slice(0, 10).forEach((user) => {
+    users.forEach((user) => {
       const userItem = document.createElement('div');
       userItem.className = 'user-item';
   
@@ -172,50 +193,81 @@ class ChatHandler {
   
       userItem.appendChild(userImg);
       userItem.appendChild(userName);
-  
       userItem.onclick = () => this.openChatModal(user.id, user.name);
   
-      userListElement.appendChild(userItem);
+      userListWrapper.appendChild(userItem);
     });
+  
+    // Adjust container height to match content
+    const firstRowHeight = userListWrapper.children[0]?.offsetHeight || 0;
+    userListContainer.style.height = `${firstRowHeight + 20}px`; // Add some padding
+  
+    // Make container scrollable if content exceeds max-height
+    if (userListWrapper.offsetHeight > userListContainer.offsetHeight) {
+      userListContainer.style.overflowY = 'auto';
+    } else {
+      userListContainer.style.overflowY = 'hidden';
+    }
   }
   
-
   displayFriendsList(friends) {
     const friendListElement = document.querySelector('.friends-scroll-container');
-    
     if (!friendListElement) {
       console.error('Friend list container not found');
       return;
     }
   
     friendListElement.innerHTML = '';
-  
     console.log(friends);
+  
     friends.forEach((friend) => {
       const friendItem = document.createElement('div');
       friendItem.className = 'friend-item';
-      friendItem.setAttribute('data-id', friend.id); // Set user ID as data attribute
+      friendItem.setAttribute('data-id', friend.id);
   
       const friendImg = document.createElement('img');
       friendImg.src = friend.profile_picture_url;
       friendImg.alt = friend.name;
       friendImg.className = 'friend-avatar';
-      friendImg.onclick = () => this.openChatWindow(friend.id, friend.name); // Open chat on image click
+      friendImg.onclick = () => this.openChatWindow(friend.id, friend.name);
+  
+      const friendInfo = document.createElement('div');
+      friendInfo.className = 'friend-info';
   
       const friendName = document.createElement('div');
       friendName.className = 'friend-name';
       friendName.textContent = friend.name;
   
-      const removeButton = document.createElement('button');
-      removeButton.textContent = "Remove";
-      removeButton.className = 'remove-button';
-      removeButton.onclick = () => this.removeFriend(friend.id);
+      const messagePreview = document.createElement('div');
+      messagePreview.className = 'message-preview';
+      messagePreview.textContent = 'Loading...';
+  
+      friendInfo.appendChild(friendName);
+      friendInfo.appendChild(messagePreview);
   
       friendItem.appendChild(friendImg);
-      friendItem.appendChild(friendName);
-      friendItem.appendChild(removeButton);
+      friendItem.appendChild(friendInfo);
   
       friendListElement.appendChild(friendItem);
+  
+      // Fetch the latest message from the server
+      this.sendChatHistoryRequest(this.senderId, friend.id)
+        .then(messages => {
+          if (messages && messages.length > 0) {
+            console.log('Latest message:', messages[messages.length - 1]);
+            const latestMessage = messages[messages.length - 1];
+            const previewText = latestMessage.message.length > 30 
+              ? latestMessage.message.substring(0, 30) + '...' 
+              : latestMessage.message;
+            messagePreview.textContent = previewText;
+          } else {
+            messagePreview.textContent = 'No messages yet';
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching chat history:', error);
+          messagePreview.textContent = 'Error loading messages';
+        });
     });
   }
 
@@ -227,14 +279,27 @@ class ChatHandler {
     const closeButton = document.getElementById('close-chat');
     const sendButton = document.getElementById('send-message');
     const messageInput = document.getElementById('message-input');
+    const friendItem = document.querySelector(`.friend-item[data-id="${friendId}"]`);
+    const unreadIndicator = friendItem?.querySelector('.unread-indicator');
+    if (unreadIndicator) {
+      unreadIndicator.remove();
+      this.ws.send(JSON.stringify({
+        'type': 'message_read',
+        'sender_id': friendId,
+        'receiver_id': this.senderId
+      }));
+    }
+
   
     chatTitle.textContent = `Chat with ${friendName}`;
   
     mainContent.classList.add('chat-open');
     chatWindow.classList.add('open');
     friendsListContainer.classList.add('chat-open');
+    
   
     const messagesContainer = document.getElementById('chat-messages');
+    
     messagesContainer.innerHTML = '';
   
     messageInput.value = '';
@@ -352,15 +417,35 @@ class ChatHandler {
   }
 
   sendChatHistoryRequest(senderId, receiverId) {
-    if (this.ws && senderId && receiverId) {
-      this.ws.send(JSON.stringify({
-        'type': 'chat_history_request',
-        'sender_id': senderId,
-        'receiver_id': receiverId
-      }));
-    } else {
-      console.warn('Cannot request chat history, WebSocket is not initialized or IDs are missing');
-    }
+    return new Promise((resolve, reject) => {
+      if (this.ws && senderId && receiverId) {
+        const requestId = Date.now().toString();
+  
+        const messageHandler = (event) => {
+          const content = JSON.parse(event.data);
+          if (content.type === 'chat_history' && content.sender_id === senderId && content.receiver_id === receiverId) {
+            this.ws.removeEventListener('message', messageHandler);
+            resolve(content.messages);
+          }
+        };
+  
+        this.ws.addEventListener('message', messageHandler);
+  
+        this.ws.send(JSON.stringify({
+          'type': 'chat_history',
+          'sender_id': senderId,
+          'receiver_id': receiverId,
+          'request_id': requestId
+        }));
+  
+        setTimeout(() => {
+          this.ws.removeEventListener('message', messageHandler);
+          reject(new Error('Chat history request timed out'));
+        }, 5000);
+      } else {
+        reject(new Error('Cannot request chat history, WebSocket is not initialized or IDs are missing'));
+      }
+    });
   }
 
   initScrollHandling() {
