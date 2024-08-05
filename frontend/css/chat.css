@@ -1,4 +1,59 @@
-/* Maintain existing styles */
+.user-list-container {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  width: 100%;
+  padding: 1rem 0;
+  background-color: transparent;
+  border-bottom: #7A35EC 2px solid;
+  overflow-y: auto;
+  max-height: 40vh; /* Adjust this value as needed */
+}
+
+.user-list-wrapper {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 1rem;
+  justify-content: center;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.user-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.user-item img {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 0.5rem;
+  border: 5px solid #7A35EC;
+}
+
+.username {
+  font-size: 1rem;
+  font-weight: bold;
+  color: white;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Hover effect for user item */
+.user-item:hover {
+  transform: translateY(-5px);
+  transition: ease-in-out;
+}
+
+/* Additional styles for other components */
 .button {
   color: var(--dl-color-theme-neutral-dark);
   display: inline-block;
@@ -16,12 +71,12 @@
   border-color: var(--dl-color-theme-neutral-dark);
   border-width: 1px;
   border-radius: 4px;
-  background-color: var(--dl-color-theme-neutral-light);
+  background-color: var (--dl-color-theme-neutral-light);
 }
 
 .list {
   width: 100%;
-  margin: 1em 0px 1em 0px;
+  margin: 1em 0px;
   display: block;
   padding: 0px 0px 0px 1.5rem;
   list-style-type: none;
@@ -46,66 +101,6 @@
   background-color: #343a40;
 }
 
-.user-list-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow-x: auto;
-  padding: 1rem 0;
-  border-bottom: 3px solid #7A35EC;
-  background-color: transparent;
-  white-space: nowrap;
-  pointer-events: auto;
-}
-
-.user-list-container:hover {
-  overflow-x: auto;
-}
-
-.user-list-container::-webkit-scrollbar {
-  height: 0px;
-}
-
-.user-list-container::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.user-list-container::-webkit-scrollbar-thumb {
-  background: transparent;
-}
-
-.user-item, .friend-item {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  background-color: transparent;
-  flex: 0 0 auto;
-  margin: 0 10px;
-  cursor: pointer;
-}
-
-.user-item img, .friend-item img {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  object-fit: cover;
-  margin-bottom: 0.5rem;
-  border-width: 5px;
-  border-color: #7A35EC;
-  border-style: solid;
-}
-
-.user-item img:hover {
-  transform: translateY(-5px);
-  transition: all 0.3s ease-in-out;
-}
-
-.user-item .username, .friend-item .friend-name {
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: white;
-}
-
 .button-container {
   display: flex;
   align-items: flex-start;
@@ -122,23 +117,22 @@
 }
 
 #content {
-  height: 100vh;
   display: flex;
   flex-direction: column;
+  height: 100vh;
 }
 
 .main-content {
-  height: 100%; /* Occupy full height */
+  flex: 1;
   display: flex;
-  flex-grow: 1;
   position: relative;
   overflow: hidden;
 }
 
 .friends-list-container {
-  flex-grow: 1;
+  flex: 1;
   overflow-y: auto;
-  transition: all 0.3s ease-in-out;
+  transition: width 0.3s ease-in-out;
   padding: 1rem;
   width: 100%;
   display: flex;
@@ -154,10 +148,10 @@
 
 .chat-window {
   position: absolute;
-  top: 50px; /* Adjust based on the height of the user list container */
+  top: 0;
   right: 0;
   width: 50%;
-  height: calc(100% - 50px); /* Adjust based on the height of the user list container */
+  height: 100%;
   background-color: white;
   border-left: 1px solid #ddd;
   transition: transform 0.3s ease-in-out;
@@ -207,34 +201,48 @@
 
 .friend-item {
   display: flex;
-  flex-direction: row;
   align-items: center;
   padding: 10px;
   border-bottom: 1px solid #e9ecef;
   width: 100%;
-  justify-content: space-between;
+  position: relative;
 }
 
 .friend-item:last-child {
   border-bottom: none;
 }
 
+
 .friend-item img {
   width: 65px;
   height: 65px;
   border-radius: 50%;
   margin-right: 15px;
-  cursor: pointer; /* Add cursor pointer to indicate clickability */
+  cursor: pointer;
 }
 
 .friend-item img:hover {
   transform: scale(1.05);
-  transition:ease-in-out;
+  transition: ease-in-out;
+}
+
+.friend-info {
+  flex-grow: 1;
+  overflow: hidden;
 }
 
 .friend-name {
   font-size: 1rem;
-  flex-grow: 1;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.message-preview {
+  font-size: 0.9rem;
+  color: #6c757d;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .remove-button {
@@ -275,7 +283,7 @@
 
 .friends-list-container {
   transition: width 0.3s ease-in-out;
-  overflow-y: auto; /* Make the container scrollable */
+  overflow-y: auto;
 }
 
 .friends-list-container.chat-open {
@@ -284,5 +292,15 @@
 
 .chat-window {
   transition: all 0.3s ease-in-out;
-  height: calc(100% - 50px); /* Adjust based on the height of the user list container */
+  height: calc(100% - 50px);
+}
+
+.unread-indicator {
+  position: relative ;
+  background-color: red;
+  color: white;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 12px;
+  font-weight: bold;
 }
