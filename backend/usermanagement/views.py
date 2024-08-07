@@ -260,17 +260,13 @@ class GenerateOTPView(APIView):
 	permission_classes = [AllowAny]
 	serializer_class = GenerateOTPSerializer
 
-	# 1. Successful genaration --> 200 / id, email
-	# 2. User already verified --> 400 / description (user already verified)
-	# 3. User not found --> 404 / description (user not found)
-	# 4. Too many request / locked --> 429 / description (too many requests)
-	'''
 	@extend_schema(
+		request=GenerateOTPSerializer,
 		responses={
 			(200, 'application/json'): {
 				'type': 'object',
 				'properties': {
-					'message': {'type': 'string', 'enum': ['OTP generated successfully']},
+					'detail': {'type': 'string', 'enum': ['OTP generated successfully']},
 					'id': {'type': 'integer'},
 					'email': {'type': 'string', 'format': 'email'}
 				},
@@ -278,34 +274,30 @@ class GenerateOTPView(APIView):
 			(400, 'application/json'): {
 				'type': 'object',
 				'properties': {
-					'detail': {'type': 'string', 'enum': ['TBD. User already verified']}
+					'detail': {'type': 'string', 'enum': ['User already verified']}
 				},
 			},
 			(404, 'application/json'): {
 				'type': 'object',
 				'properties': {
-					'detail': {'type': 'string', 'enum': ['TBD. User not found']}
+					'detail': {'type': 'string', 'enum': ['User not found']}
 				},
 			},
 			(429, 'application/json'): {
-				'description': 'TBD. Maximum OTP attempts or generations exceeded',
 				'type': 'object',
 				'properties': {
-					'detail': {'type': 'string'}
+					'detail': {'type': 'string', 'enum': ['Exceeded maximum OTP attempts or generations. Please try again later.']}
 				},
 			},
 		},
 	)
-	'''
+
 	def post(self, request):
 		serializer = GenerateOTPSerializer(data=request.data)
 		serializer.is_valid(raise_exception=True)
 		user_profile = get_object_or_404(CustomUser, pk=request.data['id'])
 		if user_profile.email_verified == True:
-			raise NotFound("User already verified", code="not_found")
-			#raise ValidationError("User already verified", code="404")
-			#return Response(status=404)
-			#return Response({'detail': 'User already verified'}, status=400) #what should be the status code here?
+			return Response({'detail': 'User already verified'}, status=400)
 		
 		otp_lock_key = f'{user_profile.id}_otp_lock'
 		otp_attempts_key = f'{user_profile.id}_otp_attempts'
@@ -316,8 +308,7 @@ class GenerateOTPView(APIView):
 
 		#protect against brute force otp guessing
 		if cache.get(otp_lock_key):
-			return HTTP_429_TOO_MANY_REQUESTS('Exceeded maximum OTP attempts or generations. Please try again later.')
-			#return Response({'detail': 'Exceeded maximum OTP attempts or generations. Please try again later.'}, status=429)
+			return Response({'detail': 'Exceeded maximum OTP attempts or generations. Please try again later.'}, status=429)
 		#protect against infinte otp generation
 		if otp_attempts >= MAX_OTP_ATTEMPTS:
 			cache.set(otp_lock_key, True, timeout=OTP_LOCK_TIME)
@@ -329,48 +320,43 @@ class GenerateOTPView(APIView):
 		cache.set(otp_cache_key, otp, timeout=300)
 		cache.incr(otp_attempts_key)
 
-		#send email with otp
+		#send email with otp // for testing this is disabled and the otp is printed in the console
 		print("send email with otp", otp)
-		
-		return Response({'message': 'OTP generated successfully', 'id': user_profile.id, 'email': user_profile.email}, status=200)
-		
+
+		return Response({'detail': 'OTP generated successfully', 'id': user_profile.id, 'email': user_profile.email}, status=200)
+
 
 class ValidateEmailView(APIView, CookieCreationMixin): 
 	permission_classes = [AllowAny]
 	serializer_class = ValidateEmailSerializer
 
-	# 1. Successful validation --> 200 / access and refresh tokens as cookies (description: successfully verified?)
-	# 2. OTP expired --> 401 / body mit suberror code: 905 description (OTP expired. Please request a new one.)
-	# 3. Invalid OTP --> 401 / body mit suberror code: 904 / description (Invalid OTP)
-	# 4. Too many request / locked --> 429 / description (too many requests)
-	# 5. User not found --> 404 / description (user not found)
-
 	@extend_schema(
+		request=ValidateEmailSerializer,
 		responses={
 			(200, 'application/json'): {
 				'type': 'object',
 				'properties': {
-					'message': {'type': 'string', 'enum': ['TBD. THis returns access and refresh tokens as cookies']},
+					'detail': {'type': 'string', 'enum': ['Successfully verified']},
 				},
 			},
-			(400, 'application/json'): {
+			# is there a better way to represent the different error messages with drf spectatular?
+			(401, 'application/json'): {
 				'type': 'object',
 				'properties': {
-					'detail': {'type': 'string', 'enum': ['TBD. OTP expired. Please request a new one.']},
-					'message': {'type': 'string', 'enum': ['TBD. Invalid OTP']},
+					'detail': {'type': 'string', 'enum': ['Invalid OTP', 'OTP expired. Please request a new one.']},
+					'suberror code': {'type': 'int', 'enum': ['904', '905']},
 				},
 			},
 			(404, 'application/json'): {
 				'type': 'object',
 				'properties': {
-					'detail': {'type': 'string', 'enum': ['TBD. User not found']}
+					'detail': {'type': 'string', 'enum': ['User not found']}
 				},
 			},
 			(429, 'application/json'): {
-				'description': 'TBD. Exceeded maximum OTP attempts. Please try again later.',
 				'type': 'object',
 				'properties': {
-					'detail': {'type': 'string'}
+					'detail': {'type': 'string', 'enum': ['Exceeded maximum OTP attempts. Please try again later.']}
 				},
 			},
 		},
@@ -387,7 +373,7 @@ class ValidateEmailView(APIView, CookieCreationMixin):
 		stored_otp = cache.get(otp_cache_key)
 
 		if not stored_otp:
-			return Response({'detail': 'OTP expired. Please request a new one.'}, status=status.HTTP_400_BAD_REQUEST) #status code?
+			return Response({'detail': 'OTP expired. Please request a new one.', 'suberror code': 905}, status=401)
 
 		if stored_otp != otp_provided:
 			if cache.get(otp_attempts_key) >= MAX_OTP_ATTEMPTS:
@@ -396,7 +382,7 @@ class ValidateEmailView(APIView, CookieCreationMixin):
 				cache.set(otp_attempts_key, 0)
 				return Response({'detail': 'Exceeded maximum OTP attempts. Please try again later.'}, status=429)
 			cache.incr(otp_attempts_key)
-			return Response({'detail': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST) #status code?
+			return Response({'detail': 'Invalid OTP', 'suberror code': 904}, status=401)
 		
 		if stored_otp == otp_provided:
 			cache.delete(otp_cache_key)
@@ -404,8 +390,9 @@ class ValidateEmailView(APIView, CookieCreationMixin):
 			user_profile.email_verified = True
 			user_profile.save()
 			token = get_tokens_for_user(user_profile)
-			response = Response(token, status=status.HTTP_200_OK)
+			response = Response(token, status=200)
 			self.createCookies(response)
+			response.data = {'detail': 'Successfully verified'}
 			return response
 
 def get_tokens_for_user(user):
@@ -415,3 +402,4 @@ def get_tokens_for_user(user):
         'access': str(refresh.access_token),
         'refresh': str(refresh),
     }
+
