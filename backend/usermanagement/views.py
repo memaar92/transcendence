@@ -25,14 +25,13 @@ from io import BytesIO
 import base64
 
 
-
 MAX_OTP_ATTEMPTS = 5
 OTP_LOCK_TIME = 300
 
 
 #TO DO: add a cron job that regularly deletes users that have not verified their email within a certain time frame
 #TO DO: add a cron job that regularly deletes expired tokens from the blacklist
-#TO DO: everywhere were access token is sent, if expired --> 401 / description (token expired)
+#TO DO: everywhere were access token is sent, if expired --> 401 / detail: token expired
 #TO DO: log out endpoint
 
 class CreateUserView(generics.CreateAPIView):
@@ -166,7 +165,6 @@ class CookieCreationMixin:
 		del response.data['refresh']
 		
 
-#check if email is verified? (kinda already done when frontend checks if email is verified, but still if someone manages to call the login endpoint directly...)
 class CustomTokenObtainPairView(TokenObtainPairView, CookieCreationMixin):
 
 	# discussion with Wayne: 
@@ -174,6 +172,8 @@ class CustomTokenObtainPairView(TokenObtainPairView, CookieCreationMixin):
 	# 2. User not found --> 404 / description (user not found) Q: In what case is this even triggered?
 	# 3. Invalid credentials --> 401 / (No active account found with the given credentials) Out of the box: no differentiation between email and pw error
 	# 2FA flow unclear
+	# check if email is verified? (kinda already done when frontend checks if email is verified, but still if someone manages to call the login endpoint directly...)
+
 
 	@extend_schema(
 		responses={
@@ -416,6 +416,7 @@ class ValidateEmailView(APIView, CookieCreationMixin):
 			return response
 
 
+# maybe add to utils as this is also required in the 42_auth flow
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
 
