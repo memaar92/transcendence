@@ -32,21 +32,22 @@ OTP_LOCK_TIME = 300
 
 #TO DO: add a cron job that regularly deletes users that have not verified their email within a certain time frame
 #TO DO: add a cron job that regularly deletes expired tokens from the blacklist
-
-# everywhere were access token is sent, if expired --> 401 / description (token expired)
+#TO DO: everywhere were access token is sent, if expired --> 401 / description (token expired)
+#TO DO: log out endpoint
 
 class CreateUserView(generics.CreateAPIView):
-	# 1. user successfully created: 201 / id, email
-	# 2. error messages (currently coming from Django): 400 / error messages
-	# (maybe differntiate between email and pw error)
+	# Discussion with Wayne:
+	# (maybe differentiate between email and pw error)
+	# TO DO: integrate backend library for pw checking
 
 	queryset = CustomUser.objects.all()
 	serializer_class = UserCreateSerializer
 	permission_classes = [AllowAny]
-	#TO DO: backend library for pw checking --> discord
+	
 	
 
 class EditUserView(generics.RetrieveUpdateDestroyAPIView):
+	# not discussed with Wayne yet
 	serializer_class = UserSerializer
 	permission_classes = [IsAuthenticated, IsSelf]
 	http_method_names = ['patch', 'delete']
@@ -61,6 +62,7 @@ class EditUserView(generics.RetrieveUpdateDestroyAPIView):
 		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class UserView(APIView):
+	# not discussed with Wayne yet
 	permission_classes = [IsAuthenticated]
 
 	def get(self, request, pk):
@@ -73,6 +75,7 @@ class UserView(APIView):
 		return Response(serializer.data)
 
 class GameHistoryList(APIView):
+	# not discussed with Wayne yet
 	permission_classes = [AllowAny]
 	#only allow GET requests
 	def get(self, request, format=None):
@@ -81,6 +84,7 @@ class GameHistoryList(APIView):
 		return Response(serializer.data)
 	
 class ProfilePictureDeleteView(APIView):
+	# not discussed with Wayne yet
 	permission_classes = [IsAuthenticated]
 
 	def get_object(self):
@@ -105,6 +109,7 @@ class ProfilePictureDeleteView(APIView):
 		return Response(status=status.HTTP_204_NO_CONTENT)
 
 class TOTPSetupView(APIView):
+	# not discussed with Wayne yet
 	permission_classes = [IsAuthenticated]
 
 	def get(self, request):
@@ -164,24 +169,34 @@ class CookieCreationMixin:
 #check if email is verified? (kinda already done when frontend checks if email is verified, but still if someone manages to call the login endpoint directly...)
 class CustomTokenObtainPairView(TokenObtainPairView, CookieCreationMixin):
 
-	# 1. Successful login --> 200 / access and refresh tokens as cookies
-	# 2. User not found --> 404 / description (user not found)
-	# 3. Invalid credentials --> 401 / (Invalid credentials)
+	# discussion with Wayne: 
+	# 1. Successful login --> 200 / access and refresh tokens as cookies DONE
+	# 2. User not found --> 404 / description (user not found) Q: In what case is this even triggered?
+	# 3. Invalid credentials --> 401 / (No active account found with the given credentials) Out of the box: no differentiation between email and pw error
+	# 2FA flow unclear
 
 	@extend_schema(
 		responses={
 			(200, 'application/json'): {
 				'type': 'object',
 				'properties': {
+					'detail': {'type': 'string', 'enum': ['Access and refresh tokens successfully created']}
+				},
+			},
+			(401, 'application/json'): {
+				'type': 'object',
+				'properties': {
+					'detail': {'type': 'string', 'enum': ['No active account found with the given credentials']}
 				},
 			},
 		},
 	)
+	
 
 	def post(self, request, *args, **kwargs):
 		response = super().post(request, *args, **kwargs)
 		user = CustomUser.objects.get(email=request.data['email'])
-		user_profile = get_object_or_404(CustomUser, email=user)
+		user_profile = get_object_or_404(CustomUser, email=user) # in what case is this even triggered?
 		totp = pyotp.TOTP(user_profile.totp_secret)
 
 		if user_profile.totp_secret:
@@ -193,20 +208,24 @@ class CustomTokenObtainPairView(TokenObtainPairView, CookieCreationMixin):
 		
 		self.createCookies(response)
 		csrf.get_token(request) #probably set by TokenObtainPairView or middleware already?
+		response.data = {'detail': 'Access and refresh tokens successfully created'}
 		return response
 
 
 class CustomTokenRefreshView(TokenRefreshView, CookieCreationMixin):
-
-	# 1. Successful refresh --> 200 / access and refresh tokens as cookies
-	# 2. Invalid refresh token --> 401 / description (Invalid refresh token)
-
-
 	@extend_schema(
 		responses={
 			(200, 'application/json'): {
 				'type': 'object',
 				'properties': {
+					'detail': {'type': 'string', 'enum': ['Access and refresh tokens successfully created']}
+				},
+			},
+			(401, 'application/json'): {
+				'type': 'object',
+				'properties': {
+					'detail': {'type': 'string', 'enum': ['Token is blacklisted', 'Token is invalid or expired']},
+					'code': {'type': 'string', 'enum': ['token_not_valid']}
 				},
 			},
 		},
@@ -215,7 +234,9 @@ class CustomTokenRefreshView(TokenRefreshView, CookieCreationMixin):
 	def post(self, request, *args, **kwargs):
 		response = super().post(request, *args, **kwargs)
 		self.createCookies(response)
+		response.data = {'detail': 'Access and refresh tokens successfully created'}
 		return response
+
 
 class CheckEmail(APIView):
 	permission_classes = [AllowAny]
@@ -226,34 +247,33 @@ class CheckEmail(APIView):
 			(200, 'application/json'): {
 				'type': 'object',
 				'properties': {
-					'detail': {'type': 'string', 'enum': ['User with this email exists OR User with this email exists but email not verified']},
-					'id': {'type': 'integer'}
+					'detail': {'type': 'string', 'enum': ['User with this email exists']},
+					'id': {'type': 'integer'},
+					'email_verified': {'type': 'boolean'}
 				},
 			},
 			(400, 'application/json'): {
 				'type': 'object',
 				'properties': {
-					'detail': {'type': 'string', 'enum': ['TBD. User with this email does not exist']}
+					'detail': {'type': 'string', 'enum': ['Bad request']}
+				},
+			},
+			(404, 'application/json'): {
+				'type': 'object',
+				'properties': {
+					'detail': {'type': 'string', 'enum': ['User with this email does not exist']}
 				},
 			},
 		},
 	)
 
-	# Methode: GET (email als query parameter)
-	# 1. Falsche Anfrage --> 400
-	# 2. Email existiert nicht --> 404 / description in response (Email not found)
-	# 3. Email existiert, aber nicht verifiziert --> 200 / user_id + bool email_verified
-	# 4. Email existiert und verifiziert --> 200 / user_id + bool email_verified
-
 	def post(self, request):
 		serializer = CheckEmailSerializer(data=request.data)
 		serializer.is_valid(raise_exception=True)
 		user = CustomUser.objects.filter(email=request.data['email']).values('email', 'email_verified', 'id')
-		if user.exists() and user.first()['email_verified'] == True:
-			return Response({'detail': 'User with this email exists'}, status=status.HTTP_200_OK)
-		elif user.exists() and user.first()['email_verified'] == False:
-			return Response({'detail': 'User with this email exists but email not verified', 'id': user.first()['id']}, status=200) #status code?
-		return Response({'detail': 'User with this email does not exist'}, status=status.HTTP_404_NOT_FOUND) #tstaus code?
+		if user.exists():
+			return Response({'detail': 'User with this email exists', 'id': user.first()['id'], 'email_verified': user.first()['email_verified']}, status=200)
+		return Response({'detail': 'User with this email does not exist'}, status=404)
 
 
 class GenerateOTPView(APIView): 
@@ -394,6 +414,7 @@ class ValidateEmailView(APIView, CookieCreationMixin):
 			self.createCookies(response)
 			response.data = {'detail': 'Successfully verified'}
 			return response
+
 
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
