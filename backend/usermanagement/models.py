@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
-from .utils import random_filename, MAX_LENGTH_DISPLAYNAME
+from utils.utils import random_filename, MAX_LENGTH_DISPLAYNAME
 
 #Custom User Manager
 #This class is used to create a user and a superuser

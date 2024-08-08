@@ -1,7 +1,7 @@
 from .models import Games
 from rest_framework import serializers
 from .models import CustomUser
-from .utils import generateUsername
+from utils.utils import generateUsername
 
 class UserSerializer(serializers.ModelSerializer):
 	class Meta:

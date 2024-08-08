@@ -17,6 +17,8 @@ from django.middleware import csrf
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, inline_serializer
 from drf_spectacular.types import OpenApiTypes
 from .permissions import IsSelf
+from utils.utils import get_tokens_for_user
+from utils.mixins import CookieCreationMixin
 import pyotp
 import qrcode
 import random
@@ -158,29 +160,6 @@ class TOTPVerifyView(APIView):
 			return Response({'detail': '2FA verification successful'}, status=status.HTTP_200_OK)
 		return Response({'detail': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
 
-
-class CookieCreationMixin:
-	def createCookies(self, response):
-		response.set_cookie(
-			key = settings.SIMPLE_JWT['AUTH_COOKIE'],
-			value = response.data['access'],
-			expires = settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'],
-			secure = settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
-			httponly = settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
-			samesite = settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
-		)
-		response.set_cookie(
-			key = settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH'],
-			value = response.data['refresh'],
-			path = settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH_PATH'],
-			expires = settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'],
-			secure = settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
-			httponly = settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
-			samesite = settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
-		)
-		del response.data['access']
-		del response.data['refresh']
-		
 
 class CustomTokenObtainPairView(TokenObtainPairView, CookieCreationMixin):
 
@@ -431,14 +410,4 @@ class ValidateEmailView(APIView, CookieCreationMixin):
 			self.createCookies(response)
 			response.data = {'detail': 'Successfully verified'}
 			return response
-
-
-# maybe add to utils as this is also required in the 42_auth flow
-def get_tokens_for_user(user):
-    refresh = RefreshToken.for_user(user)
-
-    return {
-        'access': str(refresh.access_token),
-        'refresh': str(refresh),
-    }
 
