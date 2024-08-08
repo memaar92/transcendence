@@ -31,8 +31,25 @@ OTP_LOCK_TIME = 300
 
 #TO DO: add a cron job that regularly deletes users that have not verified their email within a certain time frame
 #TO DO: add a cron job that regularly deletes expired tokens from the blacklist
-#TO DO: everywhere were access token is sent, if expired --> 401 / detail: token expired
 #TO DO: log out endpoint
+
+
+#everywhere where access token is sent, if expired --> 401 / detail: token expired
+#out of the box:
+'''
+{
+    "detail": "Given token not valid for any token type",
+    "code": "token_not_valid",
+    "messages": [
+        {
+            "token_class": "AccessToken",
+            "token_type": "access",
+            "message": "Token is invalid or expired"
+        }
+    ]
+}
+'''
+
 
 class CreateUserView(generics.CreateAPIView):
 	# Discussion with Wayne:
