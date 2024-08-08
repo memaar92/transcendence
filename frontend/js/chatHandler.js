@@ -4,13 +4,17 @@ class ChatHandler {
     this.senderId = null;
     this.currentReceiverId = null;
     this.friendsList = [];
+    this.onlineUserIds = [];
+    this.router = null;
   }
 
-  async init(authToken) {
+  async init(authToken, params, router) {
     if (this.ws) {
       console.warn('WebSocket already initialized');
       return;
     }
+
+    this.router = router;  // Save the router instance
     const url = `ws://${window.location.host}/ws/live_chat/?token=${authToken}`;
     console.log('WebSocket URL:', url);
     this.ws = new WebSocket(url);
@@ -22,7 +26,13 @@ class ChatHandler {
     };
     this.ws.onmessage = this.onMessage.bind(this);
     this.ws.onclose = this.onClose.bind(this);
-    document.getElementById('send-message').addEventListener('click', () => this.sendMessage());
+    
+    // Handle message sending on the chat page
+    if (params && params.friendId) {
+      this.currentReceiverId = params.friendId;
+      document.getElementById('send-message').addEventListener('click', () => this.sendMessage(this.currentReceiverId));
+    }
+
     this.initScrollHandling();
   }
 
@@ -58,8 +68,6 @@ class ChatHandler {
         case 'chat_message':
           if (content.sender_id === this.currentReceiverId || content.receiver_id === this.currentReceiverId)
             this.displayChatMessage(content);
-          else
-            this.updateUnreadMessages(content);
           break;
       case 'user_list':
         this.displayUserList(content.users);
@@ -176,8 +184,10 @@ class ChatHandler {
       return;
     }
   
-    userListWrapper.innerHTML = ''; // Clear previous items
+    userListWrapper.innerHTML = '';
   
+    this.onlineUserIds = users.map(user => user.id);
+
     users.forEach((user) => {
       const userItem = document.createElement('div');
       userItem.className = 'user-item';
@@ -193,21 +203,37 @@ class ChatHandler {
   
       userItem.appendChild(userImg);
       userItem.appendChild(userName);
-      userItem.onclick = () => this.openChatModal(user.id, user.name);
+      // userItem.onclick = () => this.openChatModal(user.id, user.name);
   
       userListWrapper.appendChild(userItem);
     });
   
-    // Adjust container height to match content
     const firstRowHeight = userListWrapper.children[0]?.offsetHeight || 0;
     userListContainer.style.height = `${firstRowHeight + 20}px`; // Add some padding
   
-    // Make container scrollable if content exceeds max-height
     if (userListWrapper.offsetHeight > userListContainer.offsetHeight) {
       userListContainer.style.overflowY = 'auto';
     } else {
       userListContainer.style.overflowY = 'hidden';
     }
+    this.updateFriendStatusIndicators();
+  }
+
+  updateFriendStatusIndicators() {
+    const friendItems = document.querySelectorAll('.friend-item');
+    friendItems.forEach(friendItem => {
+      const friendId = friendItem.getAttribute('data-id');
+      
+      const isOnline = this.onlineUserIds.includes(friendId);
+  
+      const friendImg = friendItem.querySelector('img');
+  
+      if (friendImg) {
+        friendImg.style.border = isOnline ? '4px solid #7A35EC' : '4px solid grey';
+      } else {
+        console.error('Image not found for friend item:', friendId);
+      }
+    });
   }
   
   displayFriendsList(friends) {
@@ -218,7 +244,6 @@ class ChatHandler {
     }
   
     friendListElement.innerHTML = '';
-    console.log(friends);
   
     friends.forEach((friend) => {
       const friendItem = document.createElement('div');
@@ -250,7 +275,6 @@ class ChatHandler {
   
       friendListElement.appendChild(friendItem);
   
-      // Fetch the latest message from the server
       this.sendChatHistoryRequest(this.senderId, friend.id)
         .then(messages => {
           if (messages && messages.length > 0) {
@@ -273,39 +297,20 @@ class ChatHandler {
 
   openChatWindow(friendId, friendName) {
     const chatWindow = document.getElementById('chat-window');
-    const friendsListContainer = document.getElementById('friends-list-container');
-    const mainContent = document.querySelector('.main-content');
     const chatTitle = document.getElementById('chat-title');
+    const messagesContainer = document.getElementById('chat-messages');
+    const messageInput = document.getElementById('message-input');
     const closeButton = document.getElementById('close-chat');
     const sendButton = document.getElementById('send-message');
-    const messageInput = document.getElementById('message-input');
-    const friendItem = document.querySelector(`.friend-item[data-id="${friendId}"]`);
-    const unreadIndicator = friendItem?.querySelector('.unread-indicator');
-    if (unreadIndicator) {
-      unreadIndicator.remove();
-      this.ws.send(JSON.stringify({
-        'type': 'message_read',
-        'sender_id': friendId,
-        'receiver_id': this.senderId
-      }));
-    }
-
   
     chatTitle.textContent = `Chat with ${friendName}`;
-  
-    mainContent.classList.add('chat-open');
     chatWindow.classList.add('open');
-    friendsListContainer.classList.add('chat-open');
-    
   
-    const messagesContainer = document.getElementById('chat-messages');
-    
     messagesContainer.innerHTML = '';
-  
     messageInput.value = '';
-  
     this.currentReceiverId = friendId;
-    
+  
+    // Load chat history from localStorage
     const storedMessages = localStorage.getItem(`chat_history_${this.senderId}_${friendId}`);
     if (storedMessages) {
       this.displayChatHistory(JSON.parse(storedMessages));
@@ -315,12 +320,20 @@ class ChatHandler {
   
     closeButton.onclick = () => this.closeChatWindow();
     sendButton.onclick = () => this.sendMessage(friendId);
-    messageInput.onkeypress= (e) => {
+    messageInput.onkeypress = (e) => {
       if (e.key === 'Enter') {
         this.sendMessage(friendId);
       }
     };
+  
+    if (this.router) {
+      const encodedName = encodeURIComponent(friendName);
+      this.router.navigate(`/live_chat/${encodedName}`);
+    } else {
+      console.error('Router instance is undefined');
+    }
   }
+  
   
   closeChatWindow() {
     const chatWindow = document.getElementById('chat-window');

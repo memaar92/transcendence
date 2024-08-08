@@ -1,105 +1,116 @@
 import ChatHandler from './chatHandler.js';
+
 class Router {
   constructor(routes) {
-      this.routes = routes;
-      this.currentRoute = null;
-      this.app = null;
-      this.currentHistoryPosition = 0;
-      this.maxHistoryPosition = 0;
+    this.routes = routes;
+    this.currentRoute = null;
+    this.app = null;
 
-      // TODO: login check
-      window.addEventListener('popstate', this.handlePopState.bind(this));
-      this.bindLinks();
+    window.addEventListener('popstate', this.handlePopState.bind(this));
+    this.bindLinks();
   }
 
   init(app) {
-      this.app = app;
-      this.navigate(window.location.pathname);
+    this.app = app;
+    this.navigate(window.location.pathname, false); // Don't push state on initial load
   }
 
   addRoute(path, templateUrl) {
-      this.routes.push({ path, templateUrl });
+    this.routes.push({ path, templateUrl });
   }
 
   async navigate(path, pushState = true) {
-      console.log(path);
-      console.log(this.routes);
-      const route = this.routes.find(route => route.path === path);
-      console.log(route);
-      if (route) {
-          this.currentRoute = route;
-          if (pushState) {
-              this.currentHistoryPosition++;
-              this.maxHistoryPosition = this.currentHistoryPosition;
-              history.pushState({ position: this.currentHistoryPosition }, '', path);
-          }
-          await this.updateView();
-      } else {
-          this.currentRoute = this.routes.find(route => route.path === "/404");
-          if (pushState) {
-              this.currentHistoryPosition++;
-              this.maxHistoryPosition = this.currentHistoryPosition;
-              history.pushState({ position: this.currentHistoryPosition }, '', "/404");
-          }
-          await this.updateView();
+    const route = this.matchRoute(path);
+    if (route) {
+      this.currentRoute = route;
+      if (pushState) {
+        history.pushState({ path }, '', path);
       }
+      await this.updateView(route.params);
+    } else {
+      this.handleNotFound(pushState);
+    }
 
-      if (this.onNavigate) {
-          this.onNavigate();
+    if (this.onNavigate) {
+      this.onNavigate(route.params);  // Pass params to onNavigate callback
+    }
+  }
+
+  matchRoute(path) {
+    for (const route of this.routes) {
+      const paramNames = [];
+      const regexPath = route.path.replace(/:(\w+)/g, (_, key) => {
+        paramNames.push(key);
+        return '([^\\/]+)';
+      });
+      const regex = new RegExp(`^${regexPath}$`);
+      const match = path.match(regex);
+      if (match) {
+        const params = paramNames.reduce((acc, paramName, index) => {
+          acc[paramName] = match[index + 1];
+          return acc;
+        }, {});
+        return { ...route, params };
       }
+    }
+    return null;
+  }
+
+  async updateView(params = {}) {
+    if (this.app && this.currentRoute) {
+      try {
+        const response = await fetch(this.currentRoute.templateUrl);
+        const html = await response.text();
+        this.app.innerHTML = this.extractContent(html);
+
+        // Ensure that the view is re-initialized
+        this.onViewUpdated(params);
+      } catch (error) {
+        console.error('Error loading template:', error);
+        this.app.innerHTML = '<p>Error loading content</p>';
+      }
+    }
+  }
+
+  extractContent(html) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const content = doc.getElementById('content');
+    return content ? content.innerHTML : '<p>No content found</p>';
+  }
+
+  handleNotFound(pushState) {
+    this.currentRoute = this.routes.find(route => route.path === "/404");
+    if (pushState) {
+      history.pushState(null, '', "/404");
+    }
+    this.updateView();
   }
 
   handlePopState(event) {
-      if (event.state && event.state.position) {
-          if (event.state.position < this.currentHistoryPosition) {
-              this.currentHistoryPosition--;
-          } else {
-              this.currentHistoryPosition++;
-          }
-      }
-      this.navigate(window.location.pathname, false);
+    const path = window.location.pathname;
+    this.navigate(path, false); // Don't push state on popstate
   }
 
   bindLinks() {
-      document.addEventListener('click', (e) => {
-          if (e.target.matches('[data-router-link]')) {
-              e.preventDefault();
-              const path = e.target.getAttribute('href');
-              this.navigate(path);
-          }
-      });
+    document.body.addEventListener('click', (event) => {
+      if (event.target.tagName === 'A') {
+        const href = event.target.getAttribute('href');
+        if (href.startsWith('/')) {
+          event.preventDefault();
+          this.navigate(href);
+        }
+      }
+    });
   }
 
-  async updateView() {
-      if (this.app && this.currentRoute) {
-          try {
-              const response = await fetch(this.currentRoute.templateUrl);
-              const html = await response.text();
-              const parser = new DOMParser();
-              const doc = parser.parseFromString(html, 'text/html');
-              const content = doc.getElementById('content');
-              if (content) {
-                  this.app.innerHTML = content.innerHTML;
-                  // Call this after the content is inserted into the DOM
-                  this.onViewUpdated();
-              } else {
-                  console.error('No content div found in the loaded HTML');
-              }
-          } catch (error) {
-              console.error('Error loading template:', error);
-              this.app.innerHTML = '<p>Error loading content</p>';
-          }
-      }
-  }
-
-  onViewUpdated() {
-      // This method can be overridden or used to initialize chat or other functionalities
-      if (window.location.pathname === '/live_chat') {
-          console.log('Initializing chat');
-          const authToken = localStorage.getItem('authToken');
-          const chatHandler = ChatHandler.getInstance();
-          chatHandler.init(authToken);
-      }
+  onViewUpdated(params) {
+    if (window.location.pathname.startsWith('/live_chat')) {
+      console.log('Initializing chat with params:', params);
+      const authToken = localStorage.getItem('authToken');
+      const chatHandler = ChatHandler.getInstance();
+      chatHandler.init(authToken, params, this); // Pass the router instance
+    }
   }
 }
 
