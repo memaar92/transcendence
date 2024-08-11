@@ -22,6 +22,7 @@ class QueueFields:
 class MatchSessionFields:
     CONNECTED_USERS = "connected_users"
     STATE = "state"
+    RECONNECTION_ATTEMPTS = "reconnection_attempts"
 
 class UserSessionFields:
     LAST_MATCH_ID = "last_match_id"
@@ -103,6 +104,29 @@ class Match:
         
         return MatchState.FINISHED
 
+    @staticmethod
+    async def get_reconnection_attempts(match_id: str, user_id: str) -> Optional[int]:
+        '''Retrieve the number of reconnection attempts for a user in a match'''
+        try:
+            # Retrieve the match data from the MATCHES_OPEN hash
+            match_data_json = await sync_to_async(redis_instance.hget)(RedisKeys.MATCHES_OPEN, match_id)
+            
+            if match_data_json is None:
+                return None
+            
+            # Parse the JSON string to a dictionary
+            match_data = json.loads(match_data_json)
+            
+            # Get the reconnection attempts for the user
+            user_data = match_data.get(user_id)
+            if user_data is None:
+                return None
+            
+            return user_data.get(MatchSessionFields.RECONNECTION_ATTEMPTS, 0)
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+            return None
+
     ###########
     # SETTERS #
     ###########
@@ -116,6 +140,10 @@ class Match:
                 MatchSessionFields.STATE: MatchState.INITIALIZING,
                 MatchSessionFields.CONNECTED_USERS: connected_users,
             }
+
+            # Add reconnection_attempts for each connected user
+            for user in connected_users:
+                match_data[user] = {MatchSessionFields.RECONNECTION_ATTEMPTS: 0}
 
             # Store the match data in the MATCHES_OPEN hash
             await sync_to_async(redis_instance.hset)(RedisKeys.MATCHES_OPEN, match_id, json.dumps(match_data))
@@ -196,6 +224,11 @@ class Match:
     async def is_alive(match_id: str) -> bool:
         '''Check if the match is still alive'''
         return await Match.get_connected_users_count(match_id) > 0 and await Match.get_match_state(match_id) != MatchState.FINISHED
+    
+    @staticmethod
+    async def exists(match_id: str) -> bool:
+        '''Check if the match exists in the Redis database'''
+        return await sync_to_async(redis_instance.hexists)(RedisKeys.MATCHES_OPEN, match_id) == 1
 
     ###########
     # DELETE  #
@@ -205,6 +238,32 @@ class Match:
     #  MISC   #
     ###########
 
+    @staticmethod
+    async def increment_reconnection_attempts(match_id: str, user_id: str) -> bool:
+        '''Increment the number of reconnection attempts for a user in a match'''
+        try:
+            # Retrieve the match data from the MATCHES_OPEN hash
+            match_data_json = await sync_to_async(redis_instance.hget)(RedisKeys.MATCHES_OPEN, match_id)
+            
+            if match_data_json is None:
+                return False
+            
+            # Parse the JSON string to a dictionary
+            match_data = json.loads(match_data_json)
+            
+            # Increment the reconnection attempts for the user
+            if user_id in match_data:
+                match_data[user_id][MatchSessionFields.RECONNECTION_ATTEMPTS] += 1
+            else:
+                match_data[user_id] = {MatchSessionFields.RECONNECTION_ATTEMPTS: 1}
+            
+            # Store the updated match data back in the MATCHES_OPEN hash
+            await sync_to_async(redis_instance.hset)(RedisKeys.MATCHES_OPEN, match_id, json.dumps(match_data))
+            
+            return True
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+            return False
 
 class PubSub:
 
