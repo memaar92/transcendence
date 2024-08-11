@@ -40,7 +40,8 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             await rs.User.set_session_info(self.user_id, UserOnlineStatus.ONLINE, None)
 
         if not await rs.User.is_playing(self.user_id):
-            await self.reconnect_to_match()
+            if await self.is_match_in_progress():
+                await self.send_match_in_progress_message()
 
     async def disconnect(self, close_code):
         if self.user_id is None:
@@ -57,9 +58,13 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         data = json.loads(text_data)
         print(data)
-        if data["match_type"] == "online" and data["action"] == "join":
-            await self.join_queue()
-            await self.check_queue()
+        if data["match_type"] == "online":
+            if data["action"] == "join":
+                await self.join_queue()
+                await self.check_queue()
+        elif data["request"] == "reconnect":
+            await self.reconnect_to_match()
+
 
 
     async def remove_from_queue(self):
@@ -119,15 +124,27 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
         }))
 
     # TEST FUNCTION FOR RECONNECTING TO MATCH
-    async def reconnect_to_match(self):
+    # async def reconnect_to_match(self):
+    #     current_match = await rs.User.get_match_id(self.user_id)
+    #     logger.info(f"Reconnecting to match: {current_match}")
+    #     if current_match:
+    #         logger.info(f"Current match: {current_match}")
+    #         does_match_exist = await rs.Match.is_alive(current_match)
+    #         logger.info(f"Match exists: {does_match_exist}")
+    #         reconnection_attempt = await rs.Match.get_reconnection_attempts(current_match, self.user_id)
+    #         if does_match_exist:
+    #             await self.send(text_data=json.dumps({
+    #                 'state': 'reconnect',
+    #                 'match_id': current_match
+    #             }))
+
+    async def is_match_in_progress(self):
         current_match = await rs.User.get_match_id(self.user_id)
-        logger.info(f"Reconnecting to match: {current_match}")
         if current_match:
-            logger.info(f"Current match: {current_match}")
-            does_match_exist = await rs.Match.is_alive(current_match)
-            logger.info(f"Match exists: {does_match_exist}")
-            if does_match_exist:
-                await self.send(text_data=json.dumps({
-                    'state': 'reconnect',
-                    'match_id': current_match
-                }))
+            return await rs.Match.is_alive(current_match)
+
+    async def send_match_in_progress_message(self):
+        await self.send(text_data=json.dumps({
+            'state': 'match_in_progress',
+            'match_id': await rs.User.get_match_id(self.user_id)
+        }))
