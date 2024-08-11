@@ -39,13 +39,15 @@
                 const data = JSON.parse(e.data);
                 console.log('Received matchmaking message:', data);
                 if (data.state === "match_assigned") {
-                    console.log('Match found! Game ID: ' + data.game_id);
-                    const gameId = data.game_id;
-                    connectToGame(gameId);
+                    if (data.match_id) {
+                        console.log('Match found! Match ID: ' + data.match_id);
+                        const match_id = data.match_id;
+                        connectToMatch(match_id);
+                    }
                 } else if (data.state === "reconnect") {
-                    console.log('Reconnecting to game...');
-                    const gameId = data.game_id;
-                    connectToGame(gameId);
+                    console.log('Reconnecting to match...');
+                    const match_id = data.match_id;
+                    connectToMatch(match_id);
                 }
             }
     
@@ -57,31 +59,31 @@
                 }))
             }
     
-            function connectToGame(gameId) {
-                const gameSocket = new WebSocket('ws://' + window.location.host + '/ws/pong/game/' + gameId + '/');
-                gameSocket.onopen = function(e) {
-                    console.log('Game WebSocket connection established.');
+            function connectToMatch(match_id) {
+                const matchSocket = new WebSocket('ws://' + window.location.host + '/ws/pong/match/' + match_id + '/');
+                matchSocket.onopen = function(e) {
+                    console.log('Match WebSocket connection established.');
                     const canvas = document.getElementById('gameCanvas');
                     canvas.style.display = 'block'; // Show the canvas
                 };
     
-                gameSocket.onclose = function(e) {
-                    console.error('Game WebSocket connection closed.');
+                matchSocket.onclose = function(e) {
+                    console.error('Match WebSocket connection closed.');
                 };
     
-                gameSocket.onerror = function(e) {
-                    console.error('Game WebSocket error:', e);
+                matchSocket.onerror = function(e) {
+                    console.error('Match WebSocket error:', e);
                 };
     
-                gameSocket.onmessage = function(e) {
+                matchSocket.onmessage = function(e) {
                     const data = JSON.parse(e.data);
-                    console.log('Received game message:', data);
+                    console.log('Received match message:', data);
                 }
             }
 
             //     let move_up = false;
 //     let move_down = false;
-//     gameSocket = connectWebSocket(url);
+//     matchSocket = connectWebSocket(url);
 
 //     function sendPlayerState() {
 //         let message = {};
@@ -94,7 +96,7 @@
 //         } else {
 //             message = { "type": "player_update", "payload": { direction: 0 } };
 //         }
-//         gameSocket.send(JSON.stringify(message));
+//         matchSocket.send(JSON.stringify(message));
 //     }
 
 //     function sendSetup(socket) {
@@ -111,18 +113,18 @@
 //     }
     
 //     function connectWebSocket(url) {
-//         const gameSocket = new WebSocket(url);
+//         const matchSocket = new WebSocket(url);
         
-//         gameSocket.onopen = function(e) {
+//         matchSocket.onopen = function(e) {
 //             console.log('WebSocket connection established.');
 //             retryCount = 0;
 //         };
         
-//         gameSocket.onclose = function(e) {
+//         matchSocket.onclose = function(e) {
 //             console.error('WebSocket connection closed.');
 //         };
         
-//         gameSocket.onerror = function(e) {
+//         matchSocket.onerror = function(e) {
 //             console.error('WebSocket error: ' + e);
 //             if (retryCount < maxRetries) {
 //                 setTimeout(() =>  {
@@ -135,7 +137,7 @@
 //             }
 //         };
 
-//         return gameSocket;
+//         return matchSocket;
 //     }
 
 //     // Paddle properties
@@ -156,9 +158,9 @@
 //         radius: 10
 //     };
 
-//     gameSocket.binaryType = 'arraybuffer'; // Set the binary type of the WebSocket to ArrayBuffer
+//     matchSocket.binaryType = 'arraybuffer'; // Set the binary type of the WebSocket to ArrayBuffer
 
-//     gameSocket.onmessage = function(e) {
+//     matchSocket.onmessage = function(e) {
 //         const data = e.data;
 
 //         if (typeof data === 'string') {
@@ -167,7 +169,7 @@
 //                 const jsonData = JSON.parse(data);
 //                 // Process JSON data
 //                 console.log('Received JSON data:', jsonData);
-//                 // Example: Update some game state based on JSON data
+//                 // Example: Update some match state based on JSON data
 //                 // ...
 //             } catch (error) {
 //                 console.error('Failed to parse JSON data:', error);
@@ -303,7 +305,7 @@
             //     requestAnimationFrame(draw);
             // }
     
-            // sendSetup(gameSocket);
+            // sendSetup(matchSocket);
             // // Start animation
             // draw();
             
