@@ -17,6 +17,8 @@ class MatchConsumer(AsyncWebsocketConsumer):
     broadcast_locks = {}
     match_states = {}
 
+    MAX_RECONNECT_ATTEMPTS = 3
+
     def __init__(self):
         super().__init__()
         self.groups = []
@@ -49,6 +51,8 @@ class MatchConsumer(AsyncWebsocketConsumer):
         # Accept the WebSocket connection
         await self.accept()
         self.connection_established = True
+        await rs.Match.increment_reconnection_attempts(self.match_id, self.user_id)
+        logger.info(f"Reconnect attempts for user {self.user_id} in match {self.match_id}: {await rs.Match.get_reconnect_attempts(self.match_id, self.user_id)}")
         logger.info(f"User {self.user_id} connected to match {self.match_id}")
 
         # Set user_id, match_id and online status in Redis
@@ -191,7 +195,8 @@ class MatchConsumer(AsyncWebsocketConsumer):
         await self.disconnect(1000)
 
     async def is_valid_connection(self, match_id, user_id):
-        # Disconnect if user is not authenticated
+
+        # User is not authenticated
         if self.user_id is None:
             logger.info("User not authenticated")
             return False
@@ -199,24 +204,41 @@ class MatchConsumer(AsyncWebsocketConsumer):
         # Convert user_id to string for use in Redis
         self.user_id = str(self.user_id)
 
-        # Diconnect if match_id is not provided
+        # No Match ID provided
         if self.match_id is None:
             logger.info("Match ID not provided")
             return False
         
-        # Diconnect if match_id is not a string
+        # Match ID is not a string
         if not isinstance(self.match_id, str):
             logger.info("Match ID is not a string")
             return False
         
-        # Disconnect if match is not found in Redis
+        # Match ID does not exist
         if not await rs.Match.exists(self.match_id):
             logger.info(f"Match {self.match_id} not found")
             return False
         
-        # Disconnect if user is already connected to a match
+        # User is already connected to a match
         logger.info(f"USER {self.user_id} IS PLAYING: {await rs.User.is_playing(self.user_id)}")
         if await rs.User.is_playing(self.user_id):
             logger.info(f"User {self.user_id} is already connected to a match")
             return False
+
+        # User is not part of the match
+        if not await rs.Match.is_user_part_of_match(self.match_id, self.user_id):
+            logger.info(f"User {self.user_id} is not part of match {self.match_id}")
+            return False
+
+        # Match is not in progress
+        if not await rs.Match.is_match_in_progress(self.match_id):
+            logger.info(f"Match {self.match_id} is not in progress")
+            return False
+        
+        # User has exceeded the maximum reconnect attempts
+        if await rs.Match.get_reconnect_attempts(self.match_id, self.user_id) >= MatchConsumer.MAX_RECONNECT_ATTEMPTS:
+            logger.info(f"User {self.user_id} has exceeded the maximum reconnect attempts")
+            return False
+
         return True
+    
