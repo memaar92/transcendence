@@ -25,25 +25,16 @@ class MatchConsumer(AsyncWebsocketConsumer):
         self.pubsub = None
         self.current_state = None
         self.disconnect_timer_task = None
+        self.connection_established = False
 
     async def connect(self):
         # Extracting the match_id from the URL route parameters
         self.match_id = self.scope['url_route']['kwargs']['match_id']
         self.user_id = self.scope["user"].id
 
-        # Disconnect if user is not authenticated
-        if self.user_id is None:
+        if not await self.is_valid_connection(self.match_id, self.user_id):
             await self.close()
-            logger.info("User not authenticated")
-            return
-        
-        # Convert user_id to string for use in Redis
-        self.user_id = str(self.user_id)
-        
-        # Disconnect if user is already connected to a match
-        if await rs.User.is_playing(self.user_id):
-            await self.close()
-            logger.info(f"User {self.user_id} is already connected to a match")
+            logger.info(f"User {self.user_id} is not allowed to connect to match {self.match_id}")
             return
 
         # Initialize pubsub connection
@@ -57,6 +48,7 @@ class MatchConsumer(AsyncWebsocketConsumer):
 
         # Accept the WebSocket connection
         await self.accept()
+        self.connection_established = True
         logger.info(f"User {self.user_id} connected to match {self.match_id}")
 
         # Set user_id, match_id and online status in Redis
@@ -77,6 +69,10 @@ class MatchConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, close_code):
 
+        # Run the disconnect logic only if the connection was established
+        if not self.connection_established:
+            return
+        
         # Handle user disconnecting from the match
         await rs.User.set_online_status(self.user_id, UserOnlineStatus.ONLINE)
         logger.info(f"User {self.user_id} disconnected from match {self.match_id}")
@@ -194,7 +190,33 @@ class MatchConsumer(AsyncWebsocketConsumer):
         await rs.PubSub.publish_match_state_channel(self.match_id, MatchState.FINISHED)
         await self.disconnect(1000)
 
-    # async def has_listeners(self, match_id):
-    #     # Check the connection count in Redis
-    #     connection_count = int(redis_instance.get(f"match:{match_id}:connections") or 0)
-    #     return connection_count > 0
+    async def is_valid_connection(self, match_id, user_id):
+        # Disconnect if user is not authenticated
+        if self.user_id is None:
+            logger.info("User not authenticated")
+            return False
+        
+        # Convert user_id to string for use in Redis
+        self.user_id = str(self.user_id)
+
+        # Diconnect if match_id is not provided
+        if self.match_id is None:
+            logger.info("Match ID not provided")
+            return False
+        
+        # Diconnect if match_id is not a string
+        if not isinstance(self.match_id, str):
+            logger.info("Match ID is not a string")
+            return False
+        
+        # Disconnect if match is not found in Redis
+        if not await rs.Match.exists(self.match_id):
+            logger.info(f"Match {self.match_id} not found")
+            return False
+        
+        # Disconnect if user is already connected to a match
+        logger.info(f"USER {self.user_id} IS PLAYING: {await rs.User.is_playing(self.user_id)}")
+        if await rs.User.is_playing(self.user_id):
+            logger.info(f"User {self.user_id} is already connected to a match")
+            return False
+        return True
