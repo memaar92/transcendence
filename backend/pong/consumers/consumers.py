@@ -1,38 +1,3 @@
-import json
-import struct
-import redis
-import asyncio
-import uuid
-import time
-from enum import Enum, auto
-from pong.matchmaking.MatchHandler import MatchHandler
-from django.contrib.auth.models import AnonymousUser
-from channels.generic.websocket import AsyncWebsocketConsumer
-from asgiref.sync import sync_to_async
-from django.core.exceptions import SuspiciousOperation
-
-import logging
-logger = logging.getLogger("PongConsumer")
-
-redis_instance = redis.StrictRedis(host='redis', port=6379, db=0)
-
-class SetupFailed(Exception):
-    def __init__(self, message="Setup failed"):
-        self.message = message
-        super().__init__(self.message)
-
-class ClientState(Enum):
-    SETUP = auto()
-    READY = auto()
-    RUNNING = auto()
-    PAUSED = auto()
-
-class MatchType(Enum):
-    LOCAL_MATCHMAKING = auto()
-    ONLINE_MATCHMAKING = auto()
-    LOCAL_TOURNAMENT = auto()
-    ONLINE_TOURNAMENT = auto()
-
 # class ClientConsumer(AsyncWebsocketConsumer):
 #     def __init__(self) -> None:
 #         self.id = uuid.uuid4()
