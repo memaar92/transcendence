@@ -105,7 +105,7 @@ class Match:
         return MatchState.FINISHED
 
     @staticmethod
-    async def get_reconnection_attempts(match_id: str, user_id: str) -> Optional[int]:
+    async def get_reconnect_attempts(match_id: str, user_id: str) -> Optional[int]:
         '''Retrieve the number of reconnection attempts for a user in a match'''
         try:
             # Retrieve the match data from the MATCHES_OPEN hash
@@ -143,7 +143,7 @@ class Match:
 
             # Add reconnection_attempts for each connected user
             for user in connected_users:
-                match_data[user] = {MatchSessionFields.RECONNECTION_ATTEMPTS: 0}
+                match_data[user] = {MatchSessionFields.RECONNECTION_ATTEMPTS: -1} # -1 indicates the user is not reconnected
 
             # Store the match data in the MATCHES_OPEN hash
             await sync_to_async(redis_instance.hset)(RedisKeys.MATCHES_OPEN, match_id, json.dumps(match_data))
@@ -229,6 +229,22 @@ class Match:
     async def exists(match_id: str) -> bool:
         '''Check if the match exists in the Redis database'''
         return await sync_to_async(redis_instance.hexists)(RedisKeys.MATCHES_OPEN, match_id) == 1
+    
+    @staticmethod
+    async def is_user_part_of_match(match_id: str, user_id: str) -> bool:
+        '''Check if the user is part of the match'''
+        return user_id in await Match.get_user_ids(match_id)
+    
+    @staticmethod
+    async def is_user_connected(match_id: str, user_id: str) -> bool:
+        '''Check if the user is connected to the match'''
+        return user_id in await Match.get_connected_users(match_id)
+    
+    @staticmethod
+    async def is_match_in_progress(match_id: str) -> bool:
+        '''Check if the match is in progress'''
+        state = await Match.get_match_state(match_id)
+        return state == MatchState.RUNNING or state == MatchState.PAUSED or state == MatchState.INITIALIZING
 
     ###########
     # DELETE  #
