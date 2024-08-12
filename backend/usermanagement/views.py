@@ -416,11 +416,12 @@ class LogoutView(APIView):
 	permission_classes = [AllowAny]
 	def post(self, request):
 		try:
-			print("getting refresh token from header")
 			refresh_token = request.COOKIES.get("refresh_token")
 			if refresh_token is None:
 				return Response({"detail": "Refresh token not provided"}, status=status.HTTP_400_BAD_REQUEST)
-			refresh_token.blacklist()
+			
+			token = RefreshToken(refresh_token)
+			token.blacklist()
 
 			response = Response(status=status.HTTP_205_RESET_CONTENT)
 			response.delete_cookie(settings.SIMPLE_JWT['AUTH_COOKIE'])
