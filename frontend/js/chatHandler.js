@@ -25,7 +25,6 @@ class ChatHandler {
 
       this.ws.onopen = () => {
           console.log('WebSocket connection opened');
-          console.log ('Context:', context);
           this.ws.send(JSON.stringify({ "type": 'set_context', "context": context }));
       };
 
@@ -37,15 +36,12 @@ class ChatHandler {
       this.ws.onclose = (e) => this.onClose(e, context);
 
       if (context === 'chat') {
-          this.currentReceiverId = params.friendId;
-          console.log('Opening chat window with params:', params);
-          this.openChatWindow(params.friendId, params.friendName);
+        this.currentReceiverId = params.username;
+        this.chatWindowOpened = false;
+      } else {
+          this.currentReceiverId = null;
+          this.initScrollHandling();
       }
-      else  {
-        this.currentReceiverId = null;
-      }
-
-      this.initScrollHandling();
     }
 
   async onClose(event, context) {
@@ -63,7 +59,7 @@ class ChatHandler {
       }
     } else {
       // console.error('WebSocket closed:', event);
-      this.displaySystemMessage(`WebSocket closed with code ${event.code}`);
+      // this.displaySystemMessage(`WebSocket closed with code ${event.code}`);
     }
   }
 
@@ -71,8 +67,14 @@ class ChatHandler {
     const content = JSON.parse(event.data);
     if (content.type === 'user_id') {
       this.senderId = content.user_id;
+      console.log('Received user ID:', this.senderId, content.context);
+      if (content.context === 'chat' && !this.chatWindowOpened) {
+          // Open chat window only after receiving the user ID
+          this.openChatWindow(this.currentReceiverId);
+          this.chatWindowOpened = true;
+      }
+      return;
     }
-    console.log('Received:', content);
     switch (content.context) {
       case 'home':
         this.handleHomeContext(content);
@@ -81,7 +83,7 @@ class ChatHandler {
         this.handleChatContext(content);
         break;
       default:
-        console.error('Unknown context:', content.context);
+        // console.error('Unknown context:', content.context);
         break;
     }
   }
@@ -103,6 +105,10 @@ class ChatHandler {
       // case 'error':
       //   this.displaySystemMessage(content.message);
       //   break;
+      case 'message_preview':
+        console.log('Received message preview:', content);
+        this.showLatestMessage(content);
+        break;
       default:
         console.error('Error:', content.type);
         break;
@@ -112,16 +118,10 @@ class ChatHandler {
   showLatestMessage(content) {
     const friendItems = document.querySelectorAll('.friend-item');
     friendItems.forEach(friendItem => {
-      const friendId = friendItem.getAttribute('data-id');
-      if (friendId === content.sender_id || friendId === content.receiver_id) {
+      if (content.message[friendItem.getAttribute('data-id')]) {
         const messagePreview = friendItem.querySelector('.message-preview');
         if (messagePreview) {
-          const previewText = content.message.length > 30
-            ? content.message.substring(0, 30) + '...'
-            : content.message;
-          messagePreview.textContent = previewText;
-        } else {
-          console.warn('Message preview not found for friend:', friendId);
+          messagePreview.textContent = content.message[friendItem.getAttribute('data-id')];
         }
       }
     });
@@ -263,7 +263,7 @@ class ChatHandler {
     });
   
     const firstRowHeight = userListWrapper.children[0]?.offsetHeight || 0;
-    userListContainer.style.height = `${firstRowHeight + 20}px`; // Add some padding
+    userListContainer.style.height = `${firstRowHeight + 20}px`;
   
     if (userListWrapper.offsetHeight > userListContainer.offsetHeight) {
       userListContainer.style.overflowY = 'auto';
@@ -303,12 +303,7 @@ class ChatHandler {
       const friendItem = document.createElement('div');
       friendItem.className = 'friend-item';
       friendItem.setAttribute('data-id', friend.id);
-  
-      const friendImg = document.createElement('img');
-      friendImg.src = friend.profile_picture_url;
-      friendImg.alt = friend.name;
-      friendImg.className = 'friend-avatar';
-      friendImg.onclick = () => {
+      friendItem.onclick = () => {
         if (this.router) {
           const encodedId = encodeURIComponent(friend.id);
           this.router.navigate(`/live_chat/${encodedId}`);
@@ -317,6 +312,11 @@ class ChatHandler {
           return;
         }
       };
+  
+      const friendImg = document.createElement('img');
+      friendImg.src = friend.profile_picture_url;
+      friendImg.alt = friend.name;
+      friendImg.className = 'friend-avatar';
       const friendInfo = document.createElement('div');
       friendInfo.className = 'friend-info';
   
@@ -327,18 +327,23 @@ class ChatHandler {
       const messagePreview = document.createElement('div');
       messagePreview.className = 'message-preview';
       messagePreview.textContent = 'Loading...';
-  
+      
       friendInfo.appendChild(friendName);
       friendInfo.appendChild(messagePreview);
-  
+      
       friendItem.appendChild(friendImg);
       friendItem.appendChild(friendInfo);
-  
+      
       friendListElement.appendChild(friendItem);
     });
+    this.ws.send(JSON.stringify({
+      'type': 'message_preview',
+      'user_id_1': this.senderId,
+      'context': 'home'
+    }));
   }
 
-  openChatWindow(friendId, friendName) {
+  openChatWindow(friendId) {
     const chatWindow = document.getElementById('chat-window');
     const chatTitle = document.getElementById('chat-title');
     const messagesContainer = document.getElementById('chat-messages');
@@ -346,23 +351,31 @@ class ChatHandler {
     const sendButton = document.getElementById('send-message');
     const messageInput = document.getElementById('message-input');
   
-    console.log('Opening chat window with friend ID:', friendId, 'Name:', friendName);
-    chatTitle.textContent = `Chat with ${friendName}`;
+    console.log('Opening chat window with friend ID:', friendId);
+    chatTitle.textContent = `Chat with ${friendId}`;
     chatWindow.classList.add('open');
   
-    messagesContainer.innerHTML = '';
+    // messagesContainer.innerHTML = '';
     messageInput.value = '';
     this.currentReceiverId = friendId;
-  
+    
     const storedMessages = localStorage.getItem(`chat_history_${this.senderId}_${friendId}`);
     if (storedMessages) {
       this.displayChatHistory(JSON.parse(storedMessages));
     } else {
+      console.log('Requesting chat history for:', friendId, this.senderId);
       this.sendChatHistoryRequest(this.senderId, friendId);
     }
-  
-    sendButton.addEventListener('click', () => this.sendMessage(this.currentReceiverId));
-  
+    sendButton.addEventListener('click', () => {
+      console.log('Send button clicked');
+      this.sendMessage(this.currentReceiverId);
+    });
+    closeButton.addEventListener('click', () => {
+      console.log('Close button clicked');
+      if (this.router) {
+        this.router.navigate('/live_chat');
+      }
+    });
     messageInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
         this.sendMessage(this.currentReceiverId);

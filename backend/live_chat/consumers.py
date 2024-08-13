@@ -94,7 +94,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     self.context = None
                     ChatConsumer.user_id_to_channel_name[self.user_id] = self.channel_name
                     await self.accept()
-                    await self.send(text_data=json.dumps({'type': 'user_id', 'user_id': self.user_id}))
                     # await self.send_friends_list(self.user_id)
                     print("Connected to chat")
                     return
@@ -128,10 +127,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message_type = data.get('type', None)
 
         if message_type == 'set_context':
+
             self.context = data.get('context', None)
+            await self.send(text_data=json.dumps({'type': 'user_id', 'user_id': self.user_id, 'context': self.context}))
             await self.broadcast_user_list()
             if self.context == 'home':
                 await self.send_friends_list(self.user_id)
+            return
         try:
             match self.context:
                 case 'home':
@@ -154,20 +156,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message_type = data.get('type', None)
         try:
             match message_type:
-                # case 'chat_request':
-                #     status = await self.get_status(data['sender_id'], data['receiver_id'])
-                #     if status == RelationshipStatus.DEFAULT:
-                #         await self.chat_request(data)
-                # case 'chat_message':
-                #     await self.chat_message(data)
-                # case 'chat_request_accepted':
-                #     await self.chat_request_accepted(data)
-                # case 'chat_request_denied':
-                #     await self.chat_request_denied(data)
+                case 'message_preview':
+                    await self.send_latest_message(data['user_id_1'], data['user_id_2'])
                 case 'chat_history':
                     await self.chat_history(data)
-                # case 'chat_request_notification':
-                #     await self.chat_request_notification(data)
                 case 'update_status':
                     await self.update_status(data['user_id_1'], data['user_id_2'], data['status'])
                     await self.send_friends_list(data['user_id_1'])
@@ -177,10 +169,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         'message': f'Unknown message type: {message_type}'
                     }))
         except Exception as e:
-            print(f"Error handling message: {e}")
+            print(f"Error handling message in home context: {e}")
+            print(data)
             await self.send(text_data=json.dumps({
                 'type': 'error',
-                'message': f'Error handling message: {str(e)}'
+                'message': f'Error handling message in home context: {str(e)}'
             }))
     
     async def handleChatContext(self, data):
@@ -199,10 +192,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         'message': f'Unknown message type: {message_type}'
                     }))
         except Exception as e:
-            print(f"Error handling message: {e}")
+            print(f"Error handling message in chat context: {e}")
             await self.send(text_data=json.dumps({
                 'type': 'error',
-                'message': f'Error handling message: {str(e)}'
+                'message': f'Error handling message in chat context: {str(e)}'
             }))
 
     async def chat_request(self, data):
@@ -224,6 +217,21 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     'receiver_id': receiver_id
                 }
             )
+
+    async def send_latest_message(self, user_id_1):
+        friends = await self.get_friends_list(user_id_1)
+        # create an array of latest messages for each friend
+        for friend in friends:
+            latest_message = await self.get_latest_message(user_id_1, friend['id'])
+            if latest_message:
+                friend['latest_message'] = latest_message
+            
+
+        await self.send(text_data=json.dumps({
+            'type': 'message_preview',
+            'context': self.context,
+            'message': latest_message
+        }))
 
     async def chat_request_notification(self, event):
         await self.update_status(event['sender_id'], event['receiver_id'], RelationshipStatus.PENDING)
@@ -399,3 +407,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
         ).values('sender_id').annotate(count=models.Count('id'))
         unread_messages_dict = {msg['sender_id']: min(msg['count'], 99) for msg in unread_messages}
         return unread_messages_dict
+
+    @database_sync_to_async
+    def get_latest_message(self, user_id_1, user_id_2):
+        messages = Message.objects.filter(
+            Q(sender_id=user_id_1, receiver_id=user_id_2) | Q(sender_id=user_id_2, receiver_id=user_id_1)
+        ).order_by('timestamp')
+        if messages:
+            latest_message = messages[0]
+            return {
+                'sender_id': latest_message.sender_id,
+                'receiver_id': latest_message.receiver_id,
+                'message': latest_message.content,
+                'timestamp': latest_message.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+                'sender_name': latest_message.sender.displayname
+            }
+        return None
