@@ -17,4 +17,5 @@ urlpatterns = [
 	path('email/', views.CheckEmail.as_view(), name='check_email'),
 	path('email/validate/', views.ValidateEmailView.as_view(), name='validate_email'),
 	path('email/otp/', views.GenerateOTPView.as_view(), name='email_otp'),
+	path('token/logout/', views.LogoutView.as_view(), name='logout'),
 ]

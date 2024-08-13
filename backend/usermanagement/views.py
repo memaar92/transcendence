@@ -411,3 +411,21 @@ class ValidateEmailView(APIView, CookieCreationMixin):
 			response.data = {'detail': 'Successfully verified'}
 			return response
 
+
+class LogoutView(APIView):
+	permission_classes = [AllowAny]
+	def post(self, request):
+		try:
+			refresh_token = request.COOKIES.get("refresh_token")
+			if refresh_token is None:
+				return Response({"detail": "Refresh token not provided"}, status=status.HTTP_400_BAD_REQUEST)
+			
+			token = RefreshToken(refresh_token)
+			token.blacklist()
+
+			response = Response(status=status.HTTP_205_RESET_CONTENT)
+			response.delete_cookie(settings.SIMPLE_JWT['AUTH_COOKIE'])
+			response.delete_cookie(settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH'], path=settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH_PATH'])
+			return response
+		except Exception as e:
+			return Response(status=status.HTTP_400_BAD_REQUEST)
