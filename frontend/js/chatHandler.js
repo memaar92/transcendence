@@ -8,79 +8,88 @@ class ChatHandler {
     this.router = null;
   }
 
-  async init(authToken, params, router) {
-    if (this.ws) {
-      console.warn('WebSocket already initialized');
-      return;
+  async init(authToken, params, router, context) {
+      this.router = router;
+
+      // console.log('Params:', params);
+      const url = `ws://${window.location.host}/ws/live_chat/?token=${authToken}`;
+      // console.log('WebSocket URL:', url);
+
+      if (this.ws) {
+          console.log('Closing existing WebSocket connection');
+          this.ws.close();
+      }
+
+      console.log('Creating new WebSocket connection');
+      this.ws = new WebSocket(url);
+
+      this.ws.onopen = () => {
+          console.log('WebSocket connection opened');
+          console.log ('Context:', context);
+          this.ws.send(JSON.stringify({ "type": 'set_context', "context": context }));
+      };
+
+      this.ws.onerror = (e) => {
+          // console.error('WebSocket error:', e);
+      };
+
+      this.ws.onmessage = this.onMessage.bind(this);
+      this.ws.onclose = (e) => this.onClose(e, context);
+
+      if (context === 'chat') {
+          this.currentReceiverId = params.friendId;
+          console.log('Opening chat window with params:', params);
+          this.openChatWindow(params.friendId, params.friendName);
+      }
+      else  {
+        this.currentReceiverId = null;
+      }
+
+      this.initScrollHandling();
     }
 
-    this.router = router;  // Save the router instance
-    const url = `ws://${window.location.host}/ws/live_chat/?token=${authToken}`;
-    console.log('WebSocket URL:', url);
-    this.ws = new WebSocket(url);
-    this.ws.onopen = () => {
-      this.ws.send(JSON.stringify({ "loaded": true }));
-    };
-    this.ws.onerror = (e) => {
-      console.error('WebSocket error:', e);
-    };
-    this.ws.onmessage = this.onMessage.bind(this);
-    this.ws.onclose = this.onClose.bind(this);
-    
-    // Handle message sending on the chat page
-    if (params && params.friendId) {
-      this.currentReceiverId = params.friendId;
-      document.getElementById('send-message').addEventListener('click', () => this.sendMessage(this.currentReceiverId));
-    }
-
-    this.initScrollHandling();
-  }
-
-  async onClose(event) {
+  async onClose(event, context) {
     if (event.code === 1006) {
-      console.error('Token expired or authentication error');
+      // console.error('Token expired or authentication error');
       const credentials = promptForCredentials();
       if (credentials) {
         const newToken = await obtainAuthToken(credentials.email, credentials.password);
         if (newToken) {
-          this.init(newToken);
+          this.init(newToken, {}, this.router, context);
         } else {
-          console.error('Failed to obtain new token');
+          // console.error('Failed to obtain new token');
           this.displaySystemMessage('Failed to authenticate. Please try again.');
         }
       }
     } else {
-      console.error('WebSocket closed:', event);
+      // console.error('WebSocket closed:', event);
       this.displaySystemMessage(`WebSocket closed with code ${event.code}`);
     }
   }
 
   onMessage(event) {
     const content = JSON.parse(event.data);
+    if (content.type === 'user_id') {
+      this.senderId = content.user_id;
+    }
     console.log('Received:', content);
+    switch (content.context) {
+      case 'home':
+        this.handleHomeContext(content);
+        break;
+      case 'chat':
+        this.handleChatContext(content);
+        break;
+      default:
+        console.error('Unknown context:', content.context);
+        break;
+    }
+  }
+
+  handleHomeContext(content) {
     switch (content.type) {
-      case 'user_id':
-        this.senderId = content.user_id;
-        break;
-      case 'chat_request_notification':
-        this.displayChatRequest(content);
-        break;
-        case 'chat_message':
-          if (content.sender_id === this.currentReceiverId || content.receiver_id === this.currentReceiverId)
-            this.displayChatMessage(content);
-          break;
       case 'user_list':
         this.displayUserList(content.users);
-        break;
-      case 'chat_request_accepted':
-        this.displaySystemMessage(content.message);
-        break;
-      case 'chat_request_denied':
-        this.displaySystemMessage(content.message);
-        break;
-      case 'chat_history':
-        this.displayChatHistory(content.messages);
-        // this.updateLatestMessage(content.messages);
         break;
       case 'friends_list':
         this.displayFriendsList(content.friends);
@@ -88,8 +97,48 @@ class ChatHandler {
       case 'unread_counts':
         this.updateUnreadMessages(content);
         break;
+      case 'chat_message':
+        this.showLatestMessage(content);
+        this.updateUnreadMessages(content);
+      // case 'error':
+      //   this.displaySystemMessage(content.message);
+      //   break;
+      default:
+        console.error('Error:', content.type);
+        break;
+    }
+  }
+
+  showLatestMessage(content) {
+    const friendItems = document.querySelectorAll('.friend-item');
+    friendItems.forEach(friendItem => {
+      const friendId = friendItem.getAttribute('data-id');
+      if (friendId === content.sender_id || friendId === content.receiver_id) {
+        const messagePreview = friendItem.querySelector('.message-preview');
+        if (messagePreview) {
+          const previewText = content.message.length > 30
+            ? content.message.substring(0, 30) + '...'
+            : content.message;
+          messagePreview.textContent = previewText;
+        } else {
+          console.warn('Message preview not found for friend:', friendId);
+        }
+      }
+    });
+  }
+
+  handleChatContext(content) {
+    switch (content.type) {
+      case 'chat_message':
+        if (content.sender_id === this.currentReceiverId || content.receiver_id === this.currentReceiverId)
+          this.displayChatMessage(content);
+          break;
+      case 'chat_history':
+        this.displayChatHistory(content.messages);
+        break;
       case 'error':
         this.displaySystemMessage(content.message);
+        break;
       default:
         console.error('Error:', content.type);
         break;
@@ -97,6 +146,7 @@ class ChatHandler {
   }
 
   sendMessage(receiverId) {
+    console.log('Sending message to:', receiverId);
     const messageInput = document.getElementById('message-input');
     const message = messageInput.value.trim();
     if (this.ws && message && receiverId && receiverId !== this.senderId) {
@@ -110,7 +160,7 @@ class ChatHandler {
       this.ws.send(JSON.stringify(newMessage));
       messageInput.value = '';
     } else {
-      console.warn('Message, receiver ID is empty, or sender and receiver are the same');
+      // console.warn('Message, receiver ID is empty, or sender and receiver are the same');
     }
   }
 
@@ -147,7 +197,7 @@ class ChatHandler {
     if (requests) {
       const requestItem = document.createElement('div');
       requestItem.textContent = `Chat request from ${content.sender_name}`;
-      console.log(content);
+      // console.log(content);
 
       const acceptButton = this.createButton('Accept', content.sender_id, content.receiver_id, true);
       const denyButton = this.createButton('Deny', content.sender_id, content.receiver_id, false);
@@ -156,7 +206,7 @@ class ChatHandler {
       requestItem.appendChild(denyButton);
       requests.appendChild(requestItem);
     } else {
-      console.error('Chat window not found');
+      console.warn('Chat window not found');
     }
   }
 
@@ -177,13 +227,17 @@ class ChatHandler {
 
   displayUserList(users) {
     const userListContainer = document.getElementById('user-list-container');
+    if (!userListContainer) {
+      console.warn('User list container not found');
+      return;
+    }
     const userListWrapper = userListContainer.querySelector('.user-list-wrapper');
     
     if (!userListWrapper) {
-      console.error('User list wrapper not found');
+      console.warn('User list wrapper not found');
       return;
     }
-  
+
     userListWrapper.innerHTML = '';
   
     this.onlineUserIds = users.map(user => user.id);
@@ -231,7 +285,7 @@ class ChatHandler {
       if (friendImg) {
         friendImg.style.border = isOnline ? '4px solid #7A35EC' : '4px solid grey';
       } else {
-        console.error('Image not found for friend item:', friendId);
+        console.warn('Image not found for friend item:', friendId);
       }
     });
   }
@@ -239,7 +293,7 @@ class ChatHandler {
   displayFriendsList(friends) {
     const friendListElement = document.querySelector('.friends-scroll-container');
     if (!friendListElement) {
-      console.error('Friend list container not found');
+      console.warn('Friend list container not found');
       return;
     }
   
@@ -254,8 +308,15 @@ class ChatHandler {
       friendImg.src = friend.profile_picture_url;
       friendImg.alt = friend.name;
       friendImg.className = 'friend-avatar';
-      friendImg.onclick = () => this.openChatWindow(friend.id, friend.name);
-  
+      friendImg.onclick = () => {
+        if (this.router) {
+          const encodedId = encodeURIComponent(friend.id);
+          this.router.navigate(`/live_chat/${encodedId}`);
+        } else {
+          console.warn('Router instance is undefined');
+          return;
+        }
+      };
       const friendInfo = document.createElement('div');
       friendInfo.className = 'friend-info';
   
@@ -274,24 +335,6 @@ class ChatHandler {
       friendItem.appendChild(friendInfo);
   
       friendListElement.appendChild(friendItem);
-  
-      this.sendChatHistoryRequest(this.senderId, friend.id)
-        .then(messages => {
-          if (messages && messages.length > 0) {
-            console.log('Latest message:', messages[messages.length - 1]);
-            const latestMessage = messages[messages.length - 1];
-            const previewText = latestMessage.message.length > 30 
-              ? latestMessage.message.substring(0, 30) + '...' 
-              : latestMessage.message;
-            messagePreview.textContent = previewText;
-          } else {
-            messagePreview.textContent = 'No messages yet';
-          }
-        })
-        .catch(error => {
-          console.error('Error fetching chat history:', error);
-          messagePreview.textContent = 'Error loading messages';
-        });
     });
   }
 
@@ -299,10 +342,11 @@ class ChatHandler {
     const chatWindow = document.getElementById('chat-window');
     const chatTitle = document.getElementById('chat-title');
     const messagesContainer = document.getElementById('chat-messages');
-    const messageInput = document.getElementById('message-input');
     const closeButton = document.getElementById('close-chat');
     const sendButton = document.getElementById('send-message');
+    const messageInput = document.getElementById('message-input');
   
+    console.log('Opening chat window with friend ID:', friendId, 'Name:', friendName);
     chatTitle.textContent = `Chat with ${friendName}`;
     chatWindow.classList.add('open');
   
@@ -310,7 +354,6 @@ class ChatHandler {
     messageInput.value = '';
     this.currentReceiverId = friendId;
   
-    // Load chat history from localStorage
     const storedMessages = localStorage.getItem(`chat_history_${this.senderId}_${friendId}`);
     if (storedMessages) {
       this.displayChatHistory(JSON.parse(storedMessages));
@@ -318,36 +361,13 @@ class ChatHandler {
       this.sendChatHistoryRequest(this.senderId, friendId);
     }
   
-    closeButton.onclick = () => this.closeChatWindow();
-    sendButton.onclick = () => this.sendMessage(friendId);
-    messageInput.onkeypress = (e) => {
+    sendButton.addEventListener('click', () => this.sendMessage(this.currentReceiverId));
+  
+    messageInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
-        this.sendMessage(friendId);
+        this.sendMessage(this.currentReceiverId);
       }
-    };
-  
-    if (this.router) {
-      const encodedName = encodeURIComponent(friendName);
-      this.router.navigate(`/live_chat/${encodedName}`);
-    } else {
-      console.error('Router instance is undefined');
-    }
-  }
-  
-  
-  closeChatWindow() {
-    const chatWindow = document.getElementById('chat-window');
-    const friendsListContainer = document.getElementById('friends-list-container');
-    const mainContent = document.querySelector('.main-content');
-    const messageInput = document.getElementById('message-input');
-  
-    mainContent.classList.remove('chat-open');
-    chatWindow.classList.remove('open');
-    friendsListContainer.classList.remove('chat-open');
-  
-    messageInput.value = '';
-  
-    this.currentReceiverId = null;
+    });
   }
   
 
@@ -369,9 +389,9 @@ class ChatHandler {
       messageItem.appendChild(messageTimestamp);
       
       messages.appendChild(messageItem);
-      messages.scrollTop = messages.scrollHeight; // Auto-scroll to bottom
+      messages.scrollTop = messages.scrollHeight;
     } else {
-      console.error('Chat messages container not found');
+      console.warn('Chat messages container not found');
     }
   }
 
@@ -400,7 +420,7 @@ class ChatHandler {
       });
       chatMessages.scrollTop = chatMessages.scrollHeight;
     } else {
-      console.error('Chat messages container not found');
+      console.warn('Chat messages container not found');
     }
   }
 
@@ -411,7 +431,7 @@ class ChatHandler {
       messageItem.textContent = message;
       messages.appendChild(messageItem);
     } else {
-      console.error('Chat window not found');
+      console.warn('Chat window not found');
     }
   }
 
@@ -479,7 +499,7 @@ class ChatHandler {
         }
       });
     } else {
-      console.error('User list container not found');
+      console.warn('User list container not found');
     }
   }
 }
@@ -506,10 +526,10 @@ async function obtainAuthToken(email, password) {
 
     const data = await response.json();
     localStorage.setItem('authToken', data.access);
-    console.log('Token stored successfully');
+    // console.log('Token stored successfully');
     return data.access;
   } catch (error) {
-    console.error('Error during token fetch:', error);
+    // console.error('Error during token fetch:', error);
     alert('Error fetching token: ' + error.message);
     return null;
   }

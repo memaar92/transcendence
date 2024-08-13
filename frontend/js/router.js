@@ -19,22 +19,22 @@ class Router {
     this.routes.push({ path, templateUrl });
   }
 
-  async navigate(path, pushState = true) {
+  async navigate(path, pushState = true, state = {}) {
     const route = this.matchRoute(path);
     if (route) {
       this.currentRoute = route;
       if (pushState) {
-        history.pushState({ path }, '', path);
+        history.pushState({ path, ...state }, '', path);
       }
       await this.updateView(route.params);
     } else {
       this.handleNotFound(pushState);
     }
-
+  
     if (this.onNavigate) {
-      this.onNavigate(route.params);  // Pass params to onNavigate callback
+      this.onNavigate(route.params);
     }
-  }
+  }  
 
   matchRoute(path) {
     for (const route of this.routes) {
@@ -63,7 +63,6 @@ class Router {
         const html = await response.text();
         this.app.innerHTML = this.extractContent(html);
 
-        // Ensure that the view is re-initialized
         this.onViewUpdated(params);
       } catch (error) {
         console.error('Error loading template:', error);
@@ -89,7 +88,8 @@ class Router {
 
   handlePopState(event) {
     const path = window.location.pathname;
-    this.navigate(path, false); // Don't push state on popstate
+    const state = event.state || {};
+    this.navigate(path, false, state);
   }
 
   bindLinks() {
@@ -109,7 +109,12 @@ class Router {
       console.log('Initializing chat with params:', params);
       const authToken = localStorage.getItem('authToken');
       const chatHandler = ChatHandler.getInstance();
-      chatHandler.init(authToken, params, this); // Pass the router instance
+      if (window.location.pathname === '/live_chat') {
+        chatHandler.init(authToken, params, this, 'home');
+      }
+      else if (window.location.pathname === '/live_chat/' + params.username) {
+        chatHandler.init(authToken, params, this, 'chat');
+      }
     }
   }
 }
