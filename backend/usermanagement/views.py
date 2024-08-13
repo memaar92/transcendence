@@ -6,7 +6,7 @@ from django.conf import settings
 from .models import Games, CustomUser
 from rest_framework import generics, status
 from rest_framework.response import Response
-from .serializers import UserSerializer, GameHistorySerializer, UserNameSerializer, UserCreateSerializer, TOTPSetupSerializer, TOTPVerifySerializer, GenerateOTPSerializer, ValidateEmailSerializer, CheckEmailSerializer
+from .serializers import UserSerializer, GameHistorySerializer, UserNameSerializer, UserCreateSerializer, TOTPSetupSerializer, TOTPVerifySerializer, GenerateOTPSerializer, ValidateEmailSerializer, CheckEmailSerializer, CustomTokenObtainPairSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -25,6 +25,7 @@ import random
 import time
 from io import BytesIO
 import base64
+import jwt
 
 
 MAX_OTP_ATTEMPTS = 5
@@ -150,16 +151,57 @@ class TOTPVerifyView(APIView):
 	permission_classes = [AllowAny]
 
 	def post(self, request):
+		# Get the token from the cookies
+		token = request.COOKIES.get('access_token')
+		if not token:
+			return Response({'detail': 'Token not found in cookies'}, status=status.HTTP_400_BAD_REQUEST)
+
+		try:
+			# Decode the token to get the user ID
+			decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+			user_id = decoded_token.get('user_id')
+		except jwt.ExpiredSignatureError:
+			return Response({'detail': 'Token has expired'}, status=status.HTTP_401_UNAUTHORIZED)
+		except jwt.InvalidTokenError:
+			return Response({'detail': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
+		
+		# Get the refresh token from the request data
+		refresh_token = request.data.get('refresh')
+		
+		if not refresh_token:
+			return Response({'detail': 'Refresh token not provided'}, status=status.HTTP_400_BAD_REQUEST)
+		try:
+			token = RefreshToken(refresh_token)
+			token.blacklist()
+		except Exception as e:
+			return Response({'detail': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
+			
+		# Get the user using the user ID
+		user = get_object_or_404(CustomUser, id=user_id)
 		serializer = TOTPVerifySerializer(data=request.data)
 		serializer.is_valid(raise_exception=True)
-		user = CustomUser.objects.get(email=request.data['email'])
-		user_profile = get_object_or_404(CustomUser, email=user)
-		totp = pyotp.TOTP(user_profile.totp_secret)
+		totp = pyotp.TOTP(user.totp_secret)
 
 		if totp.verify(serializer.validated_data['token']):
-			return Response({'detail': '2FA verification successful'}, status=status.HTTP_200_OK)
+			if not user.is_2fa_enabled:
+				user.is_2fa_enabled = True
+				user.save()
+				# Generate new tokens with custom claim
+				refresh = RefreshToken.for_user(user)
+				refresh['2fa'] = 2
+				access = refresh.access_token
+				access['2fa'] = 2
+
+				return Response({
+					'detail': '2FA verification successful',
+					'access': str(access),
+					'refresh': str(refresh)
+			}, status=status.HTTP_200_OK)
+			
 		return Response({'detail': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
 
+	#blacklist old refresh token
+	
 
 class CustomTokenObtainPairView(TokenObtainPairView, CookieCreationMixin):
 
@@ -176,7 +218,8 @@ class CustomTokenObtainPairView(TokenObtainPairView, CookieCreationMixin):
 			(200, 'application/json'): {
 				'type': 'object',
 				'properties': {
-					'detail': {'type': 'string', 'enum': ['Access and refresh tokens successfully created']}
+					'detail': {'type': 'string', 'enum': ['Access and refresh tokens successfully created']},
+					'2fa': {'type': 'int', 'enum': [0, 1]}
 				},
 			},
 			(401, 'application/json'): {
@@ -190,21 +233,19 @@ class CustomTokenObtainPairView(TokenObtainPairView, CookieCreationMixin):
 	
 
 	def post(self, request, *args, **kwargs):
-		response = super().post(request, *args, **kwargs)
+		serializer = CustomTokenObtainPairSerializer(data=request.data)
+		serializer.is_valid(raise_exception=True)
+		token = serializer.validated_data
+		response = Response(token, status=200)
 		user = CustomUser.objects.get(email=request.data['email'])
 		user_profile = get_object_or_404(CustomUser, email=user) # in what case is this even triggered?
-		totp = pyotp.TOTP(user_profile.totp_secret)
-
-		if user_profile.totp_secret:
-			serializer = TOTPVerifySerializer(data=request.data)
-			serializer.is_valid(raise_exception=True)
-			print("2FA setup required")
-			if not totp.verify(serializer.validated_data['token']):
-				return Response({'detail': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
-		
 		self.createCookies(response)
 		csrf.get_token(request) #probably set by TokenObtainPairView or middleware already?
-		response.data = {'detail': 'Access and refresh tokens successfully created'}
+
+		if user_profile.is_2fa_enabled:
+			response.data = {'detail': 'Access and refresh tokens successfully created', '2fa': 1}
+		else:
+			response.data = {'detail': 'Access and refresh tokens successfully created', '2fa': 0}
 		return response
 
 
@@ -228,6 +269,7 @@ class CustomTokenRefreshView(TokenRefreshView, CookieCreationMixin):
 	)
 
 	def post(self, request, *args, **kwargs):
+		print("request.data: ", request.data)
 		response = super().post(request, *args, **kwargs)
 		self.createCookies(response)
 		response.data = {'detail': 'Access and refresh tokens successfully created'}
