@@ -86,11 +86,7 @@ class UserView(APIView):
 
     def get(self, request, pk):
         user = get_object_or_404(CustomUser, pk=pk)
-        # check if user is the same as the one requesting
-        if request.user.pk == user.pk:
-            serializer = UserSerializer(user)
-        else:
-            serializer = UserNameSerializer(user)
+        serializer = UserNameSerializer(user)
         return Response(serializer.data)
 
 class GameHistoryList(APIView):
@@ -131,21 +127,25 @@ class TOTPSetupView(APIView):
     # not discussed with Wayne yet
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-                # Get the token from the cookies
-        token = request.COOKIES.get('access_token')
-        if not token:
-            return Response({'detail': 'Token not found in cookies'}, status=status.HTTP_400_BAD_REQUEST)
+    @extend_schema(
+        responses={
+            (200, 'application/json'): {
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string', 'enum': ['qr_code']}
+                },
+            },
+        },
+    )
 
-        try:
-            # Decode the token to get the user ID
-            decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-            user_id = decoded_token.get('user_id')
-        except jwt.ExpiredSignatureError:
-            return Response({'detail': 'Token has expired'}, status=status.HTTP_401_UNAUTHORIZED)
-        except jwt.InvalidTokenError:
-            return Response({'detail': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
-        
+    def get(self, request):
+# Get the token from the header
+        auth_header = request.headers.get('Authorization')
+        token = auth_header.split(' ')[1]
+        # Decode the token to get the user ID
+        decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+        user_id = decoded_token.get('user_id')
+
         user_profile = get_object_or_404(CustomUser, id=user_id)
         if not user_profile.totp_secret:
             user_profile.totp_secret = pyotp.random_base32()
@@ -159,12 +159,11 @@ class TOTPSetupView(APIView):
         qr_code = base64.b64encode(buffered.getvalue()).decode()
 
         return Response({'qr_code': qr_code}, status=status.HTTP_200_OK)
-    
-#TODO: delete verify view, just for debugging
+
 class TOTPVerifyView(APIView, CookieCreationMixin):
     permission_classes = [IsAuthenticated]
     serializer_class = TOTPVerifySerializer
-    
+
     @extend_schema(
         responses={
             (200, 'application/json'): {
@@ -187,9 +186,9 @@ class TOTPVerifyView(APIView, CookieCreationMixin):
             },
         },
     )
-    
+
     def post(self, request):
-        # Get the token from the cookies
+        # Get the token from the header
         auth_header = request.headers.get('Authorization')
         token = auth_header.split(' ')[1]
         # Decode the token to get the user ID
@@ -203,7 +202,7 @@ class TOTPVerifyView(APIView, CookieCreationMixin):
             token = RefreshToken(refresh_token)
         except Exception as e:
             return Response({'detail': 'Invalid refresh token'}, status=status.HTTP_401_UNAUTHORIZED)
-            
+
         # Get the user using the user ID
         user = get_object_or_404(CustomUser, id=user_id)
         serializer = TOTPVerifySerializer(data=request.data)
@@ -254,7 +253,6 @@ class CustomTokenObtainPairView(TokenObtainPairView, CookieCreationMixin):
             },
         },
     )
-    
 
     def post(self, request, *args, **kwargs):
         serializer = CustomTokenObtainPairSerializer(data=request.data)
@@ -271,7 +269,6 @@ class CustomTokenObtainPairView(TokenObtainPairView, CookieCreationMixin):
         else:
             response.data = {'detail': 'Access and refresh tokens successfully created', '2fa': 0}
         return response
-
 
 class CustomTokenRefreshView(TokenRefreshView, CookieCreationMixin):
     @extend_schema(
@@ -465,7 +462,7 @@ class ValidateEmailView(APIView, CookieCreationMixin):
                 return Response({'detail': 'Exceeded maximum OTP attempts. Please try again later.'}, status=429)
             cache.incr(otp_attempts_key)
             return Response({'detail': 'Invalid OTP', 'suberror code': 904}, status=401)
-        
+
         if stored_otp == otp_provided:
             cache.delete(otp_cache_key)
             cache.delete(otp_attempts_key)
@@ -485,7 +482,7 @@ class LogoutView(APIView):
             refresh_token = request.COOKIES.get("refresh_token")
             if refresh_token is None:
                 return Response({"detail": "Refresh token not provided"}, status=status.HTTP_400_BAD_REQUEST)
-            
+
             token = RefreshToken(refresh_token)
             token.blacklist()
 
