@@ -46,6 +46,7 @@ class TOTPSetupSerializer(serializers.Serializer):
 
 class TOTPVerifySerializer(serializers.Serializer):
 	token = serializers.CharField()
+	refresh = serializers.CharField()
 
 class GenerateOTPSerializer(serializers.Serializer):
 	id = serializers.IntegerField()

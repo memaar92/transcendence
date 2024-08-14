@@ -132,7 +132,21 @@ class TOTPSetupView(APIView):
 	permission_classes = [IsAuthenticated]
 
 	def get(self, request):
-		user_profile = request.user
+				# Get the token from the cookies
+		token = request.COOKIES.get('access_token')
+		if not token:
+			return Response({'detail': 'Token not found in cookies'}, status=status.HTTP_400_BAD_REQUEST)
+
+		try:
+			# Decode the token to get the user ID
+			decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+			user_id = decoded_token.get('user_id')
+		except jwt.ExpiredSignatureError:
+			return Response({'detail': 'Token has expired'}, status=status.HTTP_401_UNAUTHORIZED)
+		except jwt.InvalidTokenError:
+			return Response({'detail': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
+		
+		user_profile = get_object_or_404(CustomUser, id=user_id)
 		if not user_profile.totp_secret:
 			user_profile.totp_secret = pyotp.random_base32()
 			user_profile.save()
@@ -147,12 +161,13 @@ class TOTPSetupView(APIView):
 		return Response({'qr_code': qr_code}, status=status.HTTP_200_OK)
 	
 #TODO: delete verify view, just for debugging
-class TOTPVerifyView(APIView):
-	permission_classes = [AllowAny]
-
+class TOTPVerifyView(APIView, CookieCreationMixin):
+	permission_classes = [IsAuthenticated]
+	serializer_class = TOTPVerifySerializer
 	def post(self, request):
 		# Get the token from the cookies
 		token = request.COOKIES.get('access_token')
+		print("request.data: ", request.data)
 		if not token:
 			return Response({'detail': 'Token not found in cookies'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -161,20 +176,19 @@ class TOTPVerifyView(APIView):
 			decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
 			user_id = decoded_token.get('user_id')
 		except jwt.ExpiredSignatureError:
-			return Response({'detail': 'Token has expired'}, status=status.HTTP_401_UNAUTHORIZED)
+			return Response({'detail': 'Access token has expired'}, status=status.HTTP_401_UNAUTHORIZED)
 		except jwt.InvalidTokenError:
-			return Response({'detail': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
+			return Response({'detail': 'Invalid access token'}, status=status.HTTP_401_UNAUTHORIZED)
 		
 		# Get the refresh token from the request data
-		refresh_token = request.data.get('refresh')
-		
+		refresh_token = request.data['refresh']
+		print("refresh_token: ", refresh_token)
 		if not refresh_token:
 			return Response({'detail': 'Refresh token not provided'}, status=status.HTTP_400_BAD_REQUEST)
 		try:
 			token = RefreshToken(refresh_token)
-			token.blacklist()
 		except Exception as e:
-			return Response({'detail': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
+			return Response({'detail': 'Invalid refresh token'}, status=status.HTTP_401_UNAUTHORIZED)
 			
 		# Get the user using the user ID
 		user = get_object_or_404(CustomUser, id=user_id)
@@ -186,19 +200,20 @@ class TOTPVerifyView(APIView):
 			if not user.is_2fa_enabled:
 				user.is_2fa_enabled = True
 				user.save()
-				# Generate new tokens with custom claim
-				refresh = RefreshToken.for_user(user)
-				refresh['2fa'] = 2
-				access = refresh.access_token
-				access['2fa'] = 2
-
-				return Response({
-					'detail': '2FA verification successful',
-					'access': str(access),
-					'refresh': str(refresh)
-			}, status=status.HTTP_200_OK)
-			
-		return Response({'detail': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+			# Generate new tokens with custom claim
+			refresh = RefreshToken.for_user(user)
+			refresh['2fa'] = 2
+			access = refresh.access_token
+			access['2fa'] = 2
+			token.blacklist()
+			response = Response({
+				'detail': '2FA verification successful',
+				'access': str(access),
+				'refresh': str(refresh)
+		}, status=status.HTTP_200_OK)
+			self.createCookies(response)
+			return response
+		return Response({'detail': 'Invalid opt token'}, status=status.HTTP_400_BAD_REQUEST)
 
 	#blacklist old refresh token
 	
