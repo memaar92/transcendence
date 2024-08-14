@@ -29,11 +29,11 @@ import base64
 
 MAX_OTP_ATTEMPTS = 5
 OTP_LOCK_TIME = 300
+OTP_LIFETIME = 300
 
 
 #TO DO: add a cron job that regularly deletes users that have not verified their email within a certain time frame
 #TO DO: add a cron job that regularly deletes expired tokens from the blacklist
-#TO DO: log out endpoint
 
 
 #everywhere where access token is sent, if expired --> 401 / detail: token expired
@@ -333,7 +333,7 @@ class GenerateOTPView(APIView):
 
 		otp = random.randint(100000, 999999)
 		otp_cache_key = f'{user_profile.id}_otp'
-		cache.set(otp_cache_key, otp, timeout=300)
+		cache.set(otp_cache_key, otp, timeout=OTP_LIFETIME)
 		cache.incr(otp_attempts_key)
 
 		#send email with otp // for testing this is disabled and the otp is printed in the console
