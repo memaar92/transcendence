@@ -6,7 +6,7 @@ from django.conf import settings
 from .models import Games, CustomUser
 from rest_framework import generics, status
 from rest_framework.response import Response
-from .serializers import UserSerializer, GameHistorySerializer, UserNameSerializer, UserCreateSerializer, TOTPSetupSerializer, TOTPVerifySerializer, GenerateOTPSerializer, ValidateEmailSerializer, CheckEmailSerializer, CustomTokenObtainPairSerializer
+from .serializers import UserSerializer, GameSerializer, UserNameSerializer, UserCreateSerializer, TOTPSetupSerializer, TOTPVerifySerializer, GenerateOTPSerializer, ValidateEmailSerializer, CheckEmailSerializer, CustomTokenObtainPairSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -87,7 +87,19 @@ class UserView(APIView):
     def get(self, request, pk):
         user = get_object_or_404(CustomUser, pk=pk)
         serializer = UserNameSerializer(user)
-        return Response(serializer.data)
+
+        home_games = Games.objects.filter(home_id=user)
+        visitor_games = Games.objects.filter(visitor_id=user)
+        
+        # Serialize the games
+        all_games = home_games | visitor_games
+        games_serializer = GameSerializer(all_games, many=True)
+        # Combine the data
+        data = {
+            'user': serializer.data,
+            'games': games_serializer.data,
+        }
+        return Response(data)
 
 class GameHistoryList(APIView):
     # not discussed with Wayne yet
