@@ -41,21 +41,21 @@ class Redirect42Auth(APIView):
     permission_classes = [AllowAny]
 
     @extend_schema(
-		responses={
-			(200, 'application/json'): {
-				'type': 'object',
-				'properties': {
-					'detail': {'type': 'string', 'enum': ['Successfully authenticated with 42']}
-				},
-			},
-			(400, 'application/json'): {
-				'type': 'object',
-				'properties': {
-					'detail': {'type': 'string', 'enum': ['42auth failed', 'Wrong authentication method']}
-				},
-			},
-		},
-	)
+        responses={
+            (200, 'application/json'): {
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string', 'enum': ['Successfully authenticated with 42']}
+                },
+            },
+            (400, 'application/json'): {
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string', 'enum': ['42auth failed', 'Wrong authentication method']}
+                },
+            },
+        },
+    )
 
     def get(self, request):
         target_url = 'https://api.intra.42.fr/oauth/authorize?client_id=' + get_secret('oauth_client_id') + '&redirect_uri=https%3A%2F%2Flocalhost%2Fapi%2F42auth&response_type=code'
