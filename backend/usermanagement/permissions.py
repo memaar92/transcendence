@@ -22,10 +22,10 @@ class Check2FA(permissions.BasePermission):
 				# Check if '2fa' in payload is None or True
 				print("Is2fa")
 				print(payload.get('2fa'))
-				if payload.get('2fa') in [0, 3]:
+				if payload.get('2fa') in [0, 2]:
 					return True
 			except jwt.ExpiredSignatureError:
 				return False
 			except jwt.InvalidTokenError:
 				return False
-		raise PermissionDenied({'message': '2FA verification failed or not provided.'})
+		raise PermissionDenied({'message': '2FA verification needed.'})

@@ -16,7 +16,7 @@ from rest_framework.exceptions import NotFound, PermissionDenied, ValidationErro
 from django.middleware import csrf
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, inline_serializer
 from drf_spectacular.types import OpenApiTypes
-from .permissions import IsSelf
+from .permissions import IsSelf, Check2FA
 from utils.utils import get_tokens_for_user
 from utils.mixins import CookieCreationMixin
 import pyotp
@@ -82,7 +82,7 @@ class EditUserView(generics.RetrieveUpdateDestroyAPIView):
 
 class UserView(APIView):
 	# not discussed with Wayne yet
-	permission_classes = [IsAuthenticated]
+	permission_classes = [IsAuthenticated, Check2FA]
 
 	def get(self, request, pk):
 		user = get_object_or_404(CustomUser, pk=pk)
@@ -164,25 +164,39 @@ class TOTPSetupView(APIView):
 class TOTPVerifyView(APIView, CookieCreationMixin):
 	permission_classes = [IsAuthenticated]
 	serializer_class = TOTPVerifySerializer
+	
+	@extend_schema(
+		responses={
+			(200, 'application/json'): {
+				'type': 'object',
+				'properties': {
+					'detail': {'type': 'string', 'enum': ['2FA verification successful']}
+				},
+			},
+			(400, 'application/json'): {
+				'type': 'object',
+				'properties': {
+					'detail': {'type': 'string', 'enum': ['Refresh token not provided']}
+				},
+			},
+			(401, 'application/json'): {
+				'type': 'object',
+				'properties': {
+					'detail': {'type': 'string', 'enum': ['Invalid refresh token', 'Invalid 2fa token']},
+				},
+			},
+		},
+	)
+	
 	def post(self, request):
 		# Get the token from the cookies
-		token = request.COOKIES.get('access_token')
-		print("request.data: ", request.data)
-		if not token:
-			return Response({'detail': 'Token not found in cookies'}, status=status.HTTP_400_BAD_REQUEST)
-
-		try:
-			# Decode the token to get the user ID
-			decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-			user_id = decoded_token.get('user_id')
-		except jwt.ExpiredSignatureError:
-			return Response({'detail': 'Access token has expired'}, status=status.HTTP_401_UNAUTHORIZED)
-		except jwt.InvalidTokenError:
-			return Response({'detail': 'Invalid access token'}, status=status.HTTP_401_UNAUTHORIZED)
-		
+		auth_header = request.headers.get('Authorization')
+		token = auth_header.split(' ')[1]
+		# Decode the token to get the user ID
+		decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+		user_id = decoded_token.get('user_id')
 		# Get the refresh token from the request data
 		refresh_token = request.data['refresh']
-		print("refresh_token: ", refresh_token)
 		if not refresh_token:
 			return Response({'detail': 'Refresh token not provided'}, status=status.HTTP_400_BAD_REQUEST)
 		try:
@@ -204,7 +218,6 @@ class TOTPVerifyView(APIView, CookieCreationMixin):
 			refresh = RefreshToken.for_user(user)
 			refresh['2fa'] = 2
 			access = refresh.access_token
-			access['2fa'] = 2
 			token.blacklist()
 			response = Response({
 				'detail': '2FA verification successful',
@@ -213,10 +226,7 @@ class TOTPVerifyView(APIView, CookieCreationMixin):
 		}, status=status.HTTP_200_OK)
 			self.createCookies(response)
 			return response
-		return Response({'detail': 'Invalid opt token'}, status=status.HTTP_400_BAD_REQUEST)
-
-	#blacklist old refresh token
-	
+		return Response({'detail': 'Invalid 2fa token'}, status=status.HTTP_400_BAD_REQUEST)
 
 class CustomTokenObtainPairView(TokenObtainPairView, CookieCreationMixin):
 
@@ -224,7 +234,6 @@ class CustomTokenObtainPairView(TokenObtainPairView, CookieCreationMixin):
 	# 1. Successful login --> 200 / access and refresh tokens as cookies DONE
 	# 2. User not found --> 404 / description (user not found) Q: In what case is this even triggered?
 	# 3. Invalid credentials --> 401 / (No active account found with the given credentials) Out of the box: no differentiation between email and pw error
-	# 2FA flow unclear
 	# check if email is verified? (kinda already done when frontend checks if email is verified, but still if someone manages to call the login endpoint directly...)
 
 
