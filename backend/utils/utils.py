@@ -26,7 +26,9 @@ def generateUsername():
 
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
-
+    refresh['2fa'] = 0
+    if user.is_2fa_enabled:
+        refresh['2fa'] = 1
     return {
         'access': str(refresh.access_token),
         'refresh': str(refresh),

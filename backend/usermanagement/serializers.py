@@ -2,6 +2,7 @@ from .models import Games
 from rest_framework import serializers
 from .models import CustomUser
 from utils.utils import generateUsername
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 class UserSerializer(serializers.ModelSerializer):
 	class Meta:
@@ -45,6 +46,7 @@ class TOTPSetupSerializer(serializers.Serializer):
 
 class TOTPVerifySerializer(serializers.Serializer):
 	token = serializers.CharField()
+	refresh = serializers.CharField()
 
 class GenerateOTPSerializer(serializers.Serializer):
 	id = serializers.IntegerField()
@@ -55,3 +57,13 @@ class ValidateEmailSerializer(serializers.Serializer):
 
 class CheckEmailSerializer(serializers.Serializer):
 	email = serializers.EmailField()
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        if user.is_2fa_enabled:
+            token['2fa'] = 1
+        else:
+            token['2fa'] = 0
+        return token
