@@ -228,8 +228,6 @@ class CustomTokenRefreshView(TokenRefreshView, CookieCreationMixin):
 	)
 
 	def post(self, request, *args, **kwargs):
-		print("request.META: ", request.META)
-		print("request.data: ", request.data)
 		response = super().post(request, *args, **kwargs)
 		self.createCookies(response)
 		response.data = {'detail': 'Access and refresh tokens successfully created'}
