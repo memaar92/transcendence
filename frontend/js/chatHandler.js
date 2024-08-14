@@ -65,8 +65,9 @@ class ChatHandler {
 
   onMessage(event) {
     const content = JSON.parse(event.data);
+    console.log('Received message:', content);
     if (content.type === 'user_id') {
-      this.senderId = content.user_id;
+      this.senderId = Number(content.user_id);
       console.log('Received user ID:', this.senderId, content.context);
       if (content.context === 'chat' && !this.chatWindowOpened) {
           // Open chat window only after receiving the user ID
@@ -100,14 +101,19 @@ class ChatHandler {
         this.updateUnreadMessages(content);
         break;
       case 'chat_message':
-        this.showLatestMessage(content);
+        this.showLatestMessage(content.message, content.sender_id, content.receiver_id);
         this.updateUnreadMessages(content);
       // case 'error':
       //   this.displaySystemMessage(content.message);
       //   break;
       case 'message_preview':
-        console.log('Received message preview:', content);
-        this.showLatestMessage(content);
+        const friendItems = document.querySelectorAll('.friend-item');
+        friendItems.forEach(friendItem => {
+            const dataId = friendItem.getAttribute('data-id');
+            const latestMessage = content.latest_messages[dataId].message;
+            if (latestMessage) {
+              this.showLatestMessage(latestMessage, content.sender_id, dataId);
+            }});
         break;
       default:
         console.error('Error:', content.type);
@@ -115,17 +121,19 @@ class ChatHandler {
     }
   }
 
-  showLatestMessage(content) {
-    const friendItems = document.querySelectorAll('.friend-item');
-    friendItems.forEach(friendItem => {
-      if (content.message[friendItem.getAttribute('data-id')]) {
-        const messagePreview = friendItem.querySelector('.message-preview');
-        if (messagePreview) {
-          messagePreview.textContent = content.message[friendItem.getAttribute('data-id')];
-        }
+  showLatestMessage(message, senderId, friendId) {
+    const friendItem = document.querySelector(`.friend-item[data-id="${friendId}"]`);
+    if (friendItem) {
+      const messagePreview = friendItem.querySelector('.message-preview');
+      if (messagePreview && message) {
+        messagePreview.textContent = this.senderId === senderId ? `You: ${message}` : message;
+      } else {
+        console.log('preview not found');
       }
-    });
-  }
+    } else {
+      console.warn('Friend item not found:', friendId);
+    }
+  y}
 
   handleChatContext(content) {
     switch (content.type) {
@@ -146,10 +154,10 @@ class ChatHandler {
   }
 
   sendMessage(receiverId) {
-    console.log('Sending message to:', receiverId);
     const messageInput = document.getElementById('message-input');
     const message = messageInput.value.trim();
     if (this.ws && message && receiverId && receiverId !== this.senderId) {
+      console.log('Sending message to:', receiverId);
       const newMessage = {
         'type': 'chat_message',
         'message': message,
@@ -160,7 +168,7 @@ class ChatHandler {
       this.ws.send(JSON.stringify(newMessage));
       messageInput.value = '';
     } else {
-      // console.warn('Message, receiver ID is empty, or sender and receiver are the same');
+      console.warn('Message, receiver ID is empty, or sender and receiver are the same');
     }
   }
 
@@ -338,12 +346,16 @@ class ChatHandler {
     });
     this.ws.send(JSON.stringify({
       'type': 'message_preview',
-      'user_id_1': this.senderId,
       'context': 'home'
     }));
   }
 
   openChatWindow(friendId) {
+    this.ws.send(JSON.stringify({
+      'type': 'message_read',
+      'sender_id': this.senderId,
+      'receiver_id': friendId
+    }));
     const chatWindow = document.getElementById('chat-window');
     const chatTitle = document.getElementById('chat-title');
     const messagesContainer = document.getElementById('chat-messages');

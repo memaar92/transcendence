@@ -49,7 +49,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
         return users_info
 
     async def send_websocket_message(self, event):
-        await self.send(text_data=event['text'])
+        message_data = json.loads(event['text'])
+        message_data['context'] = event['context']  # Ensure the context is included in the message data
+        await self.send(text_data=json.dumps(message_data))
 
     async def broadcast_user_list(self):
          users_info = await self.get_user_list()
@@ -99,24 +101,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     return
         await self.close()
 
-    @database_sync_to_async
-    def get_user_id_from_jwt(self, token):
-        try:
-            decoded_data = UntypedToken(token)
-            user_id = decoded_data['user_id']
-            return user_id
-        except (InvalidToken, TokenError) as e:
-            print(f"Error decoding token: {e}")
-            return None
-
-    @database_sync_to_async
-    def get_user(self, user_id):
-        User = get_user_model()
-        try:
-            return User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            return None
-
     async def disconnect(self, close_code):
         if hasattr(self, 'user_id') and self.user_id in ChatConsumer.user_id_to_channel_name:
             del ChatConsumer.user_id_to_channel_name[self.user_id]
@@ -125,6 +109,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         data = json.loads(text_data)
         message_type = data.get('type', None)
+        print(f"Received message: {data}")
 
         if message_type == 'set_context':
 
@@ -133,6 +118,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.broadcast_user_list()
             if self.context == 'home':
                 await self.send_friends_list(self.user_id)
+                await self.send_unread_messages_count(self.user_id)
             return
         try:
             match self.context:
@@ -157,7 +143,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         try:
             match message_type:
                 case 'message_preview':
-                    await self.send_latest_message(data['user_id_1'], data['user_id_2'])
+                    await self.send_latest_message()
                 case 'chat_history':
                     await self.chat_history(data)
                 case 'update_status':
@@ -170,7 +156,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     }))
         except Exception as e:
             print(f"Error handling message in home context: {e}")
-            print(data)
             await self.send(text_data=json.dumps({
                 'type': 'error',
                 'message': f'Error handling message in home context: {str(e)}'
@@ -178,6 +163,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     
     async def handleChatContext(self, data):
         message_type = data.get('type', None)
+        print(f"Handling chat context message: {data}")
         try:
             match message_type:
                 case 'chat_message':
@@ -218,19 +204,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 }
             )
 
-    async def send_latest_message(self, user_id_1):
-        friends = await self.get_friends_list(user_id_1)
-        # create an array of latest messages for each friend
+    async def send_latest_message(self):
+        friends = await self.get_friends_list(self.user_id)
+        latest_messages = {}
+    
         for friend in friends:
-            latest_message = await self.get_latest_message(user_id_1, friend['id'])
+            latest_message = await self.get_latest_message(self.user_id, friend['id'])
             if latest_message:
-                friend['latest_message'] = latest_message
-            
-
+                latest_messages[friend['id']] = latest_message
         await self.send(text_data=json.dumps({
             'type': 'message_preview',
             'context': self.context,
-            'message': latest_message
+            'latest_messages': latest_messages
         }))
 
     async def chat_request_notification(self, event):
@@ -249,6 +234,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message = data.get('message')
 
         try:
+            print(f"Chat consumers: {ChatConsumer.user_id_to_channel_name}")
             if not receiver_id or not sender_id or not message:
                 await self.send(text_data=json.dumps({
                     'type': 'error',
@@ -264,8 +250,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 return
             elif receiver_id in ChatConsumer.user_id_to_channel_name:
                 receiver_channel_name = ChatConsumer.user_id_to_channel_name[receiver_id]
-                if (self.user_id == sender_id):
-                    await self.send_message_to_user(receiver_id, message, 'chat_message', 'message')
+                print(f"Sending message to {receiver_id}, {receiver_channel_name}")
+                await self.send_message_to_user(receiver_id, message, 'chat_message', 'message')
             else:
                 print(f"Receiver {receiver_id} is offline. Message will be saved but not sent.")
 
@@ -412,9 +398,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
     def get_latest_message(self, user_id_1, user_id_2):
         messages = Message.objects.filter(
             Q(sender_id=user_id_1, receiver_id=user_id_2) | Q(sender_id=user_id_2, receiver_id=user_id_1)
-        ).order_by('timestamp')
+        ).order_by('-timestamp')
         if messages:
-            latest_message = messages[0]
+            latest_message = messages.first()
             return {
                 'sender_id': latest_message.sender_id,
                 'receiver_id': latest_message.receiver_id,
@@ -423,3 +409,21 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'sender_name': latest_message.sender.displayname
             }
         return None
+
+    @database_sync_to_async
+    def get_user_id_from_jwt(self, token):
+        try:
+            decoded_data = UntypedToken(token)
+            user_id = decoded_data['user_id']
+            return user_id
+        except (InvalidToken, TokenError) as e:
+            print(f"Error decoding token: {e}")
+            return None
+
+    @database_sync_to_async
+    def get_user(self, user_id):
+        User = get_user_model()
+        try:
+            return User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return None
