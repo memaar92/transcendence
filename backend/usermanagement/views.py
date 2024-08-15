@@ -119,7 +119,11 @@ class UserView(APIView):
     permission_classes = [IsAuthenticated, Check2FA]
 
     @extend_schema(
-        responses=UserNameSerializer(many=True),
+        responses={
+            status.HTTP_200_OK: UserNameSerializer(many=True),
+            status.HTTP_401_UNAUTHORIZED: OpenApiResponse(description="Please login"),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(description="No CustomUser matches the given query.")
+        },
         description="Retrieve user information."
     )
 
@@ -133,9 +137,14 @@ class GameHistoryList(APIView):
     permission_classes = [IsAuthenticated, Check2FA]
 
     @extend_schema(
-        responses=GameSerializer(many=True),
+        responses={
+            status.HTTP_200_OK: GameSerializer(many=True),
+            status.HTTP_401_UNAUTHORIZED: OpenApiResponse(description="Please login"),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(description="No CustomUser matches the given query.")
+        },
         description="Retrieve the game history for a specific user. Can be more than one game."
     )
+
     def get(self, request, id):
         user = get_object_or_404(CustomUser, pk=id)
         home_games = Games.objects.filter(home_id=user)
