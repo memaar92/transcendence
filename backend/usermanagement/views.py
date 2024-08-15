@@ -147,13 +147,16 @@ class GameHistoryList(APIView):
 
 class ProfilePictureDeleteView(APIView):
     # not discussed with Wayne yet
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsSelf]
 
     def get_object(self):
-        user = get_object_or_404(CustomUser, pk=self.kwargs['pk'])
-        if user != self.request.user:
-            raise PermissionDenied("You don't have permission to delete this profile picture.")
-        return user
+        auth_header = self.request.headers.get('Authorization')
+        if auth_header:
+            token = auth_header.split(' ')[1]
+            decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            user_id = decoded_token.get('user_id')
+            return get_object_or_404(CustomUser, id=user_id)
+        return None
 
     def delete(self, request, *args, **kwargs):
         user = self.get_object()
