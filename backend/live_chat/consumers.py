@@ -13,13 +13,13 @@ import json
 RelationshipStatus = Relationship.RelationshipStatus
 
 class ChatConsumer(AsyncWebsocketConsumer):
-
-    user_id_to_channel_name = {}
+    
+    online_users = set()
 
     async def send_message_to_user(self, receiver_id, message, message_type, message_key):
-        channel_name = ChatConsumer.user_id_to_channel_name.get(receiver_id, None)
-        if channel_name:
-            await self.channel_layer.send(channel_name, {
+        await self.channel_layer.group_send(
+            receiver_id,
+            {
                 "type": "send_websocket_message",
                 "sender_id": self.user_id,    
                 "receiver_id": receiver_id,    
@@ -30,22 +30,24 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "receiver_id": receiver_id,
                     "sender_name": self.scope['user'].displayname
                 }),
-            })
+            }
+        )
 
     async def send_friends_list(self, user_id):
         friends_list = await self.get_friends_list(user_id)
-        await self.send(text_data=json.dumps({
-            'type': 'friends_list',
-            'friends': friends_list,
-            'context': self.context
-        }))
+        await self.channel_layer.group_send(
+            user_id,
+            {
+                'type': 'send_websocket_message',
+                'text': json.dumps({
+                    'type': 'friends_list',
+                    'friends': friends_list
+                })
+            }
+        )
 
     async def get_user_list(self):
-        users_info = []
-        for user_id in ChatConsumer.user_id_to_channel_name:
-            user = await self.get_user(user_id)
-            users_info.append({'id': str(user.id), 'name': user.displayname, 'profile_picture_url': user.profile_picture.url})
-        return users_info
+        return list(User.objects.filter(id__in=ChatConsumer.online_users).values('id', 'name', 'profile_picture_url'))
 
     async def send_websocket_message(self, event):
         message_data = json.loads(event['text'])
@@ -54,25 +56,27 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
 
     async def broadcast_user_list(self):
-         users_info = await self.get_user_list()
-         for user_id, channel_name in ChatConsumer.user_id_to_channel_name.items():
-             modified_users_info = [
-                 {
-                     'id': user['id'],
-                     'name': user['name'],
-                     'profile_picture_url': user['profile_picture_url']
-                 }
-                 for user in users_info if str(user['id']) != str(user_id)
-             ]
-             user_list_message = json.dumps({
-                 'type': 'user_list',
-                 'context': 'home',
-                 'users': modified_users_info
-             })
-             await self.channel_layer.send(channel_name, {
-                 'type': 'send_websocket_message',
-                 'text': user_list_message
-             })
+        users_info = await self.get_user_list()
+        for user_id in ChatConsumer.online_users:
+            modified_users_info = [
+                {
+                    'id': user['id'],
+                    'name': user['name'],
+                    'profile_picture_url': user['profile_picture_url']
+                }
+                for user in users_info if str(user['id']) != str(user_id)
+            ]
+            user_list_message = json.dumps({
+                'type': 'user_list',
+                'users': modified_users_info
+            })
+            await self.channel_layer.group_send(
+                self.user_id,
+                {
+                    'type': 'send_websocket_message',
+                    'text': user_list_message
+                }
+            )
 
     async def send_pending_chat_notifications(self, user_id):
         pending_requests = await self.get_pending_requests(user_id)
@@ -94,17 +98,32 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     self.scope['user'] = user
                     self.user_id = str(user.id)
                     self.context = None
-                    ChatConsumer.user_id_to_channel_name[self.user_id] = self.channel_name
+                    self.user_group_name = self.user_id
+
+                    await self.channel_layer.group_add(
+                        self.user_group_name,
+                        self.channel_name
+                    )
+                    
                     await self.accept()
-                    # await self.send_friends_list(self.user_id)
-                    print("Connected to chat")
+                    ChatConsumer.online_users.add(self.user_id)
+                    print(f"Connected to chat: User {self.user_id}, Channel {self.channel_name}")
+                    self.broadcast_user_list()
                     return
         await self.close()
 
     async def disconnect(self, close_code):
-        if hasattr(self, 'user_id') and self.user_id in ChatConsumer.user_id_to_channel_name:
-            del ChatConsumer.user_id_to_channel_name[self.user_id]
-            await self.broadcast_user_list()
+        if hasattr(self, 'user_group_name'):
+            # Remove this connection from the user's group
+            await self.channel_layer.group_discard(
+                self.user_group_name,
+                self.channel_name
+            )
+        print(f"Disconnected from chat: User {self.user_id}, Channel {self.channel_name}")
+        self.online_users.remove(self.user_id)
+        self.broadcast_user_list()
+
+            # await self.broadcast_user_list()
 
     async def receive(self, text_data):
         data = json.loads(text_data)
@@ -120,6 +139,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 await self.send_friends_list(self.user_id)
                 await self.send_unread_messages_count(self.user_id)
             return
+        print(self.context)
         try:
             match self.context:
                 case 'home':
@@ -184,25 +204,25 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'message': f'Error handling message in chat context: {str(e)}'
             }))
 
-    async def chat_request(self, data):
-        receiver_id = data['receiver_id']
-        sender_id = data['sender_id']
-        print (f"Chat request from {sender_id} to {receiver_id}")
-        if sender_id == receiver_id:
-            return
-        if receiver_id in ChatConsumer.user_id_to_channel_name:
-            receiver_channel_name = ChatConsumer.user_id_to_channel_name[receiver_id]
-            await self.update_status(sender_id, receiver_id, RelationshipStatus.PENDING)
-            await self.channel_layer.send(
-                receiver_channel_name,
-                {
-                    'type': 'chat_request_notification',
-                    'context': self.context,
-                    'sender_id': sender_id,
-                    'sender_name': self.scope['user'].displayname,
-                    'receiver_id': receiver_id
-                }
-            )
+    # async def chat_request(self, data):
+    #     receiver_id = data['receiver_id']
+    #     sender_id = data['sender_id']
+    #     print (f"Chat request from {sender_id} to {receiver_id}")
+    #     if sender_id == receiver_id:
+    #         return
+    #     if receiver_id in ChatConsumer.user_id_to_channel_name:
+    #         receiver_channel_name = ChatConsumer.user_id_to_channel_name[receiver_id]
+    #         await self.update_status(sender_id, receiver_id, RelationshipStatus.PENDING)
+    #         await self.channel_layer.send(
+    #             receiver_channel_name,
+    #             {
+    #                 'type': 'chat_request_notification',
+    #                 'context': self.context,
+    #                 'sender_id': sender_id,
+    #                 'sender_name': self.scope['user'].displayname,
+    #                 'receiver_id': receiver_id
+    #             }
+    #         )
 
     async def send_latest_message(self):
         friends = await self.get_friends_list(self.user_id)
@@ -234,7 +254,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message = data.get('message')
 
         try:
-            print(f"Chat consumers: {ChatConsumer.user_id_to_channel_name}")
             if not receiver_id or not sender_id or not message:
                 await self.send(text_data=json.dumps({
                     'type': 'error',
@@ -248,7 +267,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     'message': 'You are not friends with this user.'
                 }))
                 return
-            elif receiver_id in ChatConsumer.user_id_to_channel_name:
+            elif receiver_id in self.channel_layer.groups:
                 receiver_channel_name = ChatConsumer.user_id_to_channel_name[receiver_id]
                 print(f"Sending message to {receiver_id}, {receiver_channel_name}")
                 await self.send_message_to_user(receiver_id, message, 'chat_message', 'message')
@@ -265,32 +284,37 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'original_message': data
         }))
 
-    async def chat_request_accepted(self, data):
-        sender_id = data['sender_id']
-        receiver_id = data['receiver_id']
-        await self.update_status(sender_id, receiver_id, RelationshipStatus.BEFRIENDED)
+    # async def chat_request_accepted(self, data):
+    #     sender_id = data['sender_id']
+    #     receiver_id = data['receiver_id']
+    #     await self.update_status(sender_id, receiver_id, RelationshipStatus.BEFRIENDED)
 
-        await self.send_message_to_user(sender_id, f"You are now friends with {await self.get_user_displayname(receiver_id)}", 'chat_message', 'message')
-        await self.send_message_to_user(receiver_id, f"You are now friends with {self.scope['user'].displayname}", 'chat_message', 'message')
+    #     await self.send_message_to_user(sender_id, f"You are now friends with {await self.get_user_displayname(receiver_id)}", 'chat_message', 'message')
+    #     await self.send_message_to_user(receiver_id, f"You are now friends with {self.scope['user'].displayname}", 'chat_message', 'message')
 
-        await self.send_friends_list(sender_id)
-        await self.send_friends_list(receiver_id)
+    #     await self.send_friends_list(sender_id)
+    #     await self.send_friends_list(receiver_id)
 
-    async def chat_request_denied(self, data):
-        receiver_displayname = await self.get_user_displayname(data['receiver_id'])
-        await self.update_status(data['sender_id'], data['receiver_id'], RelationshipStatus.DEFAULT)
-        await self.send_message_to_user(data['sender_id'], receiver_displayname, 'chat_request_denied', 'message')
+    # async def chat_request_denied(self, data):
+    #     receiver_displayname = await self.get_user_displayname(data['receiver_id'])
+    #     await self.update_status(data['sender_id'], data['receiver_id'], RelationshipStatus.DEFAULT)
+    #     await self.send_message_to_user(data['sender_id'], receiver_displayname, 'chat_request_denied', 'message')
 
     async def chat_history(self, data):
         sender_id = data['sender_id']
         receiver_id = data['receiver_id']
         messages = await self.get_chat_history(sender_id, receiver_id)
-        await self.send(text_data=json.dumps({
-            'type': 'chat_history',
-            'context': self.context,
-            'messages': messages,
-            'sender_id': sender_id,
-            'receiver_id': receiver_id
+        await self.group_send(
+            self.user_id,
+            json.dumps({
+            'type': 'send_websocket_message',
+            'text': json.dumps({
+                'type': 'chat_history',
+                'messages': messages,
+                'sender_id': sender_id,
+                'receiver_id': receiver_id
+            })
+
         }))
 
     async def send_unread_messages_count(self, user_id):
