@@ -19,11 +19,6 @@ document.getElementById("register").addEventListener('click', async (e) => {
     console.log("uid " + user_info["id"]);
     if (result.ok) {
         localStorage.setItem("uid", user_info["id"])
-        api.post("/email/otp/",
-            {
-                "id": user_info["id"]
-            }
-        )
         router.navigate("/email_verification");
     } else {
         router.navigate("/home");

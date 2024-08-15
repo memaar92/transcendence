@@ -1,6 +1,7 @@
 import { api } from './api.js';
 import { router } from './app.js'
 
+
 function isValidEmail(email) {
     var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (email === '' || !emailRegex.test(email)) {
@@ -20,11 +21,19 @@ document.getElementById("login").addEventListener('click', async (e) => {
     }
     const result = await api.post('/email/', { "email": document.getElementById('email').value});
     console.log("result received");
+    localStorage.setItem("email", document.getElementById('email').value);
     if (result.ok)
-        router.navigate("/login");
+    {
+        const json = await result.json();
+        localStorage.setItem("uid", json["id"])
+        console.log(json);
+        if (json["email_verified"] == true)
+            router.navigate("/login");
+        else
+            router.navigate("/email_verification") ;
+    }
     else
     {
-        localStorage.setItem("email", document.getElementById('email').value);
         router.navigate("/register");
     }
 });
