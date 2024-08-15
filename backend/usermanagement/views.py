@@ -62,15 +62,38 @@ class CreateUserView(generics.CreateAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = UserCreateSerializer
     permission_classes = [AllowAny]
-    
-    
+
 
 class EditUserView(generics.RetrieveUpdateDestroyAPIView):
     # not discussed with Wayne yet
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated, IsSelf]
-    http_method_names = ['patch', 'delete']
+    http_method_names = ['patch', 'delete', 'get']
     queryset = CustomUser.objects.all()
+
+    def get_object(self):
+        auth_header = self.request.headers.get('Authorization')
+        if auth_header:
+            token = auth_header.split(' ')[1]
+            decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            user_id = decoded_token.get('user_id')
+            return get_object_or_404(CustomUser, id=user_id)
+        return None
+
+    @extend_schema(
+        responses=UserSerializer(many=True),
+        description="Retrieve user information."
+    )
+
+    def get(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    @extend_schema(
+        responses=UserSerializer(many=True),
+        description="Update user information."
+    )
 
     def patch(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -84,32 +107,33 @@ class UserView(APIView):
     # not discussed with Wayne yet
     permission_classes = [IsAuthenticated, Check2FA]
 
+    @extend_schema(
+        responses=UserNameSerializer(many=True),
+        description="Retrieve user information."
+    )
+
     def get(self, request, pk):
         user = get_object_or_404(CustomUser, pk=pk)
         serializer = UserNameSerializer(user)
 
-        home_games = Games.objects.filter(home_id=user)
-        visitor_games = Games.objects.filter(visitor_id=user)
-        
-        # Serialize the games
-        all_games = home_games | visitor_games
-        games_serializer = GameSerializer(all_games, many=True)
-        # Combine the data
-        data = {
-            'user': serializer.data,
-            'games': games_serializer.data,
-        }
-        return Response(data)
+        return Response(serializer.data)
 
 class GameHistoryList(APIView):
-    # not discussed with Wayne yet
-    permission_classes = [AllowAny]
-    #only allow GET requests
-    def get(self, request, format=None):
-        games = Games.objects.all()
-        serializer = GameHistorySerializer(games, many=True)
-        return Response(serializer.data)
-    
+    permission_classes = [IsAuthenticated, Check2FA]
+
+    @extend_schema(
+        responses=GameSerializer(many=True),
+        description="Retrieve the game history for a specific user. Can be more than one game."
+    )
+    def get(self, request, id):
+        user = get_object_or_404(CustomUser, pk=id)
+        home_games = Games.objects.filter(home_id=user)
+        visitor_games = Games.objects.filter(visitor_id=user)
+        all_games = home_games | visitor_games
+        games_serializer = GameSerializer(all_games, many=True)
+        return Response(games_serializer.data)
+
+
 class ProfilePictureDeleteView(APIView):
     # not discussed with Wayne yet
     permission_classes = [IsAuthenticated]
