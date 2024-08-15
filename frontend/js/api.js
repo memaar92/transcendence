@@ -1,16 +1,16 @@
-const API_BASE_URL = 'api';
+const API_BASE_URL = "api";
 
 export const api = {
   get: async (endpoint) => {
     const response = await fetch(`${API_BASE_URL}${endpoint}`);
     return response;
   },
-  
+
   post: async (endpoint, data) => {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(data),
     });
@@ -19,8 +19,8 @@ export const api = {
 
   delete: async (endpoint) => {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        method: 'DELETE'
+      method: "DELETE",
     });
     return response;
-  }
+  },
 };
