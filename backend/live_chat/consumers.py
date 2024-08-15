@@ -26,7 +26,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 "text": json.dumps({
                     "type": message_type,
                     message_key: message,
-                    "context": self.context,
                     "sender_id": self.user_id,
                     "receiver_id": receiver_id,
                     "sender_name": self.scope['user'].displayname
@@ -50,8 +49,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def send_websocket_message(self, event):
         message_data = json.loads(event['text'])
-        message_data['context'] = event['context']  # Ensure the context is included in the message data
+        message_data['context'] = self.context
         await self.send(text_data=json.dumps(message_data))
+
 
     async def broadcast_user_list(self):
          users_info = await self.get_user_list()
@@ -255,9 +255,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             else:
                 print(f"Receiver {receiver_id} is offline. Message will be saved but not sent.")
 
-            if (self.user_id == sender_id):
-                await self.save_message(sender_id, receiver_id, message)
-                await self.send_unread_messages_count(receiver_id)
+            await self.save_message(sender_id, receiver_id, message)
+            await self.send_unread_messages_count(receiver_id)
 
         except Exception as e:
             await self.send(text_data=json.dumps({
@@ -300,6 +299,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def update_messages_status(self, sender_id, receiver_id):
+        print(f"Updating messages status for {sender_id} and {receiver_id}")
         Message.objects.filter(Q(sender_id=sender_id, receiver_id=receiver_id)).update(status='read')
 
     @database_sync_to_async

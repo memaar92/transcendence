@@ -101,18 +101,17 @@ class ChatHandler {
         this.updateUnreadMessages(content);
         break;
       case 'chat_message':
-        this.showLatestMessage(content.message, content.sender_id, content.receiver_id);
-        this.updateUnreadMessages(content);
-      // case 'error':
-      //   this.displaySystemMessage(content.message);
-      //   break;
+        this.incrementUnreadMessageCount(content.sender_id);
+        this.showLatestMessage(content.message, content.sender_id, content.sender_id);
+        break;
       case 'message_preview':
         const friendItems = document.querySelectorAll('.friend-item');
         friendItems.forEach(friendItem => {
             const dataId = friendItem.getAttribute('data-id');
             const latestMessage = content.latest_messages[dataId].message;
+            const sender_id = content.latest_messages[dataId].sender_id;
             if (latestMessage) {
-              this.showLatestMessage(latestMessage, content.sender_id, dataId);
+              this.showLatestMessage(latestMessage, sender_id, dataId);
             }});
         break;
       default:
@@ -123,17 +122,26 @@ class ChatHandler {
 
   showLatestMessage(message, senderId, friendId) {
     const friendItem = document.querySelector(`.friend-item[data-id="${friendId}"]`);
+    console.log(friendId);
     if (friendItem) {
       const messagePreview = friendItem.querySelector('.message-preview');
       if (messagePreview && message) {
-        messagePreview.textContent = this.senderId === senderId ? `You: ${message}` : message;
+        if (message.length > 30) {
+          message = message.slice(0, 30) + '...';
+        }
+        console.log(this.senderId, senderId);
+        if (senderId === this.senderId) {
+          messagePreview.textContent = `You: ${message}`;
+        } else {
+          messagePreview.textContent = message;
+        }
       } else {
         console.log('preview not found');
       }
     } else {
-      console.warn('Friend item not found:', friendId);
+      console.warn('Friend item not found (latest message):', friendId);
     }
-  y}
+  }
 
   handleChatContext(content) {
     switch (content.type) {
@@ -189,12 +197,31 @@ class ChatHandler {
                 friendItem.appendChild(unreadIndicator);
             }
         } else {
+            console.log('Removing unread indicator');
             if (friendItem.contains(unreadIndicator)) {
                 unreadIndicator.remove();
             }
         }
     });
-}
+  }
+
+  incrementUnreadMessageCount(senderId) {
+    const friendItem = document.querySelector(`.friend-item[data-id="${senderId}"]`);
+    if (friendItem) {
+      let unreadIndicator = friendItem.querySelector('.unread-indicator');
+      if (!unreadIndicator) {
+        unreadIndicator = document.createElement('div');
+        unreadIndicator.className = 'unread-indicator';
+      }
+      const currentCount = Number(unreadIndicator.textContent) || 0;
+      unreadIndicator.textContent = currentCount + 1;
+      if (!friendItem.contains(unreadIndicator)) {
+        friendItem.appendChild(unreadIndicator);
+      }
+    } else {
+      console.warn('Friend item not found (unread messages):', senderId);
+    }
+  }
 
   // showMessageNotification(content) {
   //   this.updateUnreadMessageIndicator(content.sender_id);
