@@ -14,7 +14,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError, AuthenticationFailed, NotAuthenticated, Throttled
 from django.middleware import csrf
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, inline_serializer
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, inline_serializer, OpenApiResponse
 from drf_spectacular.types import OpenApiTypes
 from .permissions import IsSelf, Check2FA
 from utils.utils import get_tokens_for_user
@@ -79,9 +79,13 @@ class EditUserView(generics.RetrieveUpdateDestroyAPIView):
             user_id = decoded_token.get('user_id')
             return get_object_or_404(CustomUser, id=user_id)
         return None
-
+    
     @extend_schema(
-        responses=UserSerializer(many=True),
+        responses={
+            status.HTTP_200_OK: UserSerializer,
+            status.HTTP_401_UNAUTHORIZED: OpenApiResponse(description="Please login"),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(description="User not found")
+        },
         description="Retrieve user information."
     )
 
@@ -91,17 +95,24 @@ class EditUserView(generics.RetrieveUpdateDestroyAPIView):
         return Response(serializer.data)
 
     @extend_schema(
-        responses=UserSerializer(many=True),
+        responses={
+            status.HTTP_200_OK: UserSerializer,
+            status.HTTP_400_BAD_REQUEST: OpenApiResponse(description="Please check arguments"),
+            status.HTTP_401_UNAUTHORIZED: OpenApiResponse(description="Please login"),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(description="User not found")
+        },
         description="Update user information."
     )
 
     def patch(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=True)
+        print(serializer)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'message': 'Please check arguments',
+            'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 class UserView(APIView):
     # not discussed with Wayne yet
