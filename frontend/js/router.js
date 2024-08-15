@@ -1,4 +1,4 @@
-import { handleButtonClick } from './loginHandlers.js'
+// import { handleButtonClick } from './loginHandlers.js'
 class Router {
     constructor(routes) {
       this.routes = routes;
@@ -74,28 +74,36 @@ class Router {
         }
 
         async updateView() {
-            if (this.app && this.currentRoute) {
-              try {
-                const response = await fetch(this.currentRoute.templateUrl);
-                const html = await response.text();
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const content = doc.getElementById('content');
-                if (content) {
-                  this.app.innerHTML = content.innerHTML;
-                } else {
-                  console.error('No content div found in the loaded HTML');
-                }
-                const buttons = document.querySelectorAll('button');
-                buttons.forEach(button => {
-                  button.addEventListener('click', handleButtonClick);
-                });
-              } catch (error) {
-                console.error('Error loading template:', error);
-                this.app.innerHTML = '<p>Error loading content</p>';
-              }
+          console.log("before updated view");
+          if (this.app && this.currentRoute) {
+            try {
+              const response = await fetch(this.currentRoute.templateUrl);
+              const html = await response.text();
+              const parser = new DOMParser();
+              const content = parser.parseFromString(html, 'text/html');
+        
+              this.app.innerHTML = '';
+      
+              Array.from(content.body.childNodes).forEach(node => {
+                this.app.appendChild(node.cloneNode(true));
+              });
+
+              
+
+              const scripts = content.querySelectorAll('script');
+              scripts.forEach(oldScript => {
+                const newScript = document.createElement('script');
+                newScript.src = oldScript.src;
+                newScript.type = 'module';
+                document.body.appendChild(newScript);
+              });
+            } catch (error) {
+              console.error('Error loading template:', error);
+              this.app.innerHTML = '<p>Error loading content</p>';
             }
           }
+          console.log("after updated view")
+        }
 }
   
 export default Router;

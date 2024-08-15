@@ -1,4 +1,4 @@
-<div id="content">
+<script src="/js/email_verification.js" type="module"></script>
 <span class="d-flex justify-content-center">
     <form class="login d-inline-flex justify-content-center flex-column">
         <h1>We've emailed you a code</h1>
@@ -8,15 +8,9 @@
         <div id="verificationFeedback" class="invalid-feedback">
             wrong verification code
         </div>
-        <button class="mainButton" value="Verify" id="code-form-submit">verify</button>
+        <button class="mainButton" value="Verify" id="verify-email">verify</button>
         <p>
             Didn't receive an email? <a href="/resend_mail" data-router-link>Resend</a>
         </p>
-        <script>
-            document.addEventListener("DOMContentLoaded", function() {
-                document.getElementById('user-mail').innerText = localStorage.getItem("email");
-            });
-        </script>
     </form>
 </span>
-</div>
