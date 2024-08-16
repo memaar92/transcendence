@@ -105,7 +105,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     
                     await self.accept()
                     ChatConsumer.online_users.add(self.user_id)
-                    print(f"Connected to chat: User {self.user_id}, Channel {self.channel_name}")
+                    print(f"Connected to chat: User {self.user_id}")
                     await self.broadcast_user_list()
                     return
         await self.close()
@@ -117,7 +117,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 self.user_group_name,
                 self.channel_name
             )
-        print(f"Disconnected from chat: User {self.user_id}, Channel {self.channel_name}")
+        print(f"Disconnected from chat: User {self.user_id}")
         self.online_users.remove(self.user_id)
         await self.broadcast_user_list()
 
