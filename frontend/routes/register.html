@@ -1,14 +1,24 @@
-<div id="content">
-    <span class="d-flex justify-content-center">
-        <form class="login d-inline-flex justify-content-center flex-column">
-            <h2>Register now</h2>
-            <label for="password">Password</label>
-            <input type="password" id="password" autocomplete="password" size="30" required autofocus placeholder="Password"/>
-            <button class="mainButton" id="register">Register</button>
-            <div class="middle-line-text">
-                <span>or</span>
-            </div>
-            <p style="text-align: center;">back to <a class="link" href="/home" data-router-link>login</a></p> 
-        </form>
-    </span>
-</div>
+<script src="/js/register.js" type="module"></script>
+<span class="d-flex justify-content-center">
+  <form class="login d-inline-flex justify-content-center flex-column">
+    <h2>Register now</h2>
+    <label for="password">Password</label>
+    <input
+      type="password"
+      id="password"
+      autocomplete="password"
+      size="30"
+      required
+      autofocus
+      placeholder="Password"
+    />
+    <i class="bi bi-eye-slash" id="togglePassword"></i>
+    <button class="mainButton" id="register">Register</button>
+    <div class="middle-line-text">
+      <span>or</span>
+    </div>
+    <p style="text-align: center">
+      back to <a class="link" href="/home" data-router-link>login</a>
+    </p>
+  </form>
+</span>

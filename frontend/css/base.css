@@ -1,120 +1,145 @@
-
 body {
-    background-color: #202021;
-    font-family: 'Glegoo';
-    font-weight: 700;
-    color: white;
-    width: 100%;
-    position: absolute;
-    top: 0;
-    bottom: 0;
+  background-color: #202021;
+  font-family: "Glegoo";
+  font-weight: 700;
+  color: white;
+  width: 100%;
+  position: absolute;
+  top: 0;
+  bottom: 0;
 }
 
 :root {
-    --color-text: #fff;
-    --color-background: #202021;
-    --color-accent: #7A35EC;
-    --color-accent-shadow: #651BDD;
+  --color-text: #fff;
+  --color-background: #202021;
+  --color-accent: #7a35ec;
+  --color-accent-shadow: #651bdd;
 }
 
 h1 {
-    color: white;
+  color: white;
 }
 
 h2 {
-    align-self: center;
-    font-size: 26px;
-    font-weight: bold;
-    margin-bottom: 28px;
+  align-self: center;
+  font-size: 26px;
+  font-weight: bold;
+  margin-bottom: 28px;
 }
 
 .mainButton {
-    margin-top: 16px;
-    margin-bottom: 21px;
-    background-color: var(--color-accent);
-    color: var(--color-text);
-    border: none;
-    padding-top: 9px;
-    padding-bottom: 9px;
-    text-align: center;
-    text-decoration: none;
-    font-size: 16px;
-    border-radius: 8px;
-    font-weight: 700;
-    box-shadow: 0 4px 0px 0px var(--color-accent-shadow);
+  margin-top: 16px;
+  margin-bottom: 21px;
+  background-color: var(--color-accent);
+  color: var(--color-text);
+  border: none;
+  padding-top: 9px;
+  padding-bottom: 9px;
+  text-align: center;
+  text-decoration: none;
+  font-size: 16px;
+  border-radius: 8px;
+  font-weight: 700;
+  box-shadow: 0 4px 0px 0px var(--color-accent-shadow);
 }
 
 .secondaryButton {
-    margin-top: 16px;
+  margin-top: 16px;
 }
 
 .invalid-feedback {
-    color: var(--color-text);
+  color: var(--color-text);
 }
 
 .mainButton:hover {
-    background-color: #9565e3;
+  background-color: #9565e3;
 }
 
 .mainButton:active {
-    box-shadow: none;
-    transform: translateY(4px);
+  box-shadow: none;
+  transform: translateY(4px);
 }
 
 input {
-    border-radius: 8px;
-    padding: 12px;
-    font-family: 'Inter';
+  border-radius: 8px;
+  padding: 12px;
+  font-family: "Inter";
 }
 
 .menu {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
 }
 
-.menu li{
-    display: flex;
-    justify-content: center;
+.menu li {
+  display: flex;
+  justify-content: center;
 }
 
 .menu li:hover {
-    transform: scale(1.1);
-    transition: all 0.4s ease;
-    border-top: 1px solid #fff;
-    border-bottom: 1px solid #ffffff;
+  transform: scale(1.1);
+  transition: all 0.4s ease;
+  border-top: 1px solid #fff;
+  border-bottom: 1px solid #ffffff;
 }
 
 .menu a {
-    text-decoration: none;
-    color: var(--color-text);
-    font-size: 64px;
+  text-decoration: none;
+  color: var(--color-text);
+  font-size: 64px;
 }
 
 .middle-line-text {
-    display: flex;
-    align-items: center;
-    text-align: center;
+  display: flex;
+  align-items: center;
+  text-align: center;
 }
 
 .middle-line-text::before {
-    content: '';
-    flex: 1;
-    border-bottom: 1px solid #ffffff;
-    margin-right: 10px;
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid #ffffff;
+  margin-right: 10px;
 }
 
 .middle-line-text::after {
-    content: '';
-    flex: 1;
-    border-bottom: 1px solid #ffffff;
-    margin-left: 10px;
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid #ffffff;
+  margin-left: 10px;
 }
 
 .login {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-} 
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+#codeForm {
+    display: flex;
+    justify-content: center; /* Center inputs horizontally */
+    gap: 40px; /* Space between inputs */
+    width: 100%; /* Full width of the container */
+    max-width: 90vw; /* Max width relative to viewport width */
+    margin-bottom: 20px;
+    box-sizing: border-box; /* Include padding and border in element's total width and height */
+}
+
+.code-input {
+    flex: 1;
+    max-width: 90px;
+    height: 90px;
+    text-align: center;
+    font-size: 24px;
+    border: 2px solid #ccc;
+    border-radius: 5px;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.code-input:focus {
+    border-color: #007bff;
+}

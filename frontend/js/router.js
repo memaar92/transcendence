@@ -9,126 +9,101 @@ class Router {
     this.currentHistoryPosition = 0;
     this.maxHistoryPosition = 0;
 
-    window.addEventListener('popstate', this.handlePopState.bind(this));
+    // TODO login check
+
+    window.addEventListener("popstate", this.handlePopState.bind(this));
     this.bindLinks();
   }
 
   init(app) {
     this.app = app;
-    this.navigate(window.location.pathname, false); // Don't push state on initial load
+    this.navigate(window.location.pathname);
   }
 
   addRoute(path, templateUrl) {
     this.routes.push({ path, templateUrl });
   }
 
-  async navigate(path, pushState = true, state = {}) {
-    const route = this.matchRoute(path);
+  async navigate(path, pushState = true) {
+    const route = this.routes.find((route) => route.path === path);
     if (route) {
       this.currentRoute = route;
       if (pushState) {
         this.currentHistoryPosition++;
         this.maxHistoryPosition = this.currentHistoryPosition;
         const title_temp = document.title;
-        document.title = route.path.slice(1).replace('_', "-");
-        history.pushState({ position: this.currentHistoryPosition, path, ...state }, '', path);
+        document.title = route.path.slice(1).replace("_", "-");
+        history.pushState({ position: this.currentHistoryPosition }, "", path);
         document.title = title_temp;
       }
-      await this.updateView(route.params);
+      await this.updateView();
     } else {
-      this.handleNotFound(pushState);
+      this.currentRoute = this.routes.find((route) => route.path === "/404");
+      if (pushState) {
+        this.currentHistoryPosition++;
+        this.maxHistoryPosition = this.currentHistoryPosition;
+        history.pushState(
+          { position: this.currentHistoryPosition },
+          "",
+          "/404"
+        );
+      }
+      await this.updateView();
     }
-
     if (this.onNavigate) {
-      this.onNavigate(route ? route.params : {});
+      this.onNavigate();
     }
-  }
-
-  matchRoute(path) {
-    for (const route of this.routes) {
-      const paramNames = [];
-      const regexPath = route.path.replace(/:(\w+)/g, (_, key) => {
-        paramNames.push(key);
-        return '([^\\/]+)';
-      });
-      const regex = new RegExp(`^${regexPath}$`);
-      const match = path.match(regex);
-      if (match) {
-        const params = paramNames.reduce((acc, paramName, index) => {
-          acc[paramName] = match[index + 1];
-          return acc;
-        }, {});
-        return { ...route, params };
-      }
-    }
-    return null;
-  }
-
-  async updateView(params = {}) {
-    if (this.app && this.currentRoute) {
-      try {
-        const response = await fetch(this.currentRoute.templateUrl);
-        const html = await response.text();
-        this.app.innerHTML = this.extractContent(html);
-
-        const buttons = document.querySelectorAll('button');
-        buttons.forEach(button => {
-          button.addEventListener('click', handleButtonClick);
-        });
-
-        this.onViewUpdated(params);
-      } catch (error) {
-        console.error('Error loading template:', error);
-        this.app.innerHTML = '<p>Error loading content</p>';
-      }
-    }
-  }
-
-  extractContent(html) {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-    const content = doc.getElementById('content');
-    return content ? content.innerHTML : '<p>No content found</p>';
-  }
-
-  handleNotFound(pushState) {
-    this.currentRoute = this.routes.find(route => route.path === "/404");
-    if (pushState) {
-      this.currentHistoryPosition++;
-      this.maxHistoryPosition = this.currentHistoryPosition;
-      history.pushState({ position: this.currentHistoryPosition }, '', "/404");
-    }
-    this.updateView();
   }
 
   handlePopState(event) {
-    const path = window.location.pathname;
-    const state = event.state || {};
-    this.navigate(path, false, state);
+    if (event.state && event.state.position) {
+      if (event.state.position < this.currentHistoryPosition) {
+        this.currentHistoryPosition--;
+      } else {
+        this.currentHistoryPosition++;
+      }
+    }
+    this.navigate(window.location.pathname, false);
   }
 
   bindLinks() {
-    document.body.addEventListener('click', (event) => {
-      if (event.target.matches('[data-router-link]') || (event.target.tagName === 'A' && event.target.getAttribute('href').startsWith('/'))) {
-        event.preventDefault();
-        const href = event.target.getAttribute('href');
-        this.navigate(href);
+    document.addEventListener("click", (e) => {
+      if (e.target.matches("[data-router-link]")) {
+        e.preventDefault();
+        const path = e.target.getAttribute("href");
+        this.navigate(path);
       }
     });
   }
 
-  onViewUpdated(params) {
-    if (window.location.pathname.startsWith('/live_chat')) {
-      console.log('Initializing chat with params:', params);
-      const authToken = localStorage.getItem('authToken');
-      const chatHandler = ChatHandler.getInstance();
-      if (window.location.pathname === '/live_chat') {
-        chatHandler.init(authToken, params, this, 'home');
-      }
-      else if (window.location.pathname === '/live_chat/' + params.username) {
-        chatHandler.init(authToken, params, this, 'chat');
+  async updateView() {
+    console.log("before updated view");
+    if (this.app && this.currentRoute) {
+      try {
+        const response = await fetch(this.currentRoute.templateUrl);
+        const html = await response.text();
+        const parser = new DOMParser();
+        const content = parser.parseFromString(html, "text/html");
+
+        this.app.innerHTML = "";
+
+        Array.from(content.body.childNodes).forEach((node) => {
+          this.app.appendChild(node.cloneNode(true));
+        });
+
+        const scripts = content.querySelectorAll("script");
+        scripts.forEach((oldScript) => {
+          const newScript = document.createElement("script");
+          newScript.src = oldScript.src;
+          newScript.type = "module";
+          document.body.appendChild(newScript);
+        });
+      } catch (error) {
+        console.error("Error loading template:", error);
+        this.app.innerHTML = "<p>Error loading content</p>";
       }
     }
+    console.log("after updated view");
   }
 }
 
