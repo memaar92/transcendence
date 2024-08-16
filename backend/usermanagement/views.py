@@ -299,6 +299,7 @@ class CustomTokenRefreshView(TokenRefreshView, CookieCreationMixin):
 
 class CheckEmail(APIView):
     permission_classes = [AllowAny]
+    authentication_classes = []
     serializer_class = CheckEmailSerializer
 
     @extend_schema(
