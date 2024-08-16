@@ -117,3 +117,29 @@ input {
   left: 50%;
   transform: translate(-50%, -50%);
 }
+
+#codeForm {
+    display: flex;
+    justify-content: center; /* Center inputs horizontally */
+    gap: 40px; /* Space between inputs */
+    width: 100%; /* Full width of the container */
+    max-width: 90vw; /* Max width relative to viewport width */
+    margin-bottom: 20px;
+    box-sizing: border-box; /* Include padding and border in element's total width and height */
+}
+
+.code-input {
+    flex: 1;
+    max-width: 90px;
+    height: 90px;
+    text-align: center;
+    font-size: 24px;
+    border: 2px solid #ccc;
+    border-radius: 5px;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.code-input:focus {
+    border-color: #007bff;
+}
