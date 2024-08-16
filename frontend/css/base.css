@@ -143,3 +143,24 @@ input {
 .code-input:focus {
     border-color: #007bff;
 }
+
+.profile-container {
+  position: absolute;
+  top: 10px; /* Adjust the top position */
+  right: 10px; /* Adjust the right position */
+  display: flex;
+  align-items: center;
+  gap: 10px; /* Space between photo and username */
+}
+
+.profile-photo {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 2px solid #ccc;
+}
+
+.username {
+  font-size: 16px;
+  color: #333;
+}
