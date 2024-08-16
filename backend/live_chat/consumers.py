@@ -11,6 +11,7 @@ from rest_framework_simplejwt.tokens import UntypedToken
 import json
 
 RelationshipStatus = Relationship.RelationshipStatus
+User = get_user_model()
 
 class ChatConsumer(AsyncWebsocketConsumer):
     
@@ -46,9 +47,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             }
         )
 
-    async def get_user_list(self):
-        return list(User.objects.filter(id__in=ChatConsumer.online_users).values('id', 'name', 'profile_picture_url'))
-
     async def send_websocket_message(self, event):
         message_data = json.loads(event['text'])
         message_data['context'] = self.context
@@ -61,8 +59,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             modified_users_info = [
                 {
                     'id': user['id'],
-                    'name': user['name'],
-                    'profile_picture_url': user['profile_picture_url']
+                    'name': user['displayname'],
+                    'profile_picture_url': user['profile_picture']
                 }
                 for user in users_info if str(user['id']) != str(user_id)
             ]
@@ -108,7 +106,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     await self.accept()
                     ChatConsumer.online_users.add(self.user_id)
                     print(f"Connected to chat: User {self.user_id}, Channel {self.channel_name}")
-                    self.broadcast_user_list()
+                    await self.broadcast_user_list()
                     return
         await self.close()
 
@@ -121,9 +119,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             )
         print(f"Disconnected from chat: User {self.user_id}, Channel {self.channel_name}")
         self.online_users.remove(self.user_id)
-        self.broadcast_user_list()
-
-            # await self.broadcast_user_list()
+        await self.broadcast_user_list()
 
     async def receive(self, text_data):
         data = json.loads(text_data)
@@ -134,7 +130,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
             self.context = data.get('context', None)
             await self.send(text_data=json.dumps({'type': 'user_id', 'user_id': self.user_id, 'context': self.context}))
-            await self.broadcast_user_list()
             if self.context == 'home':
                 await self.send_friends_list(self.user_id)
                 await self.send_unread_messages_count(self.user_id)
@@ -227,16 +222,24 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def send_latest_message(self):
         friends = await self.get_friends_list(self.user_id)
         latest_messages = {}
-    
+
         for friend in friends:
             latest_message = await self.get_latest_message(self.user_id, friend['id'])
             if latest_message:
                 latest_messages[friend['id']] = latest_message
-        await self.send(text_data=json.dumps({
-            'type': 'message_preview',
-            'context': self.context,
-            'latest_messages': latest_messages
-        }))
+
+        await self.channel_layer.group_send(
+            self.user_id,
+            {
+                'type': 'send_websocket_message',
+                'text': json.dumps({
+                    'type': 'message_preview',
+                    'context': self.context,
+                    'latest_messages': latest_messages
+                })
+            }
+        )
+
 
     async def chat_request_notification(self, event):
         await self.update_status(event['sender_id'], event['receiver_id'], RelationshipStatus.PENDING)
@@ -268,8 +271,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 }))
                 return
             elif receiver_id in self.channel_layer.groups:
-                receiver_channel_name = ChatConsumer.user_id_to_channel_name[receiver_id]
-                print(f"Sending message to {receiver_id}, {receiver_channel_name}")
+                print(f"Sending message to {receiver_id}")
                 await self.send_message_to_user(receiver_id, message, 'chat_message', 'message')
             else:
                 print(f"Receiver {receiver_id} is offline. Message will be saved but not sent.")
@@ -304,7 +306,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         sender_id = data['sender_id']
         receiver_id = data['receiver_id']
         messages = await self.get_chat_history(sender_id, receiver_id)
-        await self.group_send(
+        await self.channel_layer.group_send(
             self.user_id,
             json.dumps({
             'type': 'send_websocket_message',
@@ -451,3 +453,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return User.objects.get(id=user_id)
         except User.DoesNotExist:
             return None
+
+    @database_sync_to_async
+    def get_user_list(self):
+        return list(User.objects.filter(id__in=ChatConsumer.online_users).values('id', 'displayname', 'profile_picture'))
