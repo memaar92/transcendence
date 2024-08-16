@@ -1,6 +1,7 @@
 from .models import Games
 from rest_framework import serializers
 from .models import CustomUser
+from .utils import generateUsername
 
 class UserSerializer(serializers.ModelSerializer):
 	class Meta:
@@ -17,14 +18,17 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
 	class Meta:
 		model = CustomUser
-		fields = ['id', 'email', 'password', 'displayname', 'profile_picture']
+		fields = ['id', 'email', 'password']
 		extra_kwargs = {"password": {"write_only": True}}
 
 	def create(self, validated_data):
+		username = generateUsername()
+		while CustomUser.objects.filter(displayname=username).exists():
+			username = generateUsername()
 		user = CustomUser(
 			email=validated_data['email'],
-			displayname=validated_data['displayname'],
-			profile_picture=validated_data.get('profile_picture', 'profile_pics/default.png')
+			displayname=username,
+			profile_picture='profile_pics/default.png'
 		)
 		user.set_password(validated_data['password'])
 		user.save()
@@ -41,3 +45,13 @@ class TOTPSetupSerializer(serializers.Serializer):
 
 class TOTPVerifySerializer(serializers.Serializer):
 	token = serializers.CharField()
+
+class GenerateOTPSerializer(serializers.Serializer):
+	id = serializers.IntegerField()
+
+class ValidateEmailSerializer(serializers.Serializer):
+	id = serializers.IntegerField()
+	otp = serializers.IntegerField(min_value=100000, max_value=999999)
+
+class CheckEmailSerializer(serializers.Serializer):
+	email = serializers.EmailField()

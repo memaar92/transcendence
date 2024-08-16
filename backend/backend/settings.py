@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'drf_spectacular',
 	'usermanagement',
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
@@ -51,15 +52,32 @@ INSTALLED_APPS = [
 
 ASGI_APPLICATION = "backend.asgi.application"
 
-CHANNEL_LAYERS = { 
-    "default": {
-        "BACKEND": "channels.layers.InMemoryChannelLayer"
-    }   
+REDIS_HOST = 'redis' # Redis server address
+REDIS_PORT = 6379    # or your Redis server port
+
+# Redis cache configuration
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/1',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
 }
 
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [(REDIS_HOST, REDIS_PORT)],
+        },
+    },
+}
 
 MIDDLEWARE = [
-	'corsheaders.middleware.CorsMiddleware',
+    'backend.middleware.AuthorizationMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -202,13 +220,35 @@ REST_FRAMEWORK = {
 	"DEFAULT_PERMISSION_CLASSES": [
 		"rest_framework.permissions.IsAuthenticated",
 	],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 SIMPLE_JWT = {
+    "AUTH_COOKIE": 'access_token',
+    "AUTH_COOKIE_REFRESH": 'refresh_token',
+    "AUTH_COOKIE_DOMAIN": None,
+    "AUTH_COOKIE_SECURE": True,
+    "AUTH_COOKIE_HTTP_ONLY": True,
+    "AUTH_COOKIE_PATH": '/',
+    "AUTH_COOKIE_REFRESH_PATH": '/api/token/',
+    "AUTH_COOKIE_SAMESITE": 'Strict',
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
 	"ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
 	"REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 	"ROTATE_REFRESH_TOKENS": True,
 	"BLACKLIST_AFTER_ROTATION": True,
+    #add additional settings, e.g. algo?
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Transcendence Pongo API',
+    'DESCRIPTION': 'API for the Transcendence Pongo project',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    # OTHER SETTINGS
 }
 
 AUTH_USER_MODEL = 'usermanagement.CustomUser'
+
+

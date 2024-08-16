@@ -15,7 +15,7 @@ const routes = [
     { path: '/game', templateUrl: '/routes/game.html' },
 ];
 
-const router = new Router(routes);
+export const router = new Router(routes);
 
 document.addEventListener('DOMContentLoaded', () => {
     router.init(document.getElementById('app'));

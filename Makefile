@@ -14,6 +14,9 @@ it:
 down:
 	docker-compose down
 
+execredis:
+	docker exec -it redis /bin/bash
+
 execbackend:
 	docker exec -it backend /bin/bash
 
@@ -38,11 +41,17 @@ re_postgres:
 	docker rmi -f $$(docker images | grep postgres | awk '{print $$3}')
 	docker compose up -d --build postgres
 
+re_redis:
+	docker compose stop redis
+	docker rmi -f $$(docker images | grep redis | awk '{print $$3}')
+	docker compose up -d --build redis
+
 restart:
 	docker-compose restart
 
 restart_backend:
 	docker restart $$(docker ps -a | grep backend | awk '{print $$1}')
+	docker restart $$(docker ps -a | grep redis | awk '{print $$1}')
 
 fclean: down
 	docker system prune -af
@@ -67,4 +76,4 @@ get_ips:
 
 re: fclean all
 
-.PHONY: up down build execbackend execnginx re_backend restart_backend fclean re dclean re_postgres re_nginx get_ips restart execpostgres createapp
+.PHONY: up down build execbackend execnginx re_backend restart_backend fclean re dclean re_postgres re_nginx get_ips restart execpostgres createapp execredis re_redis

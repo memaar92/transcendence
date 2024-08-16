@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
-from .utils import random_filename
+from .utils import random_filename, MAX_LENGTH_DISPLAYNAME
 
 #Custom User Manager
 #This class is used to create a user and a superuser
@@ -29,13 +29,15 @@ class CustomUserManager(BaseUserManager):
 class CustomUser(AbstractBaseUser, PermissionsMixin):
 	id = models.AutoField(primary_key=True)
 	email = models.EmailField(unique=True)
-	displayname = models.CharField(max_length=20, unique=True)
+	displayname = models.CharField(max_length=MAX_LENGTH_DISPLAYNAME, unique=True)
 	profile_picture = models.ImageField(upload_to=random_filename, default='default.png')
 	is_active = models.BooleanField(default=True)
 	is_staff = models.BooleanField(default=False)
 	is_superuser = models.BooleanField(default=False)
 	is_42_auth = models.BooleanField(default=False)
+	email_verified = models.BooleanField(default=False)
 	totp_secret = models.CharField(max_length=32, blank=True, null=True)
+	#created_at = models.DateTimeField(auto_now_add=True)
 
 	objects = CustomUserManager()
 

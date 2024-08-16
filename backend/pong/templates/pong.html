@@ -3,202 +3,106 @@
 <head>
     <title>Pong Game</title>
     <style>
-        canvas {
+        #gameCanvas {
             background-color: #000;
-            display: block;
+            display: none; /* Hide the canvas by default */
             margin: 0 auto;
         }
     </style>
 </head>
 <body>
     <canvas id="gameCanvas" width="800" height="800"></canvas>
-    <script>
-        
-        let url = "ws://" + window.location.host + "/ws/pong/";
-        const gameSocket = new WebSocket(url);
-        let clickCount = 0; // Variable to keep track of the number of clicks
-        let move_up = false;
-        let move_down = false;
-        
-        function sendMessageToServer(key, pressed) {
-            const message = { "type": "player_update", "payload": { key: key, pressed: pressed } };
-            gameSocket.send(JSON.stringify(message));
-        }
-
-        function sendPlayerState() {
-            let message = {};
-            if (move_up && move_down) {
-                message = { "type": "player_update", "payload": { direction: 0 } };
-            } else if (move_up && !move_down) {
-                message = { "type": "player_update", "payload": { direction: -1 } };
-            } else if (!move_up && move_down) {
-                message = { "type": "player_update", "payload": { direction: 1 } };
-            } else {
-                message = { "type": "player_update", "payload": { direction: 0 } };
-            }
-            gameSocket.send(JSON.stringify(message));
-        }
-
-        gameSocket.onopen = function(e) {
-            console.log('WebSocket connection established.');
-        };
-
-        gameSocket.onclose = function(e) {
-            console.error('WebSocket connection closed.');
-        };
-
-        gameSocket.onerror = function(e) {
-            console.error('WebSocket error: ' + e);
-        };
-
-        // Paddle properties
-        const paddleWidth = 20;
-        const paddleHeight = 100;
-        const leftPaddle = {
-            x: 0,
-            y: 0
-        };
-        const rightPaddle = {
-            x: 0,
-            y: 0
-        };
-        
-        const ball = {
-            x: 0,
-            y: 0,
-            radius: 10
-        };
-
-        gameSocket.binaryType = 'arraybuffer'; // Set the binary type of the WebSocket to ArrayBuffer
-
-        gameSocket.onmessage = function(e) {
-            const data = event.data;
-            const view = new DataView(data);
-
-            // Read the six floats from the DataView
-            // Assuming the data is little-endian; if not, set the second argument to false
-            const player1PosX = view.getFloat32(0, true);
-            const player1PosY = view.getFloat32(4, true);
-            const player2PosX = view.getFloat32(8, true);
-            const player2PosY = view.getFloat32(12, true);
-            const ballPosX = view.getFloat32(16, true);
-            const ballPosY = view.getFloat32(20, true);
-
-            // Update the paddles and ball
-            leftPaddle.x = player1PosX;
-            leftPaddle.y = player1PosY;
-            rightPaddle.x = player2PosX;
-            rightPaddle.y = player2PosY;
-            ball.x = ballPosX;
-            ball.y = ballPosY;
-        };
-
-    // Event listeners for key down
-    document.addEventListener('keydown', (event) => {
-        let stateChanged = false;
-        switch(event.code) {
-            case 'ArrowUp':
-                if (!move_up) {
-                    move_up = true;
-                    stateChanged = true;
-                }
-                break;
-            case 'ArrowDown':
-                if (!move_down) {
-                    move_down = true;
-                    stateChanged = true;
-                }
-                break;
-            case 'KeyW': // 'W' key
-                if (!move_up) {
-                    move_up = true;
-                    stateChanged = true;
-                }
-                break;
-            case 'KeyS': // 'S' key
-                if (!move_down) {
-                    move_down = true;
-                    stateChanged = true;
-                }
-                break;
-        }
-        if (stateChanged) {
-            sendPlayerState();
-        }
-    });
-
-    // Event listeners for key up
-    document.addEventListener('keyup', (event) => {
-        let stateChanged = false;
-        switch(event.code) {
-            case 'ArrowUp':
-                if (move_up) {
-                    move_up = false;
-                    stateChanged = true;
-                }
-                break;
-            case 'ArrowDown':
-                if (move_down) {
-                    move_down = false;
-                    stateChanged = true;
-                }
-                break;
-            case 'KeyW':
-                if (move_up) {
-                    move_up = false;
-                    stateChanged = true;
-                }
-                break;
-            case 'KeyS':
-                if (move_down) {
-                    move_down = false;
-                    stateChanged = true;
-                }
-                break;
-        }
-        if (stateChanged) {
-            sendPlayerState();
-        }
-    });
-
-        // Initialize canvas and context
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-
-        // Ball properties
-
-        function drawBall() {
-            ctx.beginPath();
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(ball.x, ball.y, ball.radius * 2, ball.radius * 2);
-            // ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI*2);
-            ctx.fill();
-            ctx.closePath();
-        }
-
-        function drawPaddle(paddle) {
-            ctx.beginPath();
-            ctx.fillStyle = '#0095DD';
-            ctx.fillRect(paddle.x, paddle.y, paddleWidth, paddleHeight);
-            ctx.fill();
-            ctx.closePath();
-        }
-
-        function draw() {
-            // Clear canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw ball and paddles
-            drawPaddle(leftPaddle);
-            drawPaddle(rightPaddle);
-            drawBall();
-
-            // Request next frame
-            requestAnimationFrame(draw);
-        }
-
-        // Start animation
-        draw();
-    </script>
+    <button id="join-queue-button">Join Queue</button>
+    <button id="reconnectButton" style="display: none;">Reconnect</button>
 </body>
+    <script>
+        window.onload = function() {
+
+            let retryCount = 0;
+            const maxRetries = 5;
+            const retryDelay = 2000; // Milliseconds
+            let match_id = null;
+    
+            const matchmakingSocket = new WebSocket('ws://' + window.location.host + '/ws/pong/matchmaking/');
+            
+            matchmakingSocket.onopen = function(e) {
+                console.log('Matchmaking WebSocket connection established.');
+            };
+    
+            matchmakingSocket.onclose = function(e) {
+                console.error('Matchmaking WebSocket connection closed.');
+            };
+    
+            matchmakingSocket.onerror = function(e) {
+                console.error('Matchmaking WebSocket error:', e);
+            };
+    
+            matchmakingSocket.onmessage = function(e) {
+                const data = JSON.parse(e.data);
+                console.log('Received matchmaking message:', data);
+                if (data.state === "match_assigned") {
+                    if (data.match_id) {
+                        console.log('Match found! Match ID: ' + data.match_id);
+                        match_id = data.match_id;
+                        connectToMatch(match_id);
+                    }
+                } else if (data.state === "match_in_progress") {
+                    console.log('Match in progress.');
+                    showReconnectButton(data.match_id); // Pass the correct match_id
+                }
+            }
+    
+            function joinQueue() {
+                console.log('Joining queue...');
+                matchmakingSocket.send(JSON.stringify({
+                    "match_type": "online",
+                    "action": "join"
+                }))
+            }
+    
+            window.connectToMatch = function(match_id) {
+                const matchSocket = new WebSocket('ws://' + window.location.host + '/ws/pong/match/' + match_id + '/');
+                matchSocket.onopen = function(e) {
+                    console.log('Match WebSocket connection established.');
+                    const canvas = document.getElementById('gameCanvas');
+                    canvas.style.display = 'block'; // Show the canvas
+                    hideReconnectButton();
+                };
+    
+                matchSocket.onclose = function(e) {
+                    console.error('Match WebSocket connection closed.');
+                };
+    
+                matchSocket.onerror = function(e) {
+                    console.error('Match WebSocket error:', e);
+                };
+    
+                matchSocket.onmessage = function(e) {
+                    const data = JSON.parse(e.data);
+                    console.log('Received match message:', data);
+                }
+            }
+            
+            // Function to show the button
+            function showReconnectButton(match_id) {
+                const reconnectButton = document.getElementById('reconnectButton');
+                if (reconnectButton) {
+                    reconnectButton.style.display = 'block';
+                    reconnectButton.onclick = function() {
+                        connectToMatch(match_id);
+                    };
+                }
+            }
+
+            function hideReconnectButton() {
+                const reconnectButton = document.getElementById('reconnectButton');
+                if (reconnectButton) {
+                    reconnectButton.style.display = 'none';
+                }
+            }
+
+            document.getElementById('join-queue-button').onclick = joinQueue;
+        }
+    </script>
 </html>
+

@@ -1,10 +1,13 @@
 import ChatHandler from './chatHandler.js';
+import { handleButtonClick } from './loginHandlers.js';
 
 class Router {
   constructor(routes) {
     this.routes = routes;
     this.currentRoute = null;
     this.app = null;
+    this.currentHistoryPosition = 0;
+    this.maxHistoryPosition = 0;
 
     window.addEventListener('popstate', this.handlePopState.bind(this));
     this.bindLinks();
@@ -24,17 +27,22 @@ class Router {
     if (route) {
       this.currentRoute = route;
       if (pushState) {
-        history.pushState({ path, ...state }, '', path);
+        this.currentHistoryPosition++;
+        this.maxHistoryPosition = this.currentHistoryPosition;
+        const title_temp = document.title;
+        document.title = route.path.slice(1).replace('_', "-");
+        history.pushState({ position: this.currentHistoryPosition, path, ...state }, '', path);
+        document.title = title_temp;
       }
       await this.updateView(route.params);
     } else {
       this.handleNotFound(pushState);
     }
-  
+
     if (this.onNavigate) {
-      this.onNavigate(route.params);
+      this.onNavigate(route ? route.params : {});
     }
-  }  
+  }
 
   matchRoute(path) {
     for (const route of this.routes) {
@@ -63,6 +71,11 @@ class Router {
         const html = await response.text();
         this.app.innerHTML = this.extractContent(html);
 
+        const buttons = document.querySelectorAll('button');
+        buttons.forEach(button => {
+          button.addEventListener('click', handleButtonClick);
+        });
+
         this.onViewUpdated(params);
       } catch (error) {
         console.error('Error loading template:', error);
@@ -81,7 +94,9 @@ class Router {
   handleNotFound(pushState) {
     this.currentRoute = this.routes.find(route => route.path === "/404");
     if (pushState) {
-      history.pushState(null, '', "/404");
+      this.currentHistoryPosition++;
+      this.maxHistoryPosition = this.currentHistoryPosition;
+      history.pushState({ position: this.currentHistoryPosition }, '', "/404");
     }
     this.updateView();
   }
@@ -94,12 +109,10 @@ class Router {
 
   bindLinks() {
     document.body.addEventListener('click', (event) => {
-      if (event.target.tagName === 'A') {
+      if (event.target.matches('[data-router-link]') || (event.target.tagName === 'A' && event.target.getAttribute('href').startsWith('/'))) {
+        event.preventDefault();
         const href = event.target.getAttribute('href');
-        if (href.startsWith('/')) {
-          event.preventDefault();
-          this.navigate(href);
-        }
+        this.navigate(href);
       }
     });
   }

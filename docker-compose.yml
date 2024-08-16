@@ -11,6 +11,7 @@ services:
       - ./secrets/django_admin_user.txt:/run/secrets/django_admin_user
     depends_on:
       - postgresql
+      - redis
     secrets:
       - psql_password
       - psql_user
@@ -52,6 +53,14 @@ services:
       - POSTGRES_USER_FILE=/run/secrets/psql_user
       - POSTGRES_DB_FILE=/run/secrets/psql_database
       - PGDATA=/var/lib/postgresql/data/pgdata
+  
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: unless-stopped
+    volumes:
+      - ./docker/redis/config/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
 
 secrets:
   psql_password:
