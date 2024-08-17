@@ -6,7 +6,7 @@ from django.conf import settings
 from .models import Games, CustomUser
 from rest_framework import generics, status
 from rest_framework.response import Response
-from .serializers import UserSerializer, GameHistorySerializer, UserNameSerializer, UserCreateSerializer, TOTPSetupSerializer, TOTPVerifySerializer, GenerateOTPSerializer, ValidateEmailSerializer, CheckEmailSerializer, CustomTokenObtainPairSerializer
+from .serializers import UserSerializer, GameSerializer, UserNameSerializer, UserCreateSerializer, TOTPSetupSerializer, TOTPVerifySerializer, GenerateOTPSerializer, ValidateEmailSerializer, CheckEmailSerializer, CustomTokenObtainPairSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -14,7 +14,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError, AuthenticationFailed, NotAuthenticated, Throttled
 from django.middleware import csrf
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, inline_serializer
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, inline_serializer, OpenApiResponse
 from drf_spectacular.types import OpenApiTypes
 from .permissions import IsSelf, Check2FA
 from utils.utils import get_tokens_for_user
@@ -62,51 +62,110 @@ class CreateUserView(generics.CreateAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = UserCreateSerializer
     permission_classes = [AllowAny]
-    
-    
+
 
 class EditUserView(generics.RetrieveUpdateDestroyAPIView):
     # not discussed with Wayne yet
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated, IsSelf]
-    http_method_names = ['patch', 'delete']
+    http_method_names = ['patch', 'delete', 'get']
     queryset = CustomUser.objects.all()
+
+    def get_object(self):
+        auth_header = self.request.headers.get('Authorization')
+        if auth_header:
+            token = auth_header.split(' ')[1]
+            decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            user_id = decoded_token.get('user_id')
+            return get_object_or_404(CustomUser, id=user_id)
+        return None
+    
+    @extend_schema(
+        responses={
+            status.HTTP_200_OK: UserSerializer,
+            status.HTTP_401_UNAUTHORIZED: OpenApiResponse(description="Please login"),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(description="User not found")
+        },
+        description="Retrieve user information."
+    )
+
+    def get(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    @extend_schema(
+        responses={
+            status.HTTP_200_OK: UserSerializer,
+            status.HTTP_400_BAD_REQUEST: OpenApiResponse(description="Please check arguments"),
+            status.HTTP_401_UNAUTHORIZED: OpenApiResponse(description="Please login"),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(description="User not found")
+        },
+        description="Update user information."
+    )
 
     def patch(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=True)
+        print(serializer)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'message': 'Please check arguments',
+            'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 class UserView(APIView):
     # not discussed with Wayne yet
     permission_classes = [IsAuthenticated, Check2FA]
 
+    @extend_schema(
+        responses={
+            status.HTTP_200_OK: UserNameSerializer(many=True),
+            status.HTTP_401_UNAUTHORIZED: OpenApiResponse(description="Please login"),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(description="No CustomUser matches the given query.")
+        },
+        description="Retrieve user information."
+    )
+
     def get(self, request, pk):
         user = get_object_or_404(CustomUser, pk=pk)
         serializer = UserNameSerializer(user)
+
         return Response(serializer.data)
 
 class GameHistoryList(APIView):
-    # not discussed with Wayne yet
-    permission_classes = [AllowAny]
-    #only allow GET requests
-    def get(self, request, format=None):
-        games = Games.objects.all()
-        serializer = GameHistorySerializer(games, many=True)
-        return Response(serializer.data)
-    
+    permission_classes = [IsAuthenticated, Check2FA]
+
+    @extend_schema(
+        responses={
+            status.HTTP_200_OK: GameSerializer(many=True),
+            status.HTTP_401_UNAUTHORIZED: OpenApiResponse(description="Please login"),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(description="No CustomUser matches the given query.")
+        },
+        description="Retrieve the game history for a specific user. Can be more than one game."
+    )
+
+    def get(self, request, id):
+        user = get_object_or_404(CustomUser, pk=id)
+        home_games = Games.objects.filter(home_id=user)
+        visitor_games = Games.objects.filter(visitor_id=user)
+        all_games = home_games | visitor_games
+        games_serializer = GameSerializer(all_games, many=True)
+        return Response(games_serializer.data)
+
+
 class ProfilePictureDeleteView(APIView):
     # not discussed with Wayne yet
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsSelf]
 
     def get_object(self):
-        user = get_object_or_404(CustomUser, pk=self.kwargs['pk'])
-        if user != self.request.user:
-            raise PermissionDenied("You don't have permission to delete this profile picture.")
-        return user
+        auth_header = self.request.headers.get('Authorization')
+        if auth_header:
+            token = auth_header.split(' ')[1]
+            decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            user_id = decoded_token.get('user_id')
+            return get_object_or_404(CustomUser, id=user_id)
+        return None
 
     def delete(self, request, *args, **kwargs):
         user = self.get_object()
