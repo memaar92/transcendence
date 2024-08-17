@@ -338,10 +338,16 @@ class CustomTokenRefreshView(TokenRefreshView, CookieCreationMixin):
                     'detail': {'type': 'string', 'enum': ['Access and refresh tokens successfully created']}
                 },
             },
+            (400, 'application/json'): {
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string', 'enum': ['Refresh token not provided']}
+                },
+            },
             (401, 'application/json'): {
                 'type': 'object',
                 'properties': {
-                    'detail': {'type': 'string', 'enum': ['Token is blacklisted', 'Token is invalid or expired']},
+                    'detail': {'type': 'string', 'enum': ['Refresh token is invalid or expired']},
                     'code': {'type': 'string', 'enum': ['token_not_valid']}
                 },
             },
@@ -349,7 +355,16 @@ class CustomTokenRefreshView(TokenRefreshView, CookieCreationMixin):
     )
 
     def post(self, request, *args, **kwargs):
-        print("request.data: ", request.data)
+        refresh_token = request.data['refresh']
+        if not refresh_token:
+            return Response({'detail': 'Refresh token not provided'}, status=400)
+        try:
+            token = RefreshToken(refresh_token)
+        except Exception as e:
+            response = Response({'detail': 'Refresh token is invalid or expired', 'code': 'token_not_valid'}, status=401)
+            response.delete_cookie(settings.SIMPLE_JWT['AUTH_COOKIE'])
+            response.delete_cookie(settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH'], path=settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH_PATH'])
+            return response
         response = super().post(request, *args, **kwargs)
         self.createCookies(response)
         response.data = {'detail': 'Access and refresh tokens successfully created'}
