@@ -366,6 +366,7 @@ class CustomTokenRefreshView(TokenRefreshView, CookieCreationMixin):
             response.delete_cookie(settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH'], path=settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH_PATH'])
             return response
         response = super().post(request, *args, **kwargs)
+        token.blacklist()
         self.createCookies(response)
         response.data = {'detail': 'Access and refresh tokens successfully created'}
         return response
