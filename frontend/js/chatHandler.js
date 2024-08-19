@@ -45,22 +45,7 @@ class ChatHandler {
     }
 
   async onClose(event, context) {
-    if (event.code === 1006) {
-      // console.error('Token expired or authentication error');
-      const credentials = promptForCredentials();
-      if (credentials) {
-        const newToken = await obtainAuthToken(credentials.email, credentials.password);
-        if (newToken) {
-          this.init(newToken, {}, this.router, context);
-        } else {
-          // console.error('Failed to obtain new token');
-          this.displaySystemMessage('Failed to authenticate. Please try again.');
-        }
-      }
-    } else {
-      // console.error('WebSocket closed:', event);
-      // this.displaySystemMessage(`WebSocket closed with code ${event.code}`);
-    }
+    console.log('WebSocket connection closed:', event.code, event.reason);
   }
 
   onMessage(event) {
@@ -554,43 +539,6 @@ class ChatHandler {
       console.warn('User list container not found');
     }
   }
-}
-
-// Function to obtain a new authentication token
-async function obtainAuthToken(email, password) {
-  try {
-    const formData = new FormData();
-    formData.append('email', email);
-    formData.append('password', password);
-
-    const response = await fetch('/api/token/', {
-      method: 'POST',
-      body: formData
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Invalid credentials');
-      } else {
-        throw new Error('Network response was not ok');
-      }
-    }
-
-    const data = await response.json();
-    localStorage.setItem('authToken', data.access);
-    // console.log('Token stored successfully');
-    return data.access;
-  } catch (error) {
-    // console.error('Error during token fetch:', error);
-    alert('Error fetching token: ' + error.message);
-    return null;
-  }
-}
-
-function promptForCredentials() {
-  const email = prompt('Enter your email:');
-  const password = prompt('Enter your password:');
-  return { email, password };
 }
 
 const instance = new ChatHandler();

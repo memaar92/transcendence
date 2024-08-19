@@ -8,6 +8,7 @@ from django.db import models
 from django.db.models import Q
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.tokens import UntypedToken
+from django.contrib.auth.models import AnonymousUser
 import json
 
 RelationshipStatus = Relationship.RelationshipStatus
@@ -86,29 +87,25 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
 
     async def connect(self):
-        token = self.scope['query_string'].decode().split('=')[1]
-
-        if token:
-            user_id = await self.get_user_id_from_jwt(token)
-            if user_id:
-                user = await self.get_user(user_id)
-                if user:
-                    self.scope['user'] = user
-                    self.user_id = str(user.id)
-                    self.context = None
-                    self.user_group_name = self.user_id
-
-                    await self.channel_layer.group_add(
-                        self.user_group_name,
-                        self.channel_name
-                    )
-                    
-                    await self.accept()
-                    ChatConsumer.online_users.add(self.user_id)
-                    print(f"Connected to chat: User {self.user_id}")
-                    await self.broadcast_user_list()
-                    return
-        await self.close()
+        if self.scope['user'] and not isinstance(self.scope['user'], AnonymousUser):
+            print(f"Client connected: {self.scope['user']}")
+            print(f"User ID: {self.scope['user'].id}")
+            await self.accept()
+        else:
+            print("Client not authenticated")
+            await self.close()
+            return
+        self.user_id = str(self.scope['user'].id)
+        self.context = None
+        self.user_group_name = self.user_id
+        await self.channel_layer.group_add(
+            self.user_group_name,
+            self.channel_name
+        )
+        
+        ChatConsumer.online_users.add(self.user_id)
+        await self.broadcast_user_list()
+        return
 
     async def disconnect(self, close_code):
         if hasattr(self, 'user_group_name'):

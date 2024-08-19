@@ -1,5 +1,4 @@
-import ChatHandler from './chatHandler.js';
-import { handleButtonClick } from './loginHandlers.js';
+import { updateChat } from './live-chat.js';
 
 class Router {
   constructor(routes) {
@@ -24,8 +23,46 @@ class Router {
     this.routes.push({ path, templateUrl });
   }
 
+  matchRoute(path) {
+    const [pathWithoutQuery, queryString] = path.split('?');
+  
+    for (const route of this.routes) {
+      const paramNames = [];
+      const regexPath = route.path.replace(/:(\w+)/g, (_, key) => {
+        paramNames.push(key);
+        return '([^\\/]+)';
+      });
+      const regex = new RegExp(`^${regexPath}$`);
+      const match = pathWithoutQuery.match(regex);
+  
+      if (match) {
+        const params = paramNames.reduce((acc, paramName, index) => {
+          acc[paramName] = match[index + 1];
+          return acc;
+        }, {});
+  
+        if (queryString) {
+          const queryParams = new URLSearchParams(queryString);
+          
+          if (queryParams.has('')) {
+            params.id = queryParams.get('');
+          }
+          
+          queryParams.forEach((value, key) => {
+            if (key !== '') {
+              params[key] = value;
+            }
+          });
+        }
+  
+        return { ...route, params };
+      }
+    }
+    return null;
+  }
+  
   async navigate(path, pushState = true) {
-    const route = this.routes.find((route) => route.path === path);
+    const route = this.matchRoute(path);
     if (route) {
       this.currentRoute = route;
       if (pushState) {
@@ -33,7 +70,10 @@ class Router {
         this.maxHistoryPosition = this.currentHistoryPosition;
         const title_temp = document.title;
         document.title = route.path.slice(1).replace("_", "-");
-        history.pushState({ position: this.currentHistoryPosition }, "", path);
+        history.pushState({ position: this.currentHistoryPosition, path: path, params: route.params}, 
+          "", 
+          path
+        );
         document.title = title_temp;
       }
       await this.updateView();
@@ -51,7 +91,7 @@ class Router {
       await this.updateView();
     }
     if (this.onNavigate) {
-      this.onNavigate();
+      this.onNavigate(route ? route.params : {});
     }
   }
 
@@ -74,6 +114,12 @@ class Router {
         this.navigate(path);
       }
     });
+  }
+
+  handlePostUpdate() {
+    if (window.location.pathname.startsWith('/live_chat')) {
+      updateChat(this.currentRoute.params);
+    }
   }
 
   async updateView() {
@@ -104,6 +150,7 @@ class Router {
       }
     }
     console.log("after updated view");
+    this.handlePostUpdate();
   }
 }
 
