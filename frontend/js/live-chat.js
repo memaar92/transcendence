@@ -1,13 +1,12 @@
 import ChatHandler from './chatHandler.js';
 
-export function updateChat(params) {
+export function updateChat(router, params) {
     console.log('Initializing chat with params:', params);
-    const authToken = localStorage.getItem('authToken');
     const chatHandler = ChatHandler.getInstance();
     if (window.location.pathname === '/live_chat') {
-      chatHandler.init(authToken, params, this, 'home');
+      chatHandler.init(params, router, 'home');
     }
     else if (window.location.pathname === '/live_chat/' + params.username) {
-      chatHandler.init(authToken, params, this, 'chat');
+      chatHandler.init(params, router, 'chat');
     }
 }

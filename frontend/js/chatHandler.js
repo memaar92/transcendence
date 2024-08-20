@@ -8,11 +8,11 @@ class ChatHandler {
     this.router = null;
   }
 
-  async init(authToken, params, router, context) {
+  async init(params, router, context) {
       this.router = router;
 
       // console.log('Params:', params);
-      const url = `ws://${window.location.host}/ws/live_chat/?token=${authToken}`;
+      const url = `ws://${window.location.host}/ws/live_chat/}`;
       // console.log('WebSocket URL:', url);
 
       if (this.ws) {
@@ -93,11 +93,21 @@ class ChatHandler {
         const friendItems = document.querySelectorAll('.friend-item');
         friendItems.forEach(friendItem => {
             const dataId = friendItem.getAttribute('data-id');
-            const latestMessage = content.latest_messages[dataId].message;
-            const sender_id = content.latest_messages[dataId].sender_id;
-            if (latestMessage) {
-              this.showLatestMessage(latestMessage, sender_id, dataId);
-            }});
+            if (content.latest_messages[dataId]) {
+              const latestMessage = content.latest_messages[dataId].message;
+              const sender_id = content.latest_messages[dataId].sender_id;
+              if (latestMessage) {
+                this.showLatestMessage(latestMessage, sender_id, dataId);
+              }
+            }
+            else {
+              console.log('No messages');
+              const messagePreview = friendItem.querySelector('.message-preview');
+              if (messagePreview) {
+              messagePreview.textContent = 'No messages';
+              }
+            }
+            });
         break;
       default:
         console.error('Error:', content.type);
@@ -326,7 +336,7 @@ class ChatHandler {
       friendItem.onclick = () => {
         if (this.router) {
           const encodedId = encodeURIComponent(friend.id);
-          this.router.navigate(`/live_chat/${encodedId}`);
+          this.router.navigate(`/live_chat/chat_room?user_id=${encodedId}`);
         } else {
           console.warn('Router instance is undefined');
           return;

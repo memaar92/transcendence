@@ -16,7 +16,8 @@ class Router {
 
   init(app) {
     this.app = app;
-    this.navigate(window.location.pathname);
+    const fullPath = window.location.pathname + window.location.search;
+    this.navigate(fullPath);
   }
 
   addRoute(path, templateUrl) {
@@ -43,15 +44,8 @@ class Router {
   
         if (queryString) {
           const queryParams = new URLSearchParams(queryString);
-          
-          if (queryParams.has('')) {
-            params.id = queryParams.get('');
-          }
-          
           queryParams.forEach((value, key) => {
-            if (key !== '') {
-              params[key] = value;
-            }
+            params[key] = value;
           });
         }
   
@@ -103,8 +97,9 @@ class Router {
         this.currentHistoryPosition++;
       }
     }
-    this.navigate(window.location.pathname, false);
-  }
+    const fullPath = window.location.pathname + window.location.search;
+    this.navigate(fullPath, false);
+  }  
 
   bindLinks() {
     document.addEventListener("click", (e) => {
@@ -118,7 +113,7 @@ class Router {
 
   handlePostUpdate() {
     if (window.location.pathname.startsWith('/live_chat')) {
-      updateChat(this.currentRoute.params);
+      updateChat(this, this.currentRoute.params);
     }
   }
 

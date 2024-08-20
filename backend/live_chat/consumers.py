@@ -109,14 +109,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, close_code):
         if hasattr(self, 'user_group_name'):
-            # Remove this connection from the user's group
             await self.channel_layer.group_discard(
                 self.user_group_name,
                 self.channel_name
             )
-        print(f"Disconnected from chat: User {self.user_id}")
-        self.online_users.remove(self.user_id)
-        await self.broadcast_user_list()
+        if hasattr(self, 'user_id'):
+            self.online_users.remove(self.user_id)
+            await self.broadcast_user_list()
 
     async def receive(self, text_data):
         data = json.loads(text_data)
