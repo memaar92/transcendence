@@ -6,7 +6,9 @@ export function updateChat(router, params) {
     if (window.location.pathname === '/live_chat') {
       chatHandler.init(params, router, 'home');
     }
-    else if (window.location.pathname === '/live_chat/' + params.username) {
+    else if (window.location.pathname === '/live_chat/chat_room') {
+      // if (!params.recipient)
+      //   router.navigate('/404');
       chatHandler.init(params, router, 'chat');
     }
 }
