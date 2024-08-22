@@ -94,9 +94,9 @@ class ChatHandler {
         this.showLatestMessage(content.message, content.sender_id, content.sender_id);
         break;
       case 'message_preview':
-        const friendItems = document.querySelectorAll('.friend-item');
-        friendItems.forEach(friendItem => {
-            const dataId = friendItem.getAttribute('data-id');
+        const chatItems = document.querySelectorAll('.chats-item');
+        chatItems.forEach(chatItem => {
+            const dataId = chatItem.getAttribute('data-id');
             if (content.latest_messages[dataId]) {
               const latestMessage = content.latest_messages[dataId].message;
               const sender_id = content.latest_messages[dataId].sender_id;
@@ -106,7 +106,7 @@ class ChatHandler {
             }
             else {
               console.log('No messages');
-              const messagePreview = friendItem.querySelector('.message-preview');
+              const messagePreview = chatItem.querySelector('.message-preview');
               if (messagePreview) {
               messagePreview.textContent = 'No messages';
               }
@@ -120,10 +120,10 @@ class ChatHandler {
   }
 
   showLatestMessage(message, senderId, friendId) {
-    const friendItem = document.querySelector(`.friend-item[data-id="${friendId}"]`);
+    const chatItem = document.querySelector(`.chats-item[data-id="${friendId}"]`);
     console.log(friendId);
-    if (friendItem) {
-      const messagePreview = friendItem.querySelector('.message-preview');
+    if (chatItem) {
+      const messagePreview = chatItem.querySelector('.message-preview');
       if (messagePreview && message) {
         if (message.length > 30) {
           message = message.slice(0, 30) + '...';
@@ -180,10 +180,10 @@ class ChatHandler {
   }
 
   updateUnreadMessages(content) {
-    const friendItems = document.querySelectorAll('.friend-item');
-    friendItems.forEach(friendItem => {
-        const senderId = friendItem.getAttribute('data-id');
-        let unreadIndicator = friendItem.querySelector('.unread-indicator');
+    const chatItems = document.querySelectorAll('.chats-item');
+    chatItems.forEach(chatItem => {
+        const senderId = chatItem.getAttribute('data-id');
+        let unreadIndicator = chatItem.querySelector('.unread-indicator');
         if (!unreadIndicator) {
             unreadIndicator = document.createElement('div');
             unreadIndicator.className = 'unread-indicator';
@@ -192,12 +192,12 @@ class ChatHandler {
         const unreadCount = content.unread_messages[senderId] || 0;
         if (unreadCount > 0) {
             unreadIndicator.textContent = unreadCount;
-            if (!friendItem.contains(unreadIndicator)) {
-                friendItem.appendChild(unreadIndicator);
+            if (!chatItem.contains(unreadIndicator)) {
+                chatItem.appendChild(unreadIndicator);
             }
         } else {
             console.log('Removing unread indicator');
-            if (friendItem.contains(unreadIndicator)) {
+            if (chatItem.contains(unreadIndicator)) {
                 unreadIndicator.remove();
             }
         }
@@ -205,17 +205,17 @@ class ChatHandler {
   }
 
   incrementUnreadMessageCount(senderId) {
-    const friendItem = document.querySelector(`.friend-item[data-id="${senderId}"]`);
-    if (friendItem) {
-      let unreadIndicator = friendItem.querySelector('.unread-indicator');
+    const chatItem = document.querySelector(`.chats-item[data-id="${senderId}"]`);
+    if (chatItem) {
+      let unreadIndicator = chatItem.querySelector('.unread-indicator');
       if (!unreadIndicator) {
         unreadIndicator = document.createElement('div');
         unreadIndicator.className = 'unread-indicator';
       }
       const currentCount = Number(unreadIndicator.textContent) || 0;
       unreadIndicator.textContent = currentCount + 1;
-      if (!friendItem.contains(unreadIndicator)) {
-        friendItem.appendChild(unreadIndicator);
+      if (!chatItem.contains(unreadIndicator)) {
+        chatItem.appendChild(unreadIndicator);
       }
     } else {
       console.warn('Friend item not found (unread messages):', senderId);
@@ -308,13 +308,13 @@ class ChatHandler {
   }
 
   updateFriendStatusIndicators() {
-    const friendItems = document.querySelectorAll('.friend-item');
-    friendItems.forEach(friendItem => {
-      const friendId = friendItem.getAttribute('data-id');
+    const chatItems = document.querySelectorAll('.chats-item');
+    chatItems.forEach(chatItem => {
+      const friendId = chatItem.getAttribute('data-id');
       
       const isOnline = this.onlineUserIds.includes(friendId);
   
-      const friendImg = friendItem.querySelector('img');
+      const friendImg = chatItem.querySelector('img');
   
       if (friendImg) {
         friendImg.style.border = isOnline ? '4px solid #7A35EC' : '4px solid grey';
@@ -324,21 +324,21 @@ class ChatHandler {
     });
   }
   
-  displayFriendsList(friends) {
-    const friendListElement = document.querySelector('.friends-scroll-container');
-    if (!friendListElement) {
+  displayFriendsList(chats) {
+    const chatsListElement = document.querySelector('.chats-scroll-container');
+    if (!chatsListElement) {
       console.warn('Friend list container not found');
       return;
     }
   
-    friendListElement.innerHTML = '';
+    chatsListElement.innerHTML = '';
   
-    friends.forEach((friend) => {
-      const friendItem = document.createElement('div');
-      friendItem.className = 'friend-item';
-      friendItem.setAttribute('data-id', friend.id);
-      friendItem.setAttribute('data-name', friend.name);
-      friendItem.onclick = () => {
+    chats.forEach((friend) => {
+      const chatItem = document.createElement('div');
+      chatItem.className = 'chats-item';
+      chatItem.setAttribute('data-id', friend.id);
+      chatItem.setAttribute('data-name', friend.name);
+      chatItem.onclick = () => {
         if (this.router) {
           this.router.navigate(`/live_chat/chat_room?recipient=${friend.name}`);
         } else {
@@ -347,28 +347,28 @@ class ChatHandler {
         }
       };
   
-      const friendImg = document.createElement('img');
-      friendImg.src = friend.profile_picture_url;
-      friendImg.alt = friend.name;
-      friendImg.className = 'friend-avatar';
-      const friendInfo = document.createElement('div');
-      friendInfo.className = 'friend-info';
+      const chatImg = document.createElement('img');
+      chatImg.src = friend.profile_picture_url;
+      chatImg.alt = friend.name;
+      chatImg.className = 'chats-avatar';
+      const chatInfo = document.createElement('div');
+      chatInfo.className = 'chats-info';
   
-      const friendName = document.createElement('div');
-      friendName.className = 'friend-name';
-      friendName.textContent = friend.name;
+      const chatName = document.createElement('div');
+      chatName.className = 'chats-name';
+      chatName.textContent = friend.name;
   
       const messagePreview = document.createElement('div');
       messagePreview.className = 'message-preview';
       messagePreview.textContent = 'Loading...';
       
-      friendInfo.appendChild(friendName);
-      friendInfo.appendChild(messagePreview);
+      chatInfo.appendChild(chatName);
+      chatInfo.appendChild(messagePreview);
       
-      friendItem.appendChild(friendImg);
-      friendItem.appendChild(friendInfo);
+      chatItem.appendChild(chatImg);
+      chatItem.appendChild(chatInfo);
       
-      friendListElement.appendChild(friendItem);
+      chatsListElement.appendChild(chatItem);
     });
     this.ws.send(JSON.stringify({
       'type': 'message_preview',

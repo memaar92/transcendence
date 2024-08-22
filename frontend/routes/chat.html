@@ -1,9 +1,9 @@
 <div id="content" class="d-flex flex-column vh-100">
-  
+
   <div class="button-container">
     <button class="custom-button" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasScrolling" aria-controls="offcanvasScrolling">Notifications</button>
   </div>
-  
+
   <div class="container-fluid py-2">
     <h2 class="font-weight-light">Active Users</h2>
     <div id="user-list-container" class="user-list-container">
@@ -11,26 +11,48 @@
         <!-- User items will be appended here -->
       </div>
     </div>
-    
+
     <div id="vertical-user-list-container" class="user-list-container vertical" style="display: none;">
       <div class="user-list-wrapper">
         <!-- User items will be appended here for vertical layout -->
       </div>
     </div>
   </div>
-  
-  <!-- Main Content Area -->
-  <div class="main-content d-flex flex-grow-1 position-relative overflow-hidden">
-    <!-- Friends List Container -->
-    <div class="container-fluid py-2 friends-list-container transition-width" id="friends-list-container">
-      <h2 class="font-weight-light text-center">Chat History</h2>
-      <div class="friends-scroll-container">
-        <!-- Friends will be appended here -->
+
+  <!-- Centered Tabs -->
+  <div class="tab-list-container">
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+      <li class="nav-item" role="presentation">
+        <a class="nav-link active" id="chats-tab" data-bs-toggle="tab" href="#chats" role="tab" aria-controls="chats" aria-selected="true">Chats</a>
+      </li>
+      <li class="nav-item" role="presentation">
+        <a class="nav-link" id="friends-tab" data-bs-toggle="tab" href="#friends" role="tab" aria-controls="friends" aria-selected="false">Friends</a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="tab-content flex-grow-1">
+    <!-- Friends Scroll Container Tab -->
+    <div class="tab-pane fade show active" id="chats" role="tabpanel" aria-labelledby="chats-tab">
+      <div class="main-content d-flex flex-grow-1 position-relative overflow-hidden">
+        <div class="container-fluid py-2 chats-list-container transition-width" id="chats-list-container">
+          <div class="chats-scroll-container">
+            <!-- Friends will be appended here -->
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Chat window (initially hidden) -->
-
+    <!-- New Container Tab -->
+    <div class="tab-pane fade" id="friends" role="tabpanel" aria-labelledby="friends-tab">
+      <div class="main-content d-flex flex-grow-1 position-relative overflow-hidden">
+        <div class="container-fluid py-2 friends transition-width" id="friends-content">
+          <div class="new-content-scroll-container">
+            <!-- New content will be appended here -->
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Offcanvas Notifications -->

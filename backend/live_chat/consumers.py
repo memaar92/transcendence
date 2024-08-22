@@ -10,6 +10,7 @@ from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.tokens import UntypedToken
 from django.contrib.auth.models import AnonymousUser
 import json
+import traceback
 
 RelationshipStatus = Relationship.RelationshipStatus
 User = get_user_model()
@@ -20,7 +21,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def send_message_to_user(self, receiver_id, message, message_type, message_key):
         await self.channel_layer.group_send(
-            receiver_id,
+            str(receiver_id),
             {
                 "type": "send_websocket_message",
                 "sender_id": self.user_id,    
@@ -155,8 +156,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             match message_type:
                 case 'message_preview':
                     await self.send_latest_message()
-                case 'chat_history':
-                    await self.chat_history(data)
                 case 'update_status':
                     await self.update_status(data['user_id_1'], data['user_id_2'], data['status'])
                     await self.send_friends_list(data['user_id_1'])
@@ -176,25 +175,37 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message_type = data.get('type', None)
         print(f"Handling chat context message: {data}")
         try:
-            match message_type:
-                case 'chat_message':
-                    await self.chat_message(data)
-                case 'message_read':
-                    await self.update_messages_status(data['sender_id'], data['receiver_id'])
-                case 'chat_history':
-                    await self.chat_history(data)
-                case _:
-                    await self.send(text_data=json.dumps({
-                        'type': 'error',
-                        'message': f'Unknown message type: {message_type}'
-                    }))
+            receiver_id = await self.get_user_id_from_displayname(data.get('receiver_id'))
         except Exception as e:
-            print(f"Error handling message in chat context: {e}")
+            print(f"Error getting receiver ID: {e}")
             await self.send(text_data=json.dumps({
                 'type': 'error',
-                'message': f'Error handling message in chat context: {str(e)}'
+                'message': f'Error getting receiver ID: {str(e)}'
             }))
-
+            return
+        match message_type:
+            case 'chat_message':
+                await self.chat_message(data, receiver_id)
+            case 'message_read':
+                await self.update_messages_status(data['sender_id'], receiver_id)
+            case 'chat_history':
+                print("receiver: ", receiver_id)
+                await self.chat_history(data, receiver_id)
+            case _:
+                await self.send(text_data=json.dumps({
+                    'type': 'error',
+                    'message': f'Unknown message type: {message_type}'
+                }))
+        # except Exception as e:
+        #     error_message = f"Error handling message in chat context: {str(e)}"
+        #     error_traceback = traceback.format_exc()
+        #     print(f"{error_message}\n{error_traceback} for user {self.user_id}")
+        #     await self.send(text_data=json.dumps({
+        #         'type': 'error',
+        #         'message': error_message,
+        #         'traceback': error_traceback
+        #     }))
+            
     # async def chat_request(self, data):
     #     receiver_id = data['receiver_id']
     #     sender_id = data['sender_id']
@@ -247,8 +258,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'sender_name': event['sender_name']
         }))
 
-    async def chat_message(self, data):
-        receiver_id = data.get('receiver_id')
+    async def chat_message(self, data, receiver_id):
         sender_id = data.get('sender_id')
         message = data.get('message')
 
@@ -266,21 +276,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     'message': 'You are not friends with this user.'
                 }))
                 return
-            elif receiver_id in self.channel_layer.groups:
-                print(f"Sending message to {receiver_id}")
-                await self.send_message_to_user(receiver_id, message, 'chat_message', 'message')
-            else:
-                print(f"Receiver {receiver_id} is offline. Message will be saved but not sent.")
+            # elif receiver_id in self.online_users:
+            print(f"Sending message to {receiver_id}")
+            await self.send_message_to_user(receiver_id, message, 'chat_message', 'message')
+            # else:
+            #     print(f"Receiver {receiver_id} is offline. Message will be saved but not sent.")
 
             await self.save_message(sender_id, receiver_id, message)
             await self.send_unread_messages_count(receiver_id)
-
         except Exception as e:
+            error_message = f"Error sending message: {str(e)}"
+            error_traceback = traceback.format_exc()
+            print(f"{error_message}\n{error_traceback} for user {self.user_id}")
             await self.send(text_data=json.dumps({
                 'type': 'error',
-                'message': f'Failed to send message: {str(e)}',
-                'original_message': data
-        }))
+                'message': error_message,
+                'traceback': error_traceback
+            }))
 
     # async def chat_request_accepted(self, data):
     #     sender_id = data['sender_id']
@@ -298,22 +310,21 @@ class ChatConsumer(AsyncWebsocketConsumer):
     #     await self.update_status(data['sender_id'], data['receiver_id'], RelationshipStatus.DEFAULT)
     #     await self.send_message_to_user(data['sender_id'], receiver_displayname, 'chat_request_denied', 'message')
 
-    async def chat_history(self, data):
+    async def chat_history(self, data, receiver_id):
         sender_id = data['sender_id']
-        receiver_id = data['receiver_id']
         messages = await self.get_chat_history(sender_id, receiver_id)
         await self.channel_layer.group_send(
             self.user_id,
-            json.dumps({
-            'type': 'send_websocket_message',
-            'text': json.dumps({
-                'type': 'chat_history',
-                'messages': messages,
-                'sender_id': sender_id,
-                'receiver_id': receiver_id
-            })
-
-        }))
+            {
+                'type': 'send_websocket_message',
+                'text': json.dumps({
+                    'type': 'chat_history',
+                    'messages': messages,
+                    'sender_id': sender_id,
+                    'receiver_id': receiver_id
+                })
+            }
+        )
 
     async def send_unread_messages_count(self, user_id):
         unread_messages = await self.get_unread_messages_count(user_id)
@@ -453,3 +464,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def get_user_list(self):
         return list(User.objects.filter(id__in=ChatConsumer.online_users).values('id', 'displayname', 'profile_picture'))
+
+    @database_sync_to_async
+    def get_user_id_from_displayname(self, displayname):
+        try:
+            user = User.objects.get(displayname=displayname)
+            return user.id
+        except User.DoesNotExist:
+            return None
