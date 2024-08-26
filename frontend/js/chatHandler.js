@@ -25,7 +25,7 @@ class ChatHandler {
 
       this.ws.onopen = () => {
           console.log('WebSocket connection opened');
-          this.ws.send(JSON.stringify({ "type": 'set_context', "context": context }));
+          this.ws.send(JSON.stringify({ "type": context, "context": 'setup' }));
           if (context === 'chat') {
             this.chatWindowOpened = false;
               // this.ws.send(JSON.stringify({ "type": 'recipient_id', "recipient": params.recipient }));
@@ -45,6 +45,7 @@ class ChatHandler {
       } else {
           this.currentReceiverId = null;
           this.initScrollHandling();
+          this.filterSelection('all');
       }
     }
 
@@ -84,7 +85,7 @@ class ChatHandler {
         this.displayUserList(content.users);
         break;
       case 'friends_list':
-        this.displayFriendsList(content.friends);
+        this.displayChatsList(content.friends);
         break;
       case 'unread_counts':
         this.updateUnreadMessages(content);
@@ -227,7 +228,7 @@ class ChatHandler {
   // }
 
   displayChatRequest(content) {
-    const requests = document.getElementById('chat-window');
+    const requests = document.getElementById('friends-scroll-container');
     if (requests) {
       const requestItem = document.createElement('div');
       requestItem.textContent = `Chat request from ${content.sender_name}`;
@@ -324,52 +325,83 @@ class ChatHandler {
     });
   }
   
-  displayFriendsList(chats) {
-    const chatsListElement = document.querySelector('.chats-scroll-container');
-    if (!chatsListElement) {
+  displayChatsList(friends) {
+    const friendsListElement = document.querySelector('.friends-scroll-container');
+    if (!friendsListElement) {
       console.warn('Friend list container not found');
       return;
     }
-  
+    const chatsListElement = document.querySelector('.chats-scroll-container');
+    if (!chatsListElement) {
+      console.warn('Chat list container not found');
+      return;
+    }
+    friendsListElement.innerHTML = '';
     chatsListElement.innerHTML = '';
   
-    chats.forEach((friend) => {
-      const chatItem = document.createElement('div');
-      chatItem.className = 'chats-item';
-      chatItem.setAttribute('data-id', friend.id);
-      chatItem.setAttribute('data-name', friend.name);
-      chatItem.onclick = () => {
-        if (this.router) {
-          this.router.navigate(`/live_chat/chat_room?recipient=${friend.name}`);
-        } else {
-          console.warn('Router instance is undefined');
-          return;
-        }
-      };
+    friends.forEach((friend) => {
+      if (friend.chat) {
+        const chatItem = document.createElement('div');
+        chatItem.className = 'chats-item';
+        chatItem.setAttribute('data-id', friend.id);
+        chatItem.setAttribute('data-name', friend.name);
+        chatItem.onclick = () => {
+          if (this.router) {
+            this.router.navigate(`/live_chat/chat_room?recipient=${friend.name}`);
+          } else {
+            console.warn('Router instance is undefined');
+            return;
+          }
+        };
+        const chatImg = document.createElement('img');
+        chatImg.src = friend.profile_picture_url;
+        chatImg.alt = friend.name;
+        chatImg.className = 'friends-avatar';
   
-      const chatImg = document.createElement('img');
-      chatImg.src = friend.profile_picture_url;
-      chatImg.alt = friend.name;
-      chatImg.className = 'chats-avatar';
-      const chatInfo = document.createElement('div');
-      chatInfo.className = 'chats-info';
+        const chatInfo = document.createElement('div');
+        chatInfo.className = 'friends-info';
   
-      const chatName = document.createElement('div');
-      chatName.className = 'chats-name';
-      chatName.textContent = friend.name;
+        const chatName = document.createElement('div');
+        chatName.className = 'friends-name';
+        chatName.textContent = friend.name;
   
-      const messagePreview = document.createElement('div');
-      messagePreview.className = 'message-preview';
-      messagePreview.textContent = 'Loading...';
-      
-      chatInfo.appendChild(chatName);
-      chatInfo.appendChild(messagePreview);
-      
-      chatItem.appendChild(chatImg);
-      chatItem.appendChild(chatInfo);
-      
-      chatsListElement.appendChild(chatItem);
+        const messagePreview = document.createElement('div');
+        messagePreview.className = 'message-preview';
+        messagePreview.textContent = 'Loading...';
+  
+        chatInfo.appendChild(chatName);
+        chatInfo.appendChild(messagePreview);
+  
+        chatItem.appendChild(chatImg);
+        chatItem.appendChild(chatInfo);
+  
+        chatsListElement.appendChild(chatItem);
+      }
+  
+      const friendItem = document.createElement('div');
+      friendItem.className = 'friends-item friends';
+      friendItem.setAttribute('data-id', friend.id);
+      friendItem.setAttribute('data-name', friend.name);
+  
+      const friendImg = document.createElement('img');
+      friendImg.src = friend.profile_picture_url;
+      friendImg.alt = friend.name;
+      friendImg.className = 'friends-avatar';
+  
+      const friendInfo = document.createElement('div');
+      friendInfo.className = 'friends-info';
+  
+      const friendName = document.createElement('div');
+      friendName.className = 'friends-name';
+      friendName.textContent = friend.name;
+  
+      friendInfo.appendChild(friendName);
+      friendItem.appendChild(friendImg);
+      friendItem.appendChild(friendInfo);
+  
+      friendsListElement.appendChild(friendItem);
     });
+  
     this.ws.send(JSON.stringify({
       'type': 'message_preview',
       'context': 'home'
@@ -533,6 +565,49 @@ class ChatHandler {
       });
     } else {
       console.warn('User list container not found');
+    }
+  }
+
+  filterSelection(c) {
+    var x, i;
+    x = document.getElementsByClassName("friends-item");
+    if (c == "all") c = "";
+    for (i = 0; i < x.length; i++) {
+      w3RemoveClass(x[i], "show");
+      if (x[i].className.indexOf(c) > -1) w3AddClass(x[i], "show");
+    }
+  }
+
+  w3AddClass(element, name) {
+    var i, arr1, arr2;
+    arr1 = element.className.split(" ");
+    arr2 = name.split(" ");
+    for (i = 0; i < arr2.length; i++) {
+      if (arr1.indexOf(arr2[i]) == -1) {
+        element.className += " " + arr2[i];
+      }
+    }
+  }
+
+  w3RemoveClass(element, name) {
+    var i, arr1, arr2;
+    arr1 = element.className.split(" ");
+    arr2 = name.split(" ");
+    for (i = 0; i < arr2.length; i++) {
+      while (arr1.indexOf(arr2[i]) > -1) {
+        arr1.splice(arr1.indexOf(arr2[i]), 1);
+      }
+    }
+    element.className = arr1.join(" ");
+  
+    var btnContainer = document.getElementById("myBtnContainer");
+    var btns = btnContainer.getElementsByClassName("custom-button");
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].addEventListener("click", function() {
+        var current = document.getElementsByClassName("active");
+        current[0].className = current[0].className.replace(" active", "");
+        this.className += " active";
+      });
     }
   }
 }

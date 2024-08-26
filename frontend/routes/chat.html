@@ -32,23 +32,28 @@
   </div>
 
   <div class="tab-content flex-grow-1">
-    <!-- Friends Scroll Container Tab -->
+    <!-- Chats Scroll Container Tab -->
     <div class="tab-pane fade show active" id="chats" role="tabpanel" aria-labelledby="chats-tab">
       <div class="main-content d-flex flex-grow-1 position-relative overflow-hidden">
         <div class="container-fluid py-2 chats-list-container transition-width" id="chats-list-container">
           <div class="chats-scroll-container">
-            <!-- Friends will be appended here -->
+            <!-- Chats will be appended here -->
           </div>
         </div>
       </div>
     </div>
 
-    <!-- New Container Tab -->
+    <!-- Friends Scroll Container Tab -->
     <div class="tab-pane fade" id="friends" role="tabpanel" aria-labelledby="friends-tab">
       <div class="main-content d-flex flex-grow-1 position-relative overflow-hidden">
-        <div class="container-fluid py-2 friends transition-width" id="friends-content">
-          <div class="new-content-scroll-container">
-            <!-- New content will be appended here -->
+        <div id="myBtnContainer">
+          <button class="custom-button active" onclick="filterSelection('all')"> Show all</button>
+          <button class="custom-button" onclick="filterSelection('requests')"> Requests</button>
+          <button class="custom-button" onclick="filterSelection('friends')"> Friends</button>
+        </div>
+        <div class="container-fluid py-2 friends-list-container transition-width" id="friends-list-container">
+          <div class="friends-scroll-container">
+            <!-- Friends will be appended here -->
           </div>
         </div>
       </div>

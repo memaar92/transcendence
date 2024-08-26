@@ -115,6 +115,10 @@
   cursor: pointer;
 }
 
+.custom-button:active {
+  background-color: #a376ec;
+}
+
 #message-input {
   flex-grow: 1;
   margin-right: 10px;
@@ -250,6 +254,23 @@
   border-bottom: none;
 }
 
+.friends-item {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #e9ecef;
+  width: 100%;
+  position: relative;
+}
+
+.friends-item img {
+  width: 65px;
+  height: 65px;
+  border-radius: 50%;
+  border-width: 2px;
+  margin-right: 15px;
+  cursor: pointer;
+}
 
 .chats-item img {
   width: 65px;
@@ -465,4 +486,9 @@
 .nav-tabs .nav-link:focus, .nav-tabs .nav-link:hover {
   border-color: #7A35EC #7A35EC #7A35EC;
   isolation: isolate;
+}
+
+/* The "show" class is added to the filtered elements */
+.show {
+  display: block;
 }
