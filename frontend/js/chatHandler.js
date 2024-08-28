@@ -6,6 +6,7 @@ class ChatHandler {
     this.friendsList = [];
     this.onlineUserIds = [];
     this.router = null;
+    this.currentFilter = 'all';
   }
 
   async init(params, router, context) {
@@ -45,7 +46,7 @@ class ChatHandler {
       } else {
           this.currentReceiverId = null;
           this.initScrollHandling();
-          this.filterSelection('all');
+          this.initFiltering();
       }
     }
 
@@ -275,9 +276,9 @@ class ChatHandler {
 
     userListWrapper.innerHTML = '';
   
-    this.onlineUserIds = users.map(user => user.id);
 
     users.forEach((user) => {
+      this.onlineUserIds.push(user.id);
       const userItem = document.createElement('div');
       userItem.className = 'user-item';
   
@@ -406,6 +407,7 @@ class ChatHandler {
       'type': 'message_preview',
       'context': 'home'
     }));
+    this.applyFilter();
   }
 
   openChatWindow(friendId) {
@@ -551,16 +553,13 @@ class ChatHandler {
 
     if (container) {
       container.addEventListener('wheel', (event) => {
-        // Check if Ctrl key is pressed
         if (event.ctrlKey) {
-          // Allow browser default zoom behavior
           return;
         }
 
-        // Horizontal scrolling
         if (event.deltaY !== 0) {
           container.scrollLeft += event.deltaY;
-          event.preventDefault(); // Prevent the default vertical scroll behavior
+          event.preventDefault();
         }
       });
     } else {
@@ -568,49 +567,39 @@ class ChatHandler {
     }
   }
 
-  filterSelection(c) {
-    var x, i;
-    x = document.getElementsByClassName("friends-item");
-    if (c == "all") c = "";
-    for (i = 0; i < x.length; i++) {
-      w3RemoveClass(x[i], "show");
-      if (x[i].className.indexOf(c) > -1) w3AddClass(x[i], "show");
-    }
-  }
-
-  w3AddClass(element, name) {
-    var i, arr1, arr2;
-    arr1 = element.className.split(" ");
-    arr2 = name.split(" ");
-    for (i = 0; i < arr2.length; i++) {
-      if (arr1.indexOf(arr2[i]) == -1) {
-        element.className += " " + arr2[i];
-      }
-    }
-  }
-
-  w3RemoveClass(element, name) {
-    var i, arr1, arr2;
-    arr1 = element.className.split(" ");
-    arr2 = name.split(" ");
-    for (i = 0; i < arr2.length; i++) {
-      while (arr1.indexOf(arr2[i]) > -1) {
-        arr1.splice(arr1.indexOf(arr2[i]), 1);
-      }
-    }
-    element.className = arr1.join(" ");
+  initFiltering() {
+    const btnContainer = document.querySelector('.btn-group');
+    const btns = btnContainer.querySelectorAll('.btn-check');
   
-    var btnContainer = document.getElementById("myBtnContainer");
-    var btns = btnContainer.getElementsByClassName("custom-button");
-    for (var i = 0; i < btns.length; i++) {
-      btns[i].addEventListener("click", function() {
-        var current = document.getElementsByClassName("active");
-        current[0].className = current[0].className.replace(" active", "");
-        this.className += " active";
+    console.log('Filter buttons:', btns);
+  
+    btns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        btns.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        this.currentFilter = btn.getAttribute('data-filter') || 'all';
+        this.applyFilter();
       });
-    }
+    });
+  
+    // Apply initial filter
+    this.applyFilter();
+  }
+
+  applyFilter() {
+    const items = document.getElementsByClassName("friends-item");
+    const filter = this.currentFilter === 'all' ? '' : this.currentFilter;
+    
+    Array.from(items).forEach(item => {
+      if (!filter || item.classList.contains(filter)) {
+        item.classList.add("show");
+      } else {
+        item.classList.remove("show");
+      }
+    });
   }
 }
+
 
 const instance = new ChatHandler();
 export default {
