@@ -9,7 +9,7 @@ from django.contrib.auth.hashers import make_password
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['id', 'email', 'displayname', 'profile_picture']
+        fields = ['id', 'email', 'displayname', 'profile_picture', 'password']
         extra_kwargs = {'password': {'write_only': True}}
 
     def update(self, instance, validated_data):
@@ -18,9 +18,20 @@ class UserSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 class UserNameSerializer(serializers.ModelSerializer):
+    # game_history = serializers.SerializerMethodField()
+
     class Meta:
         model = CustomUser
-        fields = ["id", "displayname", 'profile_picture']
+        fields = ['id', 'displayname', 'profile_picture']  # Add other user fields as needed
+
+    # def get_game_history(self, obj):
+    #     games = Games.objects.filter(home_id=obj) | Games.objects.filter(visitor_id=obj)
+    #     return GameSerializer(games, many=True).data
+
+class GameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Games
+        fields = ['id', 'home_id', 'visitor_id', 'visitor_score', 'home_score', 'created_at']
 
 class UserCreateSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -42,12 +53,6 @@ class UserCreateSerializer(serializers.ModelSerializer):
         user.set_password(validated_data['password'])
         user.save()
         return user
-
-class GameHistorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Games
-        fields = ["id", "home_id", "visitor_id", "visitor_score", "home_score", "created_at", "updated_at"]
-        read_only_fields = fields
 
 class TOTPSetupSerializer(serializers.Serializer):
     qr_code = serializers.CharField()
