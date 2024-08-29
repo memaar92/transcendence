@@ -20,6 +20,8 @@ document.getElementById("login-form-submit").addEventListener("click", async (e)
     localStorage.setItem("uid", user_info["id"]);
     router.navigate("/email_verification");
   } else {
-    router.navigate("/home");
+    const wrong_password = document.getElementById('wrong_password');
+    let bsAlert = new bootstrap.Toast(wrong_password);
+    bsAlert.show();
   }
 });

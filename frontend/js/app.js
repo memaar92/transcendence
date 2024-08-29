@@ -13,7 +13,9 @@ const routes = [
   { path: "/404", templateUrl: "/routes/404.html" },
   { path: "/game_menu", templateUrl: "/routes/game_menu.html" },
   { path: "/play", templateUrl: "/routes/play.html" },
+  { path: "/game_local", templateUrl: "/routes/game_local.html" },
   { path: "/game", templateUrl: "/routes/game.html" },
+  { path: "/profile", templateUrl: "/routes/profile.html" },
 ];
 
 export const router = new Router(routes);
