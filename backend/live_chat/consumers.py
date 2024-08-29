@@ -107,7 +107,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
         ChatConsumer.online_users.add(self.user_id)
-        await self.broadcast_user_list()
         return
 
     async def disconnect(self, close_code):
@@ -142,9 +141,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 case 'setup':
                     self.context = data.get('type', None)
                     await self.send(text_data=json.dumps({'type': 'user_id', 'user_id': self.user_id, 'context': self.context}))
+                    await self.broadcast_user_list()
                     if self.context == 'home':
                         await self.send_friends_info(self.user_id)
                         await self.send_unread_messages_count(self.user_id)
+
                 case _:
                     await self.send(text_data=json.dumps({
                         'type': 'error',

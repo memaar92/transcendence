@@ -29,7 +29,6 @@ class ChatHandler {
           this.ws.send(JSON.stringify({ "type": context, "context": 'setup' }));
           if (context === 'chat') {
             this.chatWindowOpened = false;
-              // this.ws.send(JSON.stringify({ "type": 'recipient_id', "recipient": params.recipient }));
           }
       };
 
@@ -59,9 +58,7 @@ class ChatHandler {
     console.log('Received message:', content);
     if (content.type === 'user_id') {
       this.senderId = Number(content.user_id);
-      console.log('Received user ID:', this.senderId, content.context);
       if (content.context === 'chat' && !this.chatWindowOpened) {
-          // Open chat window only after receiving the user ID
           this.openChatWindow(this.currentReceiverId);
           this.chatWindowOpened = true;
       }
@@ -261,7 +258,10 @@ class ChatHandler {
     return button;
   }
 
-  displayUserList(users) {
+  displayUserList(data) {
+    console.log('Displaying user list');
+    const parsedData = JSON.parse(data);
+    const users = parsedData.users;
     const userListContainer = document.getElementById('user-list-container');
     if (!userListContainer) {
       console.warn('User list container not found');
@@ -273,12 +273,12 @@ class ChatHandler {
       console.warn('User list wrapper not found');
       return;
     }
-
+    
+    this.onlineUserIds = users.map(user => user.id);
     userListWrapper.innerHTML = '';
   
 
     users.forEach((user) => {
-      this.onlineUserIds.push(user.id);
       const userItem = document.createElement('div');
       userItem.className = 'user-item';
   
