@@ -1,7 +1,7 @@
 import { api } from "./api.js";
 import { router } from "./app.js";
 
-document.getElementById("register").addEventListener("click", async (e) => {
+document.getElementById("login-form-submit").addEventListener("click", async (e) => {
   e.preventDefault();
   // TODO check password strength
   if (!localStorage.getItem("email")) {
@@ -9,9 +9,9 @@ document.getElementById("register").addEventListener("click", async (e) => {
     alert("Error: No email provided");
     router.navigate("/home");
   }
-  const result = await api.post("/register/", {
+  const result = await api.post("/token/", {
     email: localStorage.getItem("email"),
-    password: document.getElementById("password").value,
+    password: document.getElementById("password-field").value,
   });
   console.log("register call finished");
   const user_info = await result.json();
