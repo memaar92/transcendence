@@ -7,6 +7,7 @@ class ChatHandler {
     this.onlineUserIds = [];
     this.router = null;
     this.currentFilter = 'all';
+    this.friendsListReceived = false;
   }
 
   async init(params, router, context) {
@@ -81,9 +82,15 @@ class ChatHandler {
     switch (content.type) {
       case 'user_list':
         this.displayUserList(content.users);
+        this.onlineUserIds = content.users.map(user => user.id); // Update online user IDs
+        if (this.friendsListReceived) {
+          this.updateFriendStatusIndicators(); // Update status indicators if friends_list has been received
+        }
         break;
       case 'friends_list':
         this.displayChatsList(content.friends);
+        this.friendsListReceived = true; // Set the flag to true
+        this.updateFriendStatusIndicators(); // Update status indicators
         break;
       case 'unread_counts':
         this.updateUnreadMessages(content);
@@ -95,25 +102,24 @@ class ChatHandler {
       case 'message_preview':
         const chatItems = document.querySelectorAll('.chats-item');
         chatItems.forEach(chatItem => {
-            const dataId = chatItem.getAttribute('data-id');
-            if (content.latest_messages[dataId]) {
-              const latestMessage = content.latest_messages[dataId].message;
-              const sender_id = content.latest_messages[dataId].sender_id;
-              if (latestMessage) {
-                this.showLatestMessage(latestMessage, sender_id, dataId);
-              }
+          const dataId = chatItem.getAttribute('data-id');
+          if (content.latest_messages[dataId]) {
+            const latestMessage = content.latest_messages[dataId].message;
+            const sender_id = content.latest_messages[dataId].sender_id;
+            if (latestMessage) {
+              this.showLatestMessage(latestMessage, sender_id, dataId);
             }
-            else {
-              console.log('No messages');
-              const messagePreview = chatItem.querySelector('.message-preview');
-              if (messagePreview) {
+          } else {
+            console.log('No messages');
+            const messagePreview = chatItem.querySelector('.message-preview');
+            if (messagePreview) {
               messagePreview.textContent = 'No messages';
-              }
             }
-            });
+          }
+        });
         break;
       default:
-        console.error('Error:', content.type);
+        console.error('Unknown context:', content.type);
         break;
     }
   }
@@ -306,19 +312,29 @@ class ChatHandler {
     } else {
       userListContainer.style.overflowY = 'hidden';
     }
-    this.updateFriendStatusIndicators();
   }
 
   updateFriendStatusIndicators() {
     const chatItems = document.querySelectorAll('.chats-item');
     chatItems.forEach(chatItem => {
       const friendId = chatItem.getAttribute('data-id');
-      
       const isOnline = this.onlineUserIds.includes(friendId);
-  
       const friendImg = chatItem.querySelector('img');
-  
       if (friendImg) {
+        console.log('Updating friend status indicator:', friendId, isOnline);
+        friendImg.style.border = isOnline ? '4px solid #7A35EC' : '4px solid grey';
+      } else {
+        console.warn('Image not found for chat item:', friendId);
+      }
+    });
+
+    const friendItems = document.querySelectorAll('.friends-item');
+    friendItems.forEach(friendItem => {
+      const friendId = friendItem.getAttribute('data-id');
+      const isOnline = this.onlineUserIds.includes(friendId);
+      const friendImg = friendItem.querySelector('img');
+      if (friendImg) {
+        console.log('Updating friend status indicator:', friendId, isOnline);
         friendImg.style.border = isOnline ? '4px solid #7A35EC' : '4px solid grey';
       } else {
         console.warn('Image not found for friend item:', friendId);

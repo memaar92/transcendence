@@ -20,6 +20,7 @@ User = get_user_model()
 class ChatConsumer(AsyncWebsocketConsumer):
     
     online_users = set()
+    active_connections = {}
 
     async def send_message_to_user(self, receiver_id, message_info):
         await self.channel_layer.group_send(
@@ -70,7 +71,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 {
                     'id': user['id'],
                     'name': user['displayname'],
-                    'profile_picture_url': user['profile_picture']
+                    'profile_picture_url': user['profile_picture'],
+                    'is_online': user['id'] in ChatConsumer.online_users
                 }
                 for user in users_info if str(user['id']) != str(user_id)
             ]
@@ -78,8 +80,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'type': 'user_list',
                 'users': modified_users_info
             })
-            await self.send_message_to_user(user_id, {'message': user_list_message, 'message_type': 'user_list', 'message_key': 'users'}
-            )
+            await self.send_message_to_user(user_id, {'message': user_list_message, 'message_type': 'user_list', 'message_key': 'users'})
 
     # async def send_pending_chat_notifications(self, user_id):
     #     pending_requests = await self.get_pending_requests(user_id)
@@ -102,12 +103,24 @@ class ChatConsumer(AsyncWebsocketConsumer):
         self.user_id = str(self.scope['user'].id)
         self.context = None
         self.user_group_name = self.user_id
+
+        # Check if the user already has active connections
+        is_new_connection = self.user_id not in ChatConsumer.active_connections
+
+        # Add the channel to the user's active connections
+        if self.user_id in ChatConsumer.active_connections:
+            ChatConsumer.active_connections[self.user_id].add(self.channel_name)
+        else:
+            ChatConsumer.active_connections[self.user_id] = {self.channel_name}
+
         await self.channel_layer.group_add(
             self.user_group_name,
             self.channel_name
         )
-        ChatConsumer.online_users.add(self.user_id)
-        return
+
+        if is_new_connection:
+            ChatConsumer.online_users.add(self.user_id)
+            await self.broadcast_user_list()
 
     async def disconnect(self, close_code):
         if hasattr(self, 'user_group_name'):
@@ -116,15 +129,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 self.channel_name
             )
         if hasattr(self, 'user_id'):
-            self.online_users.remove(self.user_id)
-            await self.broadcast_user_list()
+            # Remove the channel from the user's active connections
+            if self.user_id in ChatConsumer.active_connections:
+                ChatConsumer.active_connections[self.user_id].discard(self.channel_name)
+                if not ChatConsumer.active_connections[self.user_id]:
+                    del ChatConsumer.active_connections[self.user_id]
+                    ChatConsumer.online_users.remove(self.user_id)
+                    await self.broadcast_user_list()
 
             # Clean up Redis keys
             redis_conn = get_redis_connection("default")
             redis_keys = redis_conn.keys(f"msg:*:{self.user_id}")
             for key in redis_keys:
                 redis_conn.delete(key)
-
 
     async def receive(self, text_data):
         data = json.loads(text_data)
@@ -145,11 +162,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     if self.context == 'home':
                         await self.send_friends_info(self.user_id)
                         await self.send_unread_messages_count(self.user_id)
-
                 case _:
                     await self.send(text_data=json.dumps({
                         'type': 'error',
-                        'message': f'Unknown context: {context}'
+                        'message': f'Unknown context: {self.context}'
                     }))
         except Exception as e:
             print(f"Error handling message: {e}")
@@ -449,7 +465,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def get_user_list(self):
-        return list(User.objects.filter(id__in=ChatConsumer.online_users).values('id', 'displayname', 'profile_picture'))
+        users = User.objects.filter(id__in=ChatConsumer.online_users)
+        user_list = []
+        for user in users:
+            user_list.append({
+                'id': str(user.id),
+                'displayname': user.displayname,
+                'profile_picture': user.profile_picture.url if user.profile_picture else None
+            })
+        return user_list
 
     @database_sync_to_async
     def get_user_id_from_displayname(self, displayname):

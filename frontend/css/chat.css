@@ -47,7 +47,7 @@
 }
 
 /* Hover effect for user item */
-.user-item:hover {
+.user-item img:hover {
   transform: translateY(-5px);
   transition: ease-in-out;
 }
