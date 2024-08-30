@@ -566,3 +566,27 @@ class LogoutView(APIView):
             return response
         except Exception as e:
             return Response(status=status.HTTP_400_BAD_REQUEST)
+
+class CheckLoginView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={
+            (200, 'application/json'): {
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'bool', 'enum': ['True']}
+                },
+            },
+            (401, 'application/json'): {
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string', 'enum': ['Authentication credentials were not provided.']}
+                },
+            },
+        },
+    )
+
+    def get(self, request):
+        # If the token is valid, the user is authenticated, and we return a success response
+        return Response ({"logged-in": True}, status=status.HTTP_200_OK)
