@@ -568,17 +568,26 @@ class LogoutView(APIView):
         except Exception as e:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-class CheckTokenView(APIView):
+class CheckLoginView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={
+            (200, 'application/json'): {
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'bool', 'enum': ['True']}
+                },
+            },
+            (401, 'application/json'): {
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string', 'enum': ['Authentication credentials were not provided.']}
+                },
+            },
+        },
+    )
+
     def get(self, request):
-        auth_header = request.headers.get('Authorization')
-        if auth_header:
-            try:
-                # Extract the token part from the header
-                token = auth_header.split(' ')[1]
-                # Decode the token
-                jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
-            except jwt.ExpiredSignatureError:
-                return Response({"logged-in": False}, status=status.HTTP_401_UNAUTHORIZED)
-            except jwt.InvalidTokenError:
-                return Response({"logged-in": False}, status=status.HTTP_401_UNAUTHORIZED)
+        # If the token is valid, the user is authenticated, and we return a success response
         return Response ({"logged-in": True}, status=status.HTTP_200_OK)
