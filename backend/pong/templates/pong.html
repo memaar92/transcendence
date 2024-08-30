@@ -44,12 +44,28 @@
                     if (data.match_id) {
                         console.log('Match found! Match ID: ' + data.match_id);
                         match_id = data.match_id;
-                        connectToMatch(match_id);
+                        register_to_match(match_id);
+                        // connectToMatch(match_id);
                     }
                 } else if (data.state === "match_in_progress") {
                     console.log('Match in progress.');
                     showReconnectButton(data.match_id); // Pass the correct match_id
+                } else if (data.state === "registered") {
+                    console.log('Registered to match.');
+                    connectToMatch(match_id);
+                } else if (data.state === "registration_timeout") {
+                    console.log('Registration timeout.');
+                } else if (data.state === "registration_error") {
+                    console.error('Registration error:', data.error);
                 }
+            }
+
+            function register_to_match() {
+                console.log('Registering to match...');
+                matchmakingSocket.send(JSON.stringify({
+                    "request": "register",
+                    "match_id": match_id
+                }))
             }
     
             function joinQueue() {
@@ -57,6 +73,14 @@
                 matchmakingSocket.send(JSON.stringify({
                     "match_type": "online",
                     "action": "join"
+                }))
+            }
+
+            window.register_to_match = function(match_id) {
+                console.log('Registering to match...');
+                matchmakingSocket.send(JSON.stringify({
+                    "request": "register",
+                    "match_id": match_id
                 }))
             }
     
