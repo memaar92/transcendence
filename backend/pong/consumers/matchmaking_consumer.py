@@ -6,7 +6,7 @@ from ..services.redis_service.user import User as rsUser
 from ..services.redis_service.pub_sub_manager import PubSubManager as rsPubSub
 from ..services.redis_service.matchmaking_queue import MatchmakingQueue as rsMatchmakingQueue
 from ..services.redis_service.constants import REDIS_INSTANCE
-from ..utils.states import UserOnlineStatus
+from ..services.redis_service.constants import UserGameStatus
 from ..matchmaking.matchmaker import MatchMaker
 from enum import Enum, auto
 from django.contrib.auth.models import AnonymousUser
@@ -47,8 +47,9 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
         # Set user default values in redis if not already set
         logger.info(f"User {self.user_id} exists: {await rsUser.exists(self.user_id)}")
         if not await rsUser.exists(self.user_id):
-            await rsUser.set_session_info(self.user_id, UserOnlineStatus.ONLINE, None)
+            await rsUser.set_session_info(self.user_id, UserGameStatus.AVAILABLE, None)
 
+        # Offers the user a reconnection to a match if they are not already in a game
         if not await rsUser.is_playing(self.user_id):
             if await self.is_match_in_progress():
                 await self.send_match_in_progress_message()
@@ -84,12 +85,16 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                 try:
                     self.match_id = data.get("match_id")
                     await MatchMaker.register_user(data["match_id"], self.user_id)
-                    await MatchMaker.is_registration_complete(data["match_id"])
+                    logger.info(f"User {self.user_id} registered for match {data['match_id']}")
                     await rsPubSub.subscribe_to_channel(self.pubsub, f"{self.match_id}:registration", self.registration_handler)
                     if await rsMatch.Users.Registered.registration_complete(self.match_id):
                         await rsPubSub.publish_to_channel(f"{self.match_id}:registration", "registered")
                 except MatchMaker.MatchError as e:
+                    self.send(text_data=json.dumps({
+                        'state': 'registration_error'
+                    }))
                     logger.error(f"Error registering user: {e}")
+
         
     async def registration_handler(self, message):
         '''Handle messages from the registration channel'''
@@ -132,7 +137,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
     async def join_queue(self):
         '''Add user to the matchmaking queue'''
         logger.info(f"User {self.user_id} online status: {await rsUser.get_online_status(self.user_id)}")
-        if await rsUser.get_online_status(self.user_id) == UserOnlineStatus.ONLINE:
+        if await rsUser.get_online_status(self.user_id) == UserGameStatus.AVAILABLE:
             await rsMatchmakingQueue.add_user(self.user_id)
         
 
@@ -149,6 +154,17 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                 logger.info(f"Match found: {player1_id} vs {player2_id}")
                 match_id = await self.create_match(player1_id, player2_id)
                 await self.notify_players(match_id, player1_id, player2_id)
+                await rsPubSub.subscribe_to_channel(REDIS_INSTANCE, f"MatchOutcome:{match_id}", self.match_outcome_handler)
+
+        
+    async def match_outcome_handler(self, message) -> None:
+        '''Callback function to handle messages on the MatchOutcome channel'''
+        print(f"Message: {message}")
+        logger.info(f"Message: {message['channel'].decode('utf-8')}")
+        await rsPubSub.unsubscribe_from_channel(REDIS_INSTANCE, f"{message['channel'].decode('utf-8')}", self.match_outcome_handler)
+        # if message['type'] == 'message':
+        #     print(f"Match outcome message: {message['data'].decode('utf-8')}")
+                
 
     async def create_match(self, player1_id, player2_id):
 

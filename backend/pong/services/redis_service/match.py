@@ -1,10 +1,9 @@
-import logging
-from asgiref.sync import sync_to_async
 import json
-from typing import List, Any, Union, Optional
-from ...utils.states import MatchState
-from .constants import RedisKeys, MatchSessionFields, REDIS_INSTANCE
+import logging
 import time
+from typing import Any, Callable, List, Optional, Union
+from .constants import RedisKeys, MatchSessionFields, MatchState, MatchOutcome, REDIS_INSTANCE, GeneralChannels
+from .pub_sub_manager import PubSubManager as rsPubSub
 
 logger = logging.getLogger("PongConsumer")
 
@@ -19,7 +18,7 @@ class Match:
                 '''Get the connected users for the match'''
                 try:
                     # Retrieve the match data from the Redis hash
-                    match_data_json = await sync_to_async(REDIS_INSTANCE.hget)(RedisKeys.MATCHES_OPEN, match_id)
+                    match_data_json = await REDIS_INSTANCE.hget(RedisKeys.MATCHES, match_id)
                     
                     if match_data_json:
                         # Decode the JSON string back to a Python dictionary
@@ -30,9 +29,9 @@ class Match:
                         
                         return connected_user_ids
                 except (json.JSONDecodeError, KeyError) as e:
-                    print(f"Error decoding match data: {e}")
+                    logger.error(f"Error decoding match data: {e}")
                 except Exception as e:
-                    print(f"Unexpected error: {e}")
+                    logger.error(f"Unexpected error: {e}")
                 
                 return []
 
@@ -53,16 +52,16 @@ class Match:
                 '''Get the assigned users for the match'''
                 try:
                     # Retrieve the match data from the Redis hash
-                    match_data_json = await sync_to_async(REDIS_INSTANCE.hget)(RedisKeys.MATCHES_OPEN, match_id)
+                    match_data_json = await REDIS_INSTANCE.hget(RedisKeys.MATCHES, match_id)
                     
                     if match_data_json:
                         # Decode the JSON string back to a Python dictionary
                         match_data = json.loads(match_data_json)
                         return match_data.get(MatchSessionFields.ASSIGNED_USERS, [])
                 except (json.JSONDecodeError, KeyError) as e:
-                    print(f"Error decoding match data: {e}")
+                    logger.error(f"Error decoding match data: {e}")
                 except Exception as e:
-                    print(f"Unexpected error: {e}")
+                    logger.error(f"Unexpected error: {e}")
                 
                 return []
 
@@ -83,16 +82,16 @@ class Match:
                 '''Get the registered users for the match'''
                 try:
                     # Retrieve the match data from the Redis hash
-                    match_data_json = await sync_to_async(REDIS_INSTANCE.hget)(RedisKeys.MATCHES_OPEN, match_id)
+                    match_data_json = await REDIS_INSTANCE.hget(RedisKeys.MATCHES, match_id)
                     
                     if match_data_json:
                         # Decode the JSON string back to a Python dictionary
                         match_data = json.loads(match_data_json)
                         return match_data.get(MatchSessionFields.REGISTERED_USERS, [])
                 except (json.JSONDecodeError, KeyError) as e:
-                    print(f"Error decoding match data: {e}")
+                    logger.error(f"Error decoding match data: {e}")
                 except Exception as e:
-                    print(f"Unexpected error: {e}")
+                    logger.error(f"Unexpected error: {e}")
                 
                 return []
 
@@ -123,16 +122,16 @@ class Match:
         '''Get the state of the match, FINISHED by default'''
         try:
             # Retrieve the match data from the Redis hash
-            match_data_json = await sync_to_async(REDIS_INSTANCE.hget)(RedisKeys.MATCHES_OPEN, match_id)
+            match_data_json = await REDIS_INSTANCE.hget(RedisKeys.MATCHES, match_id)
             
             if match_data_json:
                 # Decode the JSON string back to a Python dictionary
                 match_data = json.loads(match_data_json)
                 return match_data.get(MatchSessionFields.STATE, MatchState.FINISHED)
         except (json.JSONDecodeError, KeyError) as e:
-            print(f"Error decoding match data: {e}")
+            logger.error(f"Error decoding match data: {e}")
         except Exception as e:
-            print(f"Unexpected error: {e}")
+            logger.error(f"Unexpected error: {e}")
         
         return MatchState.FINISHED
 
@@ -141,16 +140,17 @@ class Match:
         '''Get the creation time of the match'''
         try:
             # Retrieve the match data from the Redis hash
-            match_data_json = await sync_to_async(REDIS_INSTANCE.hget)(RedisKeys.MATCHES_OPEN, match_id)
+            match_data_json = await REDIS_INSTANCE.hget(RedisKeys.MATCHES, match_id)
+            logger.info(f"Match data get_creation_time: {match_data_json}")
             
             if match_data_json:
                 # Decode the JSON string back to a Python dictionary
                 match_data = json.loads(match_data_json)
                 return match_data.get(MatchSessionFields.CREATION_TIME)
         except (json.JSONDecodeError, KeyError) as e:
-            print(f"Error decoding match data: {e}")
+            logger.error(f"Error decoding match data: {e}")
         except Exception as e:
-            print(f"Unexpected error: {e}")
+            logger.error(f"Unexpected error: {e}")
         
         return None
 
@@ -158,8 +158,8 @@ class Match:
     async def get_reconnect_attempts(match_id: str, user_id: str) -> Optional[int]:
         '''Retrieve the number of reconnection attempts for a user in a match'''
         try:
-            # Retrieve the match data from the MATCHES_OPEN hash
-            match_data_json = await sync_to_async(REDIS_INSTANCE.hget)(RedisKeys.MATCHES_OPEN, match_id)
+            # Retrieve the match data from the MATCHES hash
+            match_data_json = await REDIS_INSTANCE.hget(RedisKeys.MATCHES, match_id)
             
             if match_data_json is None:
                 return None
@@ -174,8 +174,26 @@ class Match:
             
             return user_data.get(MatchSessionFields.RECONNECTION_ATTEMPTS, 0)
         except Exception as e:
-            print(f"Unexpected error: {e}")
+            logger.error(f"Unexpected error: {e}")
             return None
+    
+    @staticmethod
+    async def get_outcome(match_id: str) -> Optional[str]:
+        '''Get the outcome of the match'''
+        try:
+            # Retrieve the match data from the Redis hash
+            match_data_json = await REDIS_INSTANCE.hget(RedisKeys.MATCHES, match_id)
+            
+            if match_data_json:
+                # Decode the JSON string back to a Python dictionary
+                match_data = json.loads(match_data_json)
+                return match_data.get(MatchSessionFields.OUTCOME)
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.error(f"Error decoding match data: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error: {e}")
+        
+        return None
 
     ###########
     # SETTERS #
@@ -187,34 +205,41 @@ class Match:
         try:
             # Prepare the match data as a JSON string
             match_data = {
-                MatchSessionFields.STATE: MatchState.REGISTERING,
+                MatchSessionFields.STATE: MatchState.INITIALIZING,
                 MatchSessionFields.CREATION_TIME: int(time.time()),
+                MatchSessionFields.OUTCOME: None,
                 MatchSessionFields.ASSIGNED_USERS: assigned_users,
                 MatchSessionFields.REGISTERED_USERS: [],
                 MatchSessionFields.CONNECTED_USERS: [],
             }
 
+            # Serialize match_data to JSON string
+            match_data_json = json.dumps(match_data)
+    
+            # Publish the match data to the NEW_MATCH channel
+            await rsPubSub.publish_to_channel(GeneralChannels.NEW_MATCH, match_data_json)
+    
             # Add reconnection_attempts for each connected user
             for user in assigned_users:
                 match_data[user] = {MatchSessionFields.RECONNECTION_ATTEMPTS: -1} # -1 indicates the user is not reconnected
-
-            # Store the match data in the MATCHES_OPEN hash
-            await sync_to_async(REDIS_INSTANCE.hset)(RedisKeys.MATCHES_OPEN, match_id, json.dumps(match_data))
+    
+            # Store the match data in the MATCHES hash
+            await REDIS_INSTANCE.hset(RedisKeys.MATCHES, match_id, json.dumps(match_data))
         except Exception as e:
-            print(f"Unexpected error: {e}")
+            logger.error(f"Unexpected error: {e}")
 
 
     @staticmethod
     async def delete(match_id: str) -> None:
         '''Delete the match from Redis'''
-        await sync_to_async(REDIS_INSTANCE.hdel)(RedisKeys.MATCHES_OPEN, match_id)
+        await REDIS_INSTANCE.hdel(RedisKeys.MATCHES, match_id)
 
     @staticmethod
     async def set_state(match_id: str, state: str) -> None:
         '''Set the state of the match'''
         try:
             # Retrieve the match data from the Redis hash
-            match_data_json = await sync_to_async(REDIS_INSTANCE.hget)(RedisKeys.MATCHES_OPEN, match_id)
+            match_data_json = await REDIS_INSTANCE.hget(RedisKeys.MATCHES, match_id)
             
             if match_data_json:
                 # Decode the JSON string back to a Python dictionary
@@ -222,109 +247,109 @@ class Match:
                 match_data[MatchSessionFields.STATE] = state
                 
                 # Store the updated match data in the Redis hash
-                await sync_to_async(REDIS_INSTANCE.hset)(RedisKeys.MATCHES_OPEN, match_id, json.dumps(match_data))
+                await REDIS_INSTANCE.hset(RedisKeys.MATCHES, match_id, json.dumps(match_data))
         except (json.JSONDecodeError, KeyError) as e:
-            print(f"Error decoding match data: {e}")
+            logger.error(f"Error decoding match data: {e}")
         except Exception as e:
-            print(f"Unexpected error: {e}")
+            logger.error(f"Unexpected error: {e}")
     
     @staticmethod
     async def set_creation_time(match_id: str, creation_time: int) -> None:
         '''Set the creation time of the match'''
         try:
-            # Retrieve the match data from the Redis hash
-            match_data_json = await sync_to_async(REDIS_INSTANCE.hget)(RedisKeys.MATCHES_OPEN, match_id)
+            match_data_json = await REDIS_INSTANCE.hget(RedisKeys.MATCHES, match_id)
             
             if match_data_json:
-                # Decode the JSON string back to a Python dictionary
                 match_data = json.loads(match_data_json)
                 match_data[MatchSessionFields.CREATION_TIME] = creation_time
                 
-                # Store the updated match data in the Redis hash
-                await sync_to_async(REDIS_INSTANCE.hset)(RedisKeys.MATCHES_OPEN, match_id, json.dumps(match_data))
+                await REDIS_INSTANCE.hset(RedisKeys.MATCHES, match_id, json.dumps(match_data))
         except (json.JSONDecodeError, KeyError) as e:
-            print(f"Error decoding match data: {e}")
+            logger.error(f"Error decoding match data: {e}")
         except Exception as e:
-            print(f"Unexpected error: {e}")
+            logger.error(f"Unexpected error: {e}")
+
+    @staticmethod
+    async def set_outcome(match_id: str, outcome: MatchOutcome) -> None:
+        '''Set the outcome of the match'''
+        try:
+            match_data_json = await REDIS_INSTANCE.hget(RedisKeys.MATCHES, match_id)
+            
+            if match_data_json:
+                match_data = json.loads(match_data_json)
+                match_data[MatchSessionFields.OUTCOME] = outcome
+                
+                await REDIS_INSTANCE.hset(RedisKeys.MATCHES, match_id, json.dumps(match_data))
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.error(f"Error decoding match data: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error: {e}")
 
     @staticmethod
     async def connect_user(match_id: str, user_id: str) -> None:
         '''Add the user to the match'''
         try:
-            # Retrieve the match data from the Redis hash
-            match_data_json = await sync_to_async(REDIS_INSTANCE.hget)(RedisKeys.MATCHES_OPEN, match_id)
+            match_data_json = await REDIS_INSTANCE.hget(RedisKeys.MATCHES, match_id)
             
             if match_data_json:
-                # Decode the JSON string back to a Python dictionary
                 match_data = json.loads(match_data_json)
                 connected_users = match_data.get(MatchSessionFields.CONNECTED_USERS, [])
                 
                 if user_id in connected_users:
                     return
 
-                # Add the user to the connected_users list
                 connected_users.append(user_id)
                 match_data[MatchSessionFields.CONNECTED_USERS] = connected_users
                 
-                # Store the updated match data in the Redis hash
-                await sync_to_async(REDIS_INSTANCE.hset)(RedisKeys.MATCHES_OPEN, match_id, json.dumps(match_data))
+                await REDIS_INSTANCE.hset(RedisKeys.MATCHES, match_id, json.dumps(match_data))
         except (json.JSONDecodeError, KeyError) as e:
-            print(f"Error decoding match data: {e}")
+            logger.error(f"Error decoding match data: {e}")
         except Exception as e:
-            print(f"Unexpected error: {e}")
+            logger.error(f"Unexpected error: {e}")
     
     @staticmethod
     async def disconnect_user(match_id: str, user_id: str) -> None:
         '''Remove the user from the match'''
         try:
-            # Retrieve the match data from the Redis hash
-            match_data_json = await sync_to_async(REDIS_INSTANCE.hget)(RedisKeys.MATCHES_OPEN, match_id)
+            match_data_json = await REDIS_INSTANCE.hget(RedisKeys.MATCHES, match_id)
             
             if match_data_json:
-                # Decode the JSON string back to a Python dictionary
                 match_data = json.loads(match_data_json)
                 connected_users = match_data.get(MatchSessionFields.CONNECTED_USERS, [])
                 
-                # Remove the user from the connected_users list
                 connected_users.remove(user_id)
                 match_data[MatchSessionFields.CONNECTED_USERS] = connected_users
                 
-                # Store the updated match data in the Redis hash
-                await sync_to_async(REDIS_INSTANCE.hset)(RedisKeys.MATCHES_OPEN, match_id, json.dumps(match_data))
+                await REDIS_INSTANCE.hset(RedisKeys.MATCHES, match_id, json.dumps(match_data))
         except (json.JSONDecodeError, KeyError) as e:
-            print(f"Error decoding match data: {e}")
+            logger.error(f"Error decoding match data: {e}")
         except Exception as e:
-            print(f"Unexpected error: {e}")
+            logger.error(f"Unexpected error: {e}")
     
     @staticmethod
     async def register_user(match_id: str, user_id: str) -> None:
         '''Add the user to the match'''
         logger.info(f"Registering user {user_id} for match {match_id}")
         try:
-            # Retrieve the match data from the Redis hash
-            match_data_json = await sync_to_async(REDIS_INSTANCE.hget)(RedisKeys.MATCHES_OPEN, match_id)
+            match_data_json = await REDIS_INSTANCE.hget(RedisKeys.MATCHES, match_id)
             
             if match_data_json:
-                # Decode the JSON string back to a Python dictionary
                 match_data = json.loads(match_data_json)
                 registered_users = match_data.get(MatchSessionFields.REGISTERED_USERS, [])
                 
                 if user_id in registered_users:
                     return
 
-                # Add the user to the registered_users list
                 registered_users.append(user_id)
                 match_data[MatchSessionFields.REGISTERED_USERS] = registered_users
 
                 logger.info(f"Registered users: {registered_users}")
                 
-                # Store the updated match data in the Redis hash
-                await sync_to_async(REDIS_INSTANCE.hset)(RedisKeys.MATCHES_OPEN, match_id, json.dumps(match_data))
+                await REDIS_INSTANCE.hset(RedisKeys.MATCHES, match_id, json.dumps(match_data))
         except (json.JSONDecodeError, KeyError) as e:
-            print(f"Error decoding match data: {e}")
+            logger.error(f"Error decoding match data: {e}")
         except Exception as e:
-            print(f"Unexpected error: {e}")
-
+            logger.error(f"Unexpected error: {e}")
 
     ###########
     #   BOOL  #
@@ -338,7 +363,7 @@ class Match:
     @staticmethod
     async def exists(match_id: str) -> bool:
         '''Check if the match exists in the Redis database'''
-        return await sync_to_async(REDIS_INSTANCE.hexists)(RedisKeys.MATCHES_OPEN, match_id) == 1
+        return await REDIS_INSTANCE.hexists(RedisKeys.MATCHES, match_id) == 1
     
     @staticmethod
     async def is_user_assigned(match_id: str, user_id: str) -> bool:
@@ -373,25 +398,21 @@ class Match:
     async def increment_reconnection_attempts(match_id: str, user_id: str) -> bool:
         '''Increment the number of reconnection attempts for a user in a match'''
         try:
-            # Retrieve the match data from the MATCHES_OPEN hash
-            match_data_json = await sync_to_async(REDIS_INSTANCE.hget)(RedisKeys.MATCHES_OPEN, match_id)
+            match_data_json = await REDIS_INSTANCE.hget(RedisKeys.MATCHES, match_id)
             
             if match_data_json is None:
                 return False
             
-            # Parse the JSON string to a dictionary
             match_data = json.loads(match_data_json)
             
-            # Increment the reconnection attempts for the user
             if user_id in match_data:
                 match_data[user_id][MatchSessionFields.RECONNECTION_ATTEMPTS] += 1
             else:
                 match_data[user_id] = {MatchSessionFields.RECONNECTION_ATTEMPTS: 1}
             
-            # Store the updated match data back in the MATCHES_OPEN hash
-            await sync_to_async(REDIS_INSTANCE.hset)(RedisKeys.MATCHES_OPEN, match_id, json.dumps(match_data))
+            await REDIS_INSTANCE.hset(RedisKeys.MATCHES, match_id, json.dumps(match_data))
             
             return True
         except Exception as e:
-            print(f"Unexpected error: {e}")
+            logger.error(f"Unexpected error: {e}")
             return False

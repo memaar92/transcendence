@@ -1,7 +1,8 @@
 from ..services.redis_service.match import Match as rsMatch
+from ..services.redis_service.user import User as rsUser
 from ..services.redis_service.pub_sub_manager import PubSubManager as rsPubSub
 from ..services.redis_service.constants import REDIS_INSTANCE
-from ..utils.states import MatchState
+from ..services.redis_service.constants import MatchState, UserGameStatus, MatchOutcome
 from uuid import uuid4
 from threading import Thread
 import time
@@ -21,7 +22,7 @@ def run_async_in_thread(async_func, *args):
 class MatchMaker:
 
     REGISTRATION_TIMEOUT = 5 # seconds, time to wait for both users to register for a match
-    GAMESTART_TIMEOUT = 10 # seconds, time to wait for the game to start after registration
+    GAMESTART_TIMEOUT = 2 # seconds, time to wait for the game to start after registration
     pubsub = REDIS_INSTANCE.pubsub()
 
     def __init__(self):
@@ -58,7 +59,7 @@ class MatchMaker:
             current_time = time.time()
             if current_time - creation_time > cls.REGISTRATION_TIMEOUT:
                 logger.info(f"Match {match_id} between {assigned_users[0]} and {assigned_users[1]} did not register in time and will be deleted")
-                rsPubSub.publish_to_channel(f"{match_id}:registration", "registration_timeout")
+                await rsPubSub.publish_to_channel(f"{match_id}:registration", "registration_timeout")
                 await rsMatch.delete(match_id)
                 break
             if await rsMatch.Users.Registered.registration_complete(match_id):
@@ -80,10 +81,31 @@ class MatchMaker:
             current_time = time.time()
             if current_time - creation_time > cls.GAMESTART_TIMEOUT:
                 logger.info(f"Match {match_id} between {assigned_users[0]} and {assigned_users[1]} did not start in time and will be deleted")
-                rsPubSub.publish_to_channel(f"{match_id}:registration", "registration_timeout")
+                await rsPubSub.publish_to_channel(f"{match_id}:registration", "registration_timeout")
                 await rsMatch.delete(match_id)
                 break
             if await rsMatch.get_state(match_id) != MatchState.INITIALIZING:
+                break
+            await asyncio.sleep(1)
+
+    @classmethod
+    async def _monitor_game_connections(cls, match_id: str) -> None:
+        '''Monitor the game connections for a match'''
+        creation_time = await rsMatch.get_creation_time(match_id)
+        if not creation_time:
+            raise cls.MatchError("No creation time found for match")
+        
+        assigned_users = await rsMatch.Users.Assigned.get(match_id)
+        if len(assigned_users) != 2:
+            logger.info(f"Match {match_id} does not have exactly 2 assigned users")
+            return
+        while True:
+            current_time = time.time()
+            if current_time - creation_time > cls.GAMESTART_TIMEOUT:
+                logger.info(f"Match {match_id} between {assigned_users[0]} and {assigned_users[1]} did not start in time: DRAW")
+                await rsPubSub.publish_to_channel(f"MatchOutcome:{match_id}", MatchOutcome.DRAW)
+                break
+            if await rsMatch.Users.Connected.count(match_id) > 0:
                 break
             await asyncio.sleep(1)
     
@@ -95,8 +117,9 @@ class MatchMaker:
         match_id = str(uuid4())
         await rsMatch.create(match_id, [user_id_1, user_id_2])
 
-        register_thread = Thread(target=run_async_in_thread, args=(cls._monitor_registration_timeout, match_id))
-        register_thread.start()
+        # Schedule the _monitor_game_connections coroutine in the event loop
+        loop = asyncio.get_running_loop()
+        asyncio.run_coroutine_threadsafe(cls._monitor_game_connections(match_id), loop)
 
         return match_id
 
@@ -112,6 +135,7 @@ class MatchMaker:
             raise cls.MatchError("User is not assigned to this match")
         await rsMatch.register_user(match_id, user_id)
         if await rsMatch.Users.Registered.registration_complete(match_id):
+            logger.info(f"Match {match_id} is ready to start")
             await rsMatch.set_state(match_id, MatchState.INITIALIZING)
             await rsMatch.set_creation_time(match_id, time.time())
             game_start_thread = Thread(target=run_async_in_thread, args=(cls._monitor_gamestart_timeout, match_id,))
@@ -121,3 +145,18 @@ class MatchMaker:
     async def is_registration_complete(cls, match_id: str) -> bool:
         '''Check if the registration for a match is complete'''
         return await rsMatch.Users.Registered.registration_complete(match_id)
+    
+    @classmethod
+    async def is_user_available(cls, user_id: str) -> bool:
+        '''Check if a user is available for matchmaking'''
+        return not await rsUser.is_playing(user_id)
+    
+    @classmethod
+    async def lock_user(cls, user_id: str) -> None:
+        '''Lock a user for matchmaking'''
+        await rsUser.set_online_status(user_id, UserGameStatus.IN_QUEUE)
+
+    @classmethod
+    async def unlock_user(cls, user_id: str) -> None:
+        '''Remove a user from the matchmaking queue'''
+        await rsUser.set_online_status(user_id, UserGameStatus.AVAILABLE)

@@ -1,83 +1,85 @@
 from .constants import RedisKeys, MatchSessionFields, REDIS_INSTANCE
-from typing import Any, Callable, Optional
-from asgiref.sync import sync_to_async
+from .key_creation import KeyCreation
+from typing import Any, Callable, Optional, Dict, List, Tuple
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
+import logging
 
+logger = logging.getLogger("PongConsumer")
 
 class PubSubManager:
-    
+    '''Class to manage Redis Pub/Sub operations'''
+
+    _tasks: Dict[str, List[Tuple[Callable[[Any], None], asyncio.Task]]] = {}
+
     @staticmethod
     async def publish_to_channel(channel: str, message: str) -> None:
         '''Publish a message to a Redis channel'''
         try:
-            await sync_to_async(REDIS_INSTANCE.publish)(channel, message)
+            await REDIS_INSTANCE.publish(channel, message)
         except Exception as e:
-            print(f"Error publishing to channel: {e}")
+            logger.error(f"Error publishing to channel: {e}")
+
+    @staticmethod
+    async def subscribe_to_channel(redis_instance, channel: str, callback: Callable[[Any], None]) -> None:
+        logger.info(f"Subscribe to channel triggered")
+        pubsub = redis_instance.pubsub()
+        await pubsub.subscribe(channel)
     
+        async def message_listener():
+            logger.info(f"Subscribed to channel: {channel}")
+            while True:
+                message = await pubsub.get_message(ignore_subscribe_messages=True)
+                if message:
+                    logger.info(f"Received message: {message}")
+                    await callback(message)
+                await asyncio.sleep(0.01)  # Sleep briefly to avoid busy-waiting
+    
+        if channel not in PubSubManager._tasks:
+            task = asyncio.create_task(message_listener())
+            PubSubManager._tasks[channel] = [(callback, task)]
+        else:
+            logger.info(f"Channel {channel} already has a task, skipping creation of a new one.")
+
     @staticmethod
-    async def subscribe_to_channel(
-        pubsub: Any, 
-        channel: str, 
-        external_handler: Optional[Callable[[Any], None]] = None
-    ) -> None:
-        '''Subscribe to a Redis channel and handle messages with an external handler'''
+    async def unsubscribe_from_channel(redis_instance, channel: str, callback: Callable[[Any], None]) -> None:
+        '''Unsubscribe a specific callback from a Redis channel'''
+        pubsub = redis_instance.pubsub()
+        logger.info(f"Unsubscribing from channel: {channel}")
         try:
-            await sync_to_async(pubsub.subscribe)(channel)
-            print(f"Subscribed to channel: {channel}")
-
-            # Run the listener in a separate thread
-            loop = asyncio.get_event_loop()
-            with ThreadPoolExecutor() as pool:
-                await loop.run_in_executor(pool, PubSubManager._listen_to_channel, pubsub, external_handler)
+            if channel in PubSubManager._tasks:
+                tasks = PubSubManager._tasks[channel]
+                for cb, task in tasks:
+                    if cb == callback:
+                        task.cancel()
+                        try:
+                            await task
+                        except asyncio.CancelledError:
+                            logger.info(f"Task for channel {channel} with callback {callback} cancelled")
+                        tasks.remove((cb, task))
+                        break
+                if not tasks:
+                    await pubsub.unsubscribe(channel)
+                    logger.info(f"Unsubscribed from channel: {channel}")
+                    del PubSubManager._tasks[channel]
         except Exception as e:
-            print(f"Error subscribing to channel: {e}")
-
-    @staticmethod
-    def _listen_to_channel(pubsub: Any, external_handler: Optional[Callable[[Any], None]]) -> None:
-        '''Blocking listener for Redis channel to be run in a separate thread'''
-        handler = external_handler if external_handler else PubSubManager.message_handler
-        for message in pubsub.listen():
-            # Running the handler in the event loop
-            asyncio.run(handler(message))
-
-    @staticmethod
-    async def unsubscribe_from_channel(pubsub: Any, channel: str) -> None:
-        '''Unsubscribe from a Redis channel'''
-        try:
-            await sync_to_async(pubsub.unsubscribe)(channel)
-            print(f"Unsubscribed from channel: {channel}")
-        except Exception as e:
-            print(f"Error unsubscribing from channel: {e}")
+            logger.error(f"Error unsubscribing from channel: {e}")
 
     @staticmethod
     async def publish_match_state_channel(match_id: str, state: str) -> None:
         '''Publish the match state to the Redis channel'''
-        channel = f"{RedisKeys.MATCHES_OPEN}:{match_id}:{MatchSessionFields.STATE}"
+        channel = KeyCreation.create_match_session_key(match_id, MatchSessionFields.STATE)
         await PubSubManager.publish_to_channel(channel, state)
 
     @staticmethod
-    async def subscribe_to_match_state_channel(pubsub: Any, match_id: str, external_handler: Optional[Callable[[Any], None]] = None) -> None:
+    async def subscribe_to_match_state_channel(redis_instance: Any, match_id: str, external_handler: Optional[Callable[[Any], None]] = None) -> None:
         '''Subscribe to the match state channel'''
-        channel = f"{RedisKeys.MATCHES_OPEN}:{match_id}:{MatchSessionFields.STATE}"
-        await PubSubManager.subscribe_to_channel(pubsub, channel, external_handler)
+        logger.info(f"Subscribing to match state channel for match {match_id}")
+        channel = KeyCreation.create_match_session_key(match_id, MatchSessionFields.STATE)
+        await PubSubManager.subscribe_to_channel(redis_instance, channel, external_handler)
 
     @staticmethod
-    async def unsubscribe_from_match_state_channel(pubsub: Any, match_id: str) -> None:
+    async def unsubscribe_from_match_state_channel(redis_instance: Any, match_id: str) -> None:
         '''Unsubscribe from the match state channel'''
-        channel = f"{RedisKeys.MATCHES_OPEN}:{match_id}:{MatchSessionFields.STATE}"
-        await PubSubManager.unsubscribe_from_channel(pubsub, channel)
-
-    @staticmethod
-    async def message_handler(message: Any) -> None:
-        '''Default message handler'''
-        if message['type'] == 'message':
-            data = message['data']
-            if isinstance(data, bytes):
-                # If data is bytes, decode it to a string
-                data = data.decode('utf-8')
-            elif isinstance(data, int):
-                # If data is an integer, handle it as needed (e.g., convert to string or log it)
-                data = str(data)
-            print(f"Received message: {data}")
-
+        logger.info(f"Unsubscribing from match state channel for match {match_id}")
+        channel = KeyCreation.create_match_session_key(match_id, MatchSessionFields.STATE)
+        await PubSubManager.unsubscribe_from_channel(redis_instance, channel)

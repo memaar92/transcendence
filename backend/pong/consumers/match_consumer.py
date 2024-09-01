@@ -6,7 +6,7 @@ from ..services.redis_service.match import Match as rsMatch
 from ..services.redis_service.user import User as rsUser
 from ..services.redis_service.constants import REDIS_INSTANCE
 from channels.generic.websocket import AsyncWebsocketConsumer
-from ..utils.states import MatchState, UserOnlineStatus
+from ..services.redis_service.constants import MatchState, UserGameStatus
 
 import logging
 logger = logging.getLogger("PongConsumer")
@@ -15,7 +15,7 @@ class MatchConsumer(AsyncWebsocketConsumer):
 
     broadcast_tasks = {}
     broadcast_locks = {}
-    match_states = {}
+    match_state_tasks = {}
 
     MAX_RECONNECT_ATTEMPTS = 3
 
@@ -32,8 +32,11 @@ class MatchConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         # Extracting the match_id from the URL route parameters
         self.match_id = self.scope['url_route']['kwargs']['match_id']
+
+        # Extracting the user_id from the scope
         self.user_id = self.scope["user"].id
 
+        # Check if the connection is valid
         if not await self.is_valid_connection(self.match_id, self.user_id):
             await self.close()
             logger.info(f"User {self.user_id} is not allowed to connect to match {self.match_id}")
@@ -41,44 +44,20 @@ class MatchConsumer(AsyncWebsocketConsumer):
 
         # Initialize pubsub connection
         self.pubsub = REDIS_INSTANCE.pubsub()
-        
-        # Subscribe to the match state channel
-        await rsPubSub.subscribe_to_match_state_channel(self.pubsub, self.match_id)
 
-        # Add the connection to the channel group for this match
-        await self.channel_layer.group_add(self.match_id, self.channel_name)
-
-        # Accept the WebSocket connection
-        await self.accept()
-        self.connection_established = True
-        await rsMatch.increment_reconnection_attempts(self.match_id, self.user_id)
-        logger.info(f"Reconnect attempts for user {self.user_id} in match {self.match_id}: {await rsMatch.get_reconnect_attempts(self.match_id, self.user_id)}")
-        logger.info(f"User {self.user_id} connected to match {self.match_id}")
-
-        # Set user_id, match_id and online status in Redis
-        await rsUser.set_online_status(self.user_id, UserOnlineStatus.PLAYING)
-        await rsUser.set_match_id(self.user_id, self.match_id)
-
-        # Initialize lock for the match_id if not already present
-        if self.match_id not in MatchConsumer.broadcast_locks:
-            MatchConsumer.broadcast_locks[self.match_id] = asyncio.Lock()
-
-        # Create a broadcast task for the match if not already present
-        async with MatchConsumer.broadcast_locks[self.match_id]:
-            if self.match_id not in MatchConsumer.broadcast_tasks:
-                MatchConsumer.broadcast_tasks[self.match_id] = asyncio.create_task(self.broadcast_match_data())
-                MatchConsumer.match_states[self.match_id] = asyncio.create_task(self.state_change_listener())
-            else:
-                await rsPubSub.publish_match_state_channel(self.match_id, MatchState.RUNNING)
+        # Establish the connection and set up the necessary tasks
+        await self._establish_connection()
 
     async def disconnect(self, close_code):
 
+        await rsUser.set_online_status(self.user_id, UserGameStatus.AVAILABLE)
+        
         # Run the disconnect logic only if the connection was established
         if not self.connection_established:
             return
         
         # Handle user disconnecting from the match
-        await rsUser.set_online_status(self.user_id, UserOnlineStatus.ONLINE)
+        await rsUser.set_online_status(self.user_id, UserGameStatus.AVAILABLE)
         logger.info(f"User {self.user_id} disconnected from match {self.match_id}")
         await self.channel_layer.group_discard(self.match_id, self.channel_name)
     
@@ -86,17 +65,12 @@ class MatchConsumer(AsyncWebsocketConsumer):
         if await rsMatch.Users.Connected.count(self.match_id) == 0:
             # Perform necessary cleanup
             logger.info(f"No connected Users left for match {self.match_id}")
-            if self.match_id in MatchConsumer.broadcast_locks:
-                async with MatchConsumer.broadcast_locks[self.match_id]:
-                    if self.match_id in MatchConsumer.broadcast_tasks:
-                        MatchConsumer.broadcast_tasks[self.match_id].cancel()
-                        del MatchConsumer.broadcast_tasks[self.match_id]
-                        del MatchConsumer.match_states[self.match_id]
-                    # Delete the lock for the match_id
-                    del MatchConsumer.broadcast_locks[self.match_id]
+            self._cleanup_match_resources()
         else:
-            await rsPubSub.publish_match_state_channel(self.match_id, MatchState.PAUSED)
-            logger.info(f"Match {self.match_id} is paused")
+            if self.current_state != MatchState.FINISHED:
+                await self._change_match_state(MatchState.PAUSED)
+                await rsMatch.disconnect_user(self.match_id, self.user_id)
+                logger.info(f"Match {self.match_id} is {self.current_state}")
 
     async def receive(self, text_data):
         # data = json.loads(text_data)
@@ -113,6 +87,67 @@ class MatchConsumer(AsyncWebsocketConsumer):
         #     }
         # )
         pass
+
+    async def _establish_connection(self):
+        # Add the connection to the channel group for this match
+        await self.channel_layer.group_add(self.match_id, self.channel_name)
+
+        # Accept the WebSocket connection
+        await self.accept()
+        self.connection_established = True
+        await rsMatch.increment_reconnection_attempts(self.match_id, self.user_id)
+        logger.info(f"Reconnect attempts for user {self.user_id} in match {self.match_id}: {await rsMatch.get_reconnect_attempts(self.match_id, self.user_id)}")
+        logger.info(f"User {self.user_id} connected to match {self.match_id}")
+
+        # Set user_id, match_id and online status for connected user in Redis
+        await rsUser.set_online_status(self.user_id, UserGameStatus.PLAYING)
+        await rsUser.set_match_id(self.user_id, self.match_id)
+
+        # Connect the user to the match in Redis
+        await rsMatch.connect_user(self.match_id, self.user_id)
+        logger.info(f"User {self.user_id} connected to match {self.match_id}")
+
+        # Initialize lock for the match_id if not already present
+        if self.match_id not in MatchConsumer.broadcast_locks:
+            MatchConsumer.broadcast_locks[self.match_id] = asyncio.Lock()
+
+        # Create tasks for the match
+        await self._create_tasks()
+
+    async def _create_tasks(self):
+        # Create a broadcast task for the match if not already present
+        async with MatchConsumer.broadcast_locks[self.match_id]:
+            if self.match_id not in MatchConsumer.broadcast_tasks:
+                MatchConsumer.broadcast_tasks[self.match_id] = asyncio.create_task(self.broadcast_match_data())
+                # MatchConsumer.match_state_tasks[self.match_id] = asyncio.create_task(self.state_change_listener())
+                # Subscribe to the match state channel
+                await rsPubSub.subscribe_to_match_state_channel(REDIS_INSTANCE, self.match_id, self.state_change_listener)
+            else:
+                await rsPubSub.publish_match_state_channel(self.match_id, MatchState.RUNNING)
+
+    async def _cleanup_match_resources(self):
+        # Remove the connection from the channel group
+        await self.channel_layer.group_discard(self.match_id, self.channel_name)
+
+        # Set user_id, match_id and online status for connected user in Redis
+        await rsUser.set_online_status(self.user_id, UserGameStatus.AVAILABLE)
+        await rsUser.set_match_id(self.user_id, None)
+
+        # Disconnect the user from the match in Redis
+        await rsMatch.disconnect_user(self.match_id, self.user_id)
+
+        # Unsuscribe from the match state channel
+        await rsPubSub.unsubscribe_from_match_state_channel(REDIS_INSTANCE, self.match_id, self.state_change_listener)
+
+        # Check if there are any listeners left
+        if self.match_id in MatchConsumer.broadcast_locks:
+                async with MatchConsumer.broadcast_locks[self.match_id]:
+                    if self.match_id in MatchConsumer.broadcast_tasks:
+                        MatchConsumer.broadcast_tasks[self.match_id].cancel()
+                        del MatchConsumer.broadcast_tasks[self.match_id]
+                        del MatchConsumer.match_state_tasks[self.match_id]
+                    # Delete the lock for the match_id
+                    del MatchConsumer.broadcast_locks[self.match_id]
 
     async def match_update(self, event):
         # Send match update to WebSocket
@@ -158,15 +193,22 @@ class MatchConsumer(AsyncWebsocketConsumer):
             await asyncio.sleep(0.1)
 
 
+    async def state_change_listener(self, message):
+        print(f"state_change_listener TRIGGERED: {message}")
+        # await rsMatch.set_state(self.match_id, message['data'].decode('utf-8'))
+        logger.info(f"State in redis: {await rsMatch.get_state(self.match_id)}")
+        # loop = asyncio.get_event_loop()
+        # while True:
+        #     message = await loop.run_in_executor(None, self.pubsub.get_message, True, None)
+        #     if message:
+        #         logger.info(f"state_change_listener TRIGGERED: {message}")
+        #         if message['type'] == 'message':
+        #             self.current_state = message['data'].decode('utf-8')
+        #     await asyncio.sleep(0.01)  # Sleep briefly to avoid busy-waiting
 
-    async def state_change_listener(self):
-        loop = asyncio.get_event_loop()
-        while True:
-            message = await loop.run_in_executor(None, self.pubsub.get_message, True, 0.1)
-            if message:
-                logger.info(f"Received message: {message}")
-                if message['type'] == 'message':
-                    self.current_state = message['data'].decode('utf-8')
+    async def _change_match_state(self, state: MatchState):
+        self.current_state = state
+        await rsPubSub.publish_match_state_channel(self.match_id, state)
                         
     async def handle_player_disconnect(self):
         if self.disconnect_timer_task:
@@ -220,7 +262,6 @@ class MatchConsumer(AsyncWebsocketConsumer):
             return False
         
         # User is already connected to a match
-        logger.info(f"USER {self.user_id} IS PLAYING: {await rsUser.is_playing(self.user_id)}")
         if await rsUser.is_playing(self.user_id):
             logger.info(f"User {self.user_id} is already connected to a match")
             return False
