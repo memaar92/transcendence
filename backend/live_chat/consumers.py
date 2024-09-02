@@ -120,7 +120,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         if is_new_connection:
             ChatConsumer.online_users.add(self.user_id)
-            await self.broadcast_user_list()
 
     async def disconnect(self, close_code):
         if hasattr(self, 'user_group_name'):
@@ -158,10 +157,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 case 'setup':
                     self.context = data.get('type', None)
                     await self.send(text_data=json.dumps({'type': 'user_id', 'user_id': self.user_id, 'context': self.context}))
-                    await self.broadcast_user_list()
                     if self.context == 'home':
                         await self.send_friends_info(self.user_id)
                         await self.send_unread_messages_count(self.user_id)
+                    await self.broadcast_user_list()
                 case _:
                     await self.send(text_data=json.dumps({
                         'type': 'error',
@@ -334,7 +333,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def update_messages_status(self, sender_id, receiver_id):
         print(f"Updating messages status for {sender_id} and {receiver_id}")
-        Message.objects.filter(Q(sender_id=sender_id, receiver_id=receiver_id)).update(status='read')
+        Message.objects.filter(Q(sender_id=receiver_id, receiver_id=sender_id)).update(status='read')
 
     @database_sync_to_async
     def get_chat_history(self, sender_id, receiver_id):

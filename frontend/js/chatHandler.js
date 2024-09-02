@@ -82,15 +82,9 @@ class ChatHandler {
     switch (content.type) {
       case 'user_list':
         this.displayUserList(content.users);
-        this.onlineUserIds = content.users.map(user => user.id); // Update online user IDs
-        if (this.friendsListReceived) {
-          this.updateFriendStatusIndicators(); // Update status indicators if friends_list has been received
-        }
         break;
       case 'friends_list':
         this.displayChatsList(content.friends);
-        this.friendsListReceived = true; // Set the flag to true
-        this.updateFriendStatusIndicators(); // Update status indicators
         break;
       case 'unread_counts':
         this.updateUnreadMessages(content);
@@ -125,6 +119,9 @@ class ChatHandler {
   }
 
   showLatestMessage(message, senderId, friendId) {
+    if (document.querySelector('.no-chats-message')) {
+      document.querySelector('.no-chats-message').remove();
+    }
     const chatItem = document.querySelector(`.chats-item[data-id="${friendId}"]`);
     console.log(friendId);
     if (chatItem) {
@@ -312,6 +309,7 @@ class ChatHandler {
     } else {
       userListContainer.style.overflowY = 'hidden';
     }
+    this.updateFriendStatusIndicators();
   }
 
   updateFriendStatusIndicators() {
@@ -356,6 +354,12 @@ class ChatHandler {
     friendsListElement.innerHTML = '';
     chatsListElement.innerHTML = '';
   
+    if (friends.length === 0) {
+      const noFriendsMessage = document.createElement('div');
+      noFriendsMessage.className = 'no-friends-message';
+      noFriendsMessage.textContent = 'No friends available';
+      friendsListElement.appendChild(noFriendsMessage);
+    }
     friends.forEach((friend) => {
       if (friend.chat) {
         const chatItem = document.createElement('div');
@@ -418,7 +422,13 @@ class ChatHandler {
   
       friendsListElement.appendChild(friendItem);
     });
-  
+    
+    if (document.querySelector('.chats-scroll-container').children.length === 0) {
+      const noChatsMessage = document.createElement('div');
+      noChatsMessage.className = 'no-chats-message';
+      noChatsMessage.textContent = 'No chats available';
+      document.querySelector('.chats-scroll-container').appendChild(noChatsMessage);
+    }
     this.ws.send(JSON.stringify({
       'type': 'message_preview',
       'context': 'home'
