@@ -27,7 +27,7 @@ h2 {
   margin-bottom: 28px;
 }
 
-.mainButton {
+.button {
   margin-top: 16px;
   margin-bottom: 21px;
   background-color: var(--color-accent);
@@ -43,6 +43,11 @@ h2 {
   box-shadow: 0 4px 0px 0px var(--color-accent-shadow);
 }
 
+.button:active {
+  box-shadow: none;
+  transform: translateY(4px);
+}
+
 .secondaryButton {
   margin-top: 16px;
 }
@@ -51,19 +56,15 @@ h2 {
   color: var(--color-text);
 }
 
-.mainButton:hover {
-  background-color: #9565e3;
-}
-
-.mainButton:active {
-  box-shadow: none;
-  transform: translateY(4px);
-}
-
 input {
   border-radius: 8px;
   padding: 12px;
   font-family: "Inter";
+}
+
+input:focus {
+  outline: var(--color-accent) solid 2px;
+  box-shadow: none;
 }
 
 .menu {
