@@ -14,6 +14,8 @@ body {
   --color-background: #202021;
   --color-accent: #7a35ec;
   --color-accent-shadow: #651bdd;
+  --color-deny: #EC3535;
+  --color-confirm: #27D66A;
 }
 
 h1 {
@@ -48,6 +50,28 @@ h2 {
   transform: translateY(4px);
 }
 
+.confirm-button {
+  background-color: var(--color-confirm);
+  box-shadow: 0 4px 0px 0px #189548;
+  height: 3rem;
+  width: 3rem;
+}
+
+.confirm-button:hover {
+  background-color: #49b271;
+}
+
+.cancel-button {
+  background-color: var(--color-deny);
+  box-shadow: 0 4px 0px 0px #941F1F;
+  height: 3rem;
+  width: 3rem;
+}
+
+.cancel-button:hover {
+  background-color: #b86363;
+}
+
 .secondaryButton {
   margin-top: 16px;
 }
@@ -65,6 +89,26 @@ input {
 input:focus {
   outline: var(--color-accent) solid 2px;
   box-shadow: none;
+}
+
+input:disabled {
+  background-color: white;
+  color: gray;
+  border: var(--color-accent) solid 0px;
+}
+
+.dangerous-button {
+  color: var(--color-text);
+  background-color: var(--color-background);
+  border: var(--color-deny) solid 2px;
+  border-radius: 1rem;
+}
+
+.dangerous-button:hover {
+  transition: all 0.4s ease;
+  color: var(--color-background);
+  background-color: var(--color-deny);
+
 }
 
 .menu {
@@ -121,12 +165,12 @@ input:focus {
 
 #codeForm {
     display: flex;
-    justify-content: center; /* Center inputs horizontally */
-    gap: 40px; /* Space between inputs */
-    width: 100%; /* Full width of the container */
-    max-width: 90vw; /* Max width relative to viewport width */
+    justify-content: center;
+    gap: 40px;
+    width: 100%;
+    max-width: 90vw;
     margin-bottom: 20px;
-    box-sizing: border-box; /* Include padding and border in element's total width and height */
+    box-sizing: border-box;
 }
 
 .code-input {
@@ -146,12 +190,18 @@ input:focus {
 }
 
 .profile-container {
+  cursor: default;
   position: absolute;
-  top: 10px; /* Adjust the top position */
-  right: 10px; /* Adjust the right position */
+  top: 10px;
+  right: 10px;
   display: flex;
   align-items: center;
-  gap: 10px; /* Space between photo and username */
+  gap: 10px;
+}
+
+.profile-container:hover {
+  transform: scale(1.1);
+  transition: all 0.4s ease;
 }
 
 .profile-photo {
