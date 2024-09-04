@@ -3,7 +3,6 @@ import { router } from "./app.js";
 
 document.getElementById("login-form-submit").addEventListener("click", async (e) => {
   e.preventDefault();
-  // TODO check password strength
   if (!localStorage.getItem("email")) {
     console.log(localStorage.getItem("email"));
     alert("Error: No email provided");
@@ -17,8 +16,7 @@ document.getElementById("login-form-submit").addEventListener("click", async (e)
   const user_info = await result.json();
   console.log("uid " + user_info["id"]);
   if (result.ok) {
-    localStorage.setItem("uid", user_info["id"]);
-    router.navigate("/email_verification");
+    router.navigate("/main_menu");
   } else {
     const wrong_password = document.getElementById('wrong_password');
     let bsAlert = new bootstrap.Toast(wrong_password);
