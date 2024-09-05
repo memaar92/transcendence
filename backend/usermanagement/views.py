@@ -95,12 +95,39 @@ class EditUserView(generics.RetrieveUpdateDestroyAPIView):
         return Response(serializer.data)
 
     @extend_schema(
+        request=UserSerializer,
         responses={
             status.HTTP_200_OK: UserSerializer,
-            status.HTTP_400_BAD_REQUEST: OpenApiResponse(description="Please check arguments"),
+            status.HTTP_400_BAD_REQUEST: OpenApiTypes.OBJECT,
             status.HTTP_401_UNAUTHORIZED: OpenApiResponse(description="Please login"),
             status.HTTP_404_NOT_FOUND: OpenApiResponse(description="User not found")
         },
+        examples=[
+            OpenApiExample(
+                'Invalid Email',
+                summary="Invalid Email",
+                description="Custom user with this email already exists",
+                value={
+                    "message": "Please check arguments",
+                    "errors": {"email": ["custom user with this email already exists"]}
+                },
+                request_only=False,
+                response_only=True,
+                status_codes=['400']
+            ),
+            OpenApiExample(
+                'Invalid displayname',
+                summary="Invalid displayname",
+                description="Ensure this field has no more than 20 characters.",
+                value={
+                    "message": "Please check arguments",
+                    "errors": {"displayname": ["Ensure this field has no more than 20 characters."]}
+                },
+                request_only=False,
+                response_only=True,
+                status_codes=['400']
+            ),
+        ],
         description="Update user information."
     )
 
