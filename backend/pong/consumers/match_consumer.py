@@ -6,7 +6,7 @@ from ..services.redis_service.match import Match as rsMatch
 from ..services.redis_service.user import User as rsUser
 from ..services.redis_service.constants import REDIS_INSTANCE
 from channels.generic.websocket import AsyncWebsocketConsumer
-from ..services.redis_service.constants import MatchState, UserGameStatus
+from ..services.redis_service.constants import MatchState, UserGameStatus, MatchOutcome
 
 import logging
 logger = logging.getLogger("PongConsumer")
@@ -57,19 +57,21 @@ class MatchConsumer(AsyncWebsocketConsumer):
             return
         
         # Handle user disconnecting from the match
+        logger.info(f"Users left in match {self.match_id}: {await rsMatch.Users.Connected.count(self.match_id)}")
         await rsUser.set_online_status(self.user_id, UserGameStatus.AVAILABLE)
         logger.info(f"User {self.user_id} disconnected from match {self.match_id}")
         await self.channel_layer.group_discard(self.match_id, self.channel_name)
+        await rsMatch.disconnect_user(self.match_id, self.user_id)
     
         # Check if there are any listeners left
         if await rsMatch.Users.Connected.count(self.match_id) == 0:
             # Perform necessary cleanup
             logger.info(f"No connected Users left for match {self.match_id}")
+            await rsMatch.set_state(self.match_id, MatchState.FINISHED)
             self._cleanup_match_resources()
         else:
             if self.current_state != MatchState.FINISHED:
                 await self._change_match_state(MatchState.PAUSED)
-                await rsMatch.disconnect_user(self.match_id, self.user_id)
                 logger.info(f"Match {self.match_id} is {self.current_state}")
 
     async def receive(self, text_data):
@@ -97,7 +99,6 @@ class MatchConsumer(AsyncWebsocketConsumer):
         self.connection_established = True
         await rsMatch.increment_reconnection_attempts(self.match_id, self.user_id)
         logger.info(f"Reconnect attempts for user {self.user_id} in match {self.match_id}: {await rsMatch.get_reconnect_attempts(self.match_id, self.user_id)}")
-        logger.info(f"User {self.user_id} connected to match {self.match_id}")
 
         # Set user_id, match_id and online status for connected user in Redis
         await rsUser.set_online_status(self.user_id, UserGameStatus.PLAYING)
@@ -123,7 +124,7 @@ class MatchConsumer(AsyncWebsocketConsumer):
                 # Subscribe to the match state channel
                 await rsPubSub.subscribe_to_match_state_channel(REDIS_INSTANCE, self.match_id, self.state_change_listener)
             else:
-                await rsPubSub.publish_match_state_channel(self.match_id, MatchState.RUNNING)
+                await rsMatch.set_state(self.match_id, MatchState.RUNNING)
 
     async def _cleanup_match_resources(self):
         # Remove the connection from the channel group
@@ -131,10 +132,7 @@ class MatchConsumer(AsyncWebsocketConsumer):
 
         # Set user_id, match_id and online status for connected user in Redis
         await rsUser.set_online_status(self.user_id, UserGameStatus.AVAILABLE)
-        await rsUser.set_match_id(self.user_id, None)
-
-        # Disconnect the user from the match in Redis
-        await rsMatch.disconnect_user(self.match_id, self.user_id)
+        # await rsUser.set_match_id(self.user_id, None)
 
         # Unsuscribe from the match state channel
         await rsPubSub.unsubscribe_from_match_state_channel(REDIS_INSTANCE, self.match_id, self.state_change_listener)
@@ -194,7 +192,7 @@ class MatchConsumer(AsyncWebsocketConsumer):
 
 
     async def state_change_listener(self, message):
-        print(f"state_change_listener TRIGGERED: {message}")
+        logger.info(f"state_change_listener TRIGGERED: {message}")
         # await rsMatch.set_state(self.match_id, message['data'].decode('utf-8'))
         logger.info(f"State in redis: {await rsMatch.get_state(self.match_id)}")
         # loop = asyncio.get_event_loop()
@@ -208,9 +206,10 @@ class MatchConsumer(AsyncWebsocketConsumer):
 
     async def _change_match_state(self, state: MatchState):
         self.current_state = state
-        await rsPubSub.publish_match_state_channel(self.match_id, state)
+        await rsMatch.set_state(self.match_id, state)
                         
     async def handle_player_disconnect(self):
+        logger.info("Disconnect handler TRIGGERED")
         if self.disconnect_timer_task:
             self.disconnect_timer_task.cancel()
         
@@ -233,7 +232,8 @@ class MatchConsumer(AsyncWebsocketConsumer):
                 'data': {'state': 'finished', 'winner': self.user_id}
             }
         )
-        await rsPubSub.publish_match_state_channel(self.match_id, MatchState.FINISHED)
+        await rsMatch.set_outcome(self.match_id, MatchOutcome.NORMAL)
+        await self._change_match_state(MatchState.FINISHED)
         await self.disconnect(1000)
 
     async def is_valid_connection(self, match_id, user_id):

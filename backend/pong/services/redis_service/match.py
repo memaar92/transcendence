@@ -4,6 +4,7 @@ import time
 from typing import Any, Callable, List, Optional, Union
 from .constants import RedisKeys, MatchSessionFields, MatchState, MatchOutcome, REDIS_INSTANCE, GeneralChannels
 from .pub_sub_manager import PubSubManager as rsPubSub
+from redis.asyncio import WatchError
 
 logger = logging.getLogger("PongConsumer")
 
@@ -167,11 +168,19 @@ class Match:
             # Parse the JSON string to a dictionary
             match_data = json.loads(match_data_json)
             
-            # Get the reconnection attempts for the user
-            user_data = match_data.get(user_id)
-            if user_data is None:
+            # Ensure match_data is a dictionary
+            if not isinstance(match_data, dict):
+                logger.error(f"Invalid match data format for match_id: {match_id}")
                 return None
             
+            # Get the user data
+            user_data = match_data.get(user_id)
+            
+            # Ensure user_data is a dictionary
+            if not isinstance(user_data, dict):
+                return None
+            
+            # Get the reconnection attempts for the user
             return user_data.get(MatchSessionFields.RECONNECTION_ATTEMPTS, 0)
         except Exception as e:
             logger.error(f"Unexpected error: {e}")
@@ -216,15 +225,15 @@ class Match:
             # Serialize match_data to JSON string
             match_data_json = json.dumps(match_data)
     
-            # Publish the match data to the NEW_MATCH channel
-            await rsPubSub.publish_to_channel(GeneralChannels.NEW_MATCH, match_data_json)
-    
             # Add reconnection_attempts for each connected user
             for user in assigned_users:
                 match_data[user] = {MatchSessionFields.RECONNECTION_ATTEMPTS: -1} # -1 indicates the user is not reconnected
     
             # Store the match data in the MATCHES hash
             await REDIS_INSTANCE.hset(RedisKeys.MATCHES, match_id, json.dumps(match_data))
+
+            # Publish the match data to the NEW_MATCH channel
+            await rsPubSub.publish_to_channel(GeneralChannels.NEW_MATCH, match_data_json)
         except Exception as e:
             logger.error(f"Unexpected error: {e}")
 
@@ -248,6 +257,9 @@ class Match:
                 
                 # Store the updated match data in the Redis hash
                 await REDIS_INSTANCE.hset(RedisKeys.MATCHES, match_id, json.dumps(match_data))
+
+                # Publish the updated match state to the MATCH_STATE channel
+                await rsPubSub.publish_match_state_channel(match_id, state)
         except (json.JSONDecodeError, KeyError) as e:
             logger.error(f"Error decoding match data: {e}")
         except Exception as e:
@@ -289,19 +301,42 @@ class Match:
     async def connect_user(match_id: str, user_id: str) -> None:
         '''Add the user to the match'''
         try:
-            match_data_json = await REDIS_INSTANCE.hget(RedisKeys.MATCHES, match_id)
-            
-            if match_data_json:
-                match_data = json.loads(match_data_json)
-                connected_users = match_data.get(MatchSessionFields.CONNECTED_USERS, [])
-                
-                if user_id in connected_users:
-                    return
-
-                connected_users.append(user_id)
-                match_data[MatchSessionFields.CONNECTED_USERS] = connected_users
-                
-                await REDIS_INSTANCE.hset(RedisKeys.MATCHES, match_id, json.dumps(match_data))
+            async with REDIS_INSTANCE.pipeline(transaction=True) as pipe:
+                while True:
+                    try:
+                        # Watch the match data for changes
+                        await pipe.watch(RedisKeys.MATCHES)
+                        
+                        # Retrieve the match data
+                        match_data_json = await pipe.hget(RedisKeys.MATCHES, match_id)
+                        
+                        if match_data_json:
+                            match_data = json.loads(match_data_json)
+                            connected_users = match_data.get(MatchSessionFields.CONNECTED_USERS, [])
+                            
+                            logger.info(f"CONNECTED USERS BEFORE: {connected_users}")
+                            
+                            if user_id in connected_users:
+                                logger.info(f"User {user_id} is already connected to match {match_id}")
+                                return
+                            
+                            connected_users.append(user_id)
+                            match_data[MatchSessionFields.CONNECTED_USERS] = connected_users
+                            
+                            # Start a transaction
+                            pipe.multi()
+                            pipe.hset(RedisKeys.MATCHES, match_id, json.dumps(match_data))
+                            
+                            # Execute the transaction
+                            await pipe.execute()
+                            logger.info(f"CONNECTED USERS AFTER: {connected_users}")
+                            break
+                        else:
+                            logger.warning(f"No match data found for match_id: {match_id}")
+                            break
+                    except WatchError:
+                        # If the watched key changed, retry the transaction
+                        continue
         except (json.JSONDecodeError, KeyError) as e:
             logger.error(f"Error decoding match data: {e}")
         except Exception as e:
@@ -405,8 +440,15 @@ class Match:
             
             match_data = json.loads(match_data_json)
             
+            if not isinstance(match_data, dict):
+                logger.error(f"Invalid match data format for match_id: {match_id}")
+                return False
+            
             if user_id in match_data:
-                match_data[user_id][MatchSessionFields.RECONNECTION_ATTEMPTS] += 1
+                if MatchSessionFields.RECONNECTION_ATTEMPTS in match_data[user_id]:
+                    match_data[user_id][MatchSessionFields.RECONNECTION_ATTEMPTS] += 1
+                else:
+                    match_data[user_id][MatchSessionFields.RECONNECTION_ATTEMPTS] = 1
             else:
                 match_data[user_id] = {MatchSessionFields.RECONNECTION_ATTEMPTS: 1}
             
