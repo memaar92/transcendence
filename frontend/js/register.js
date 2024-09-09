@@ -1,6 +1,19 @@
 import { api } from "./api.js";
 import { router } from "./app.js";
 
+let password = document.getElementById("password");
+let power = document.getElementById("power-point");
+password.oninput = function () {
+    let result = zxcvbn(password.value);
+    let widthPower = 
+        ["1%", "25%", "50%", "75%", "100%"];
+    let colorPower = 
+        ["#D73F40", "#DC6551", "#F2B84F", "#BDE952", "#3ba62f"];
+
+    power.style.width = widthPower[result.score];
+    power.style.backgroundColor = colorPower[result.score];
+};
+
 document.getElementById("register").addEventListener("click", async (e) => {
   e.preventDefault();
   // TODO check password strength

@@ -200,11 +200,11 @@ input:disabled {
 }
 
 .profile-container:hover {
-  transform: scale(1.1);
+  transform: scale(1.05);
   transition: all 0.4s ease;
 }
 
-.profile-photo {
+#profile-photo-icon {
   width: 50px;
   height: 50px;
   border-radius: 50%;
@@ -214,4 +214,14 @@ input:disabled {
 .username {
   font-size: 16px;
   color: #333;
+}
+
+#content {
+  overflow-x: auto;
+  grid-area: content;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
 }

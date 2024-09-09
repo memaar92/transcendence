@@ -15,7 +15,10 @@ const routes = [
   { path: "/play", templateUrl: "/routes/play.html" },
   { path: "/game_local", templateUrl: "/routes/game_local.html" },
   { path: "/game", templateUrl: "/routes/game.html" },
-  { path: "/profile", templateUrl: "/routes/profile.html" },
+  { path: "/account", templateUrl: "/routes/account.html" },
+  { path: "/security", templateUrl: "/routes/security.html" },
+  { path: "/appearance", templateUrl: "/routes/appearance.html" },
+  { path: "/stats", templateUrl: "/routes/stats.html" },
 ];
 
 export const router = new Router(routes);

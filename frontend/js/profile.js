@@ -1,30 +1,31 @@
 import { api } from "./api.js";
 import { router } from "./app.js";
 
-const result = await api.get("/profile/");
+await update_userinfo()
 
-const profile_info = await result.json()
-
-const photo = document.getElementById("profile-photo");
-photo.src = profile_info["profile_picture"];
-
-document.getElementById('displayname').value = profile_info["displayname"];
-
-const email = document.getElementById("email");
-email.value = profile_info["email"];
-
-document.getElementsByClassName("back-button")[0].addEventListener("click", async (e) => {
-    e.preventDefault();
-    router.handlePopState();
+document.getElementById("back").addEventListener("click", async (e) => {
+  console.log("going back");
+  history.back();
 });
 
+document.getElementById("upload-photo").addEventListener("change", async (e) => {
+  let photo = document.getElementById("upload-photo").files[0];
+  let formData = new FormData();
+      
+  formData.append("profile_picture", photo);
+  await fetch('/api/profile/', {method: "PATCH", body: formData});
+  
+  console.log("uploading photo");
+  await update_userinfo();
+});
 
 document.body.addEventListener('click', async function (event) {
   const target = event.target;
   const form = target.closest('form');
 
   if (!form) return;
-
+  if (form.id == "picture") return;
+  
   const editBtn = form.querySelector('.edit-button');
   const confirmBtn = form.querySelector('.confirm-button');
   const cancelBtn = form.querySelector('.cancel-button');
@@ -41,24 +42,74 @@ document.body.addEventListener('click', async function (event) {
       const result = await api.patch("/profile/", {
         displayname: form.querySelector('input').value,
       });
+      if (result.status == 400)
+      {
+        await result.json()
+          .then(data => {
+            if (data.errors) {
+              showAlert(JSON.stringify(data.errors));
+            } else {
+              showAlert('No errors found');
+            }
+          })
+          .catch(error => {
+            showAlert(`Error parsing JSON: ${error.message}`);
+          });
+
+      }
       console.log(await result.json());
     }
     if (form.querySelector('input').id == "email") {
       const result = await api.patch("/profile/", {
         email: form.querySelector('input').value,
       });
+      if (result.status == 400)
+        {
+          await result.json()
+            .then(data => {
+              if (data.errors) {
+                showAlert(JSON.stringify(data.errors));
+              } else {
+                showAlert('No errors found');
+              }
+            })
+            .catch(error => {
+              showAlert(`Error parsing JSON: ${error.message}`);
+            });
+
+        }
       console.log(await result.json());
     }
     resetButtons(form, editBtn, confirmBtn, cancelBtn);
   } else if (target.closest('.cancel-button')) {
     resetButtons(form, editBtn, confirmBtn, cancelBtn);
   }
+  await update_userinfo()
 });
 
 document.getElementById("delete").addEventListener('click', async function (event) {
   const result = await api.delete("/profile/");
+  router.navigate("/home")
   event.preventDefault();
 });
+
+function showAlert(message) {
+  const alertContainer = document.getElementById('alertContainer');
+  
+  const alertElement = document.createElement('div');
+  alertElement.classList.add('alert', 'alert-danger', 'alert-dismissible', 'fade', 'show');
+  alertElement.setAttribute('role', 'alert');
+  
+  alertElement.innerHTML = `
+    ${message}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  `;
+  
+  alertContainer.appendChild(alertElement);
+  
+  // Initialize the Bootstrap alert
+  new bootstrap.Alert(alertElement);
+}
 
 function resetButtons(form, editBtn, confirmBtn, cancelBtn) {
   form.querySelector('input').disabled = true;
@@ -67,4 +118,18 @@ function resetButtons(form, editBtn, confirmBtn, cancelBtn) {
   editBtn.style.display = 'inline-block';
   confirmBtn.style.display = 'none';
   cancelBtn.style.display = 'none';
+}
+
+async function update_userinfo() {
+  console.log("updating user_info");
+  const result = await api.get("/profile/");
+  const profile_info = await result.json()
+
+  const photo = document.getElementById("profile-photo");
+  photo.src = profile_info["profile_picture"];
+
+  document.getElementById('displayname').value = profile_info["displayname"];
+
+  const email = document.getElementById("email");
+  email.value = profile_info["email"];
 }

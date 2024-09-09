@@ -82,6 +82,9 @@ class Router {
         const parser = new DOMParser();
         const content = parser.parseFromString(html, "text/html");
 
+        const oldScripts = document.querySelectorAll("body script");
+        oldScripts.forEach((script) => script.remove());
+
         this.app.innerHTML = "";
 
         Array.from(content.body.childNodes).forEach((node) => {
@@ -91,8 +94,14 @@ class Router {
         const scripts = content.querySelectorAll("script");
         scripts.forEach((oldScript) => {
           const newScript = document.createElement("script");
-          newScript.src = oldScript.src;
-          newScript.type = "module";
+          if (oldScript.src) {
+            newScript.src = `${oldScript.src}?v=${new Date().getTime()}`; // cache busting
+          } else {
+            newScript.textContent = oldScript.textContent;
+          }
+          newScript.type = oldScript.type || "text/javascript";
+          newScript.defer = oldScript.defer || false;
+          newScript.async = oldScript.async || false;
           document.body.appendChild(newScript);
         });
       } catch (error) {

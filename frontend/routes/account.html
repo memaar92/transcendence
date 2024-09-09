@@ -1,6 +1,6 @@
 <script src="/js/profile.js" type="module"></script>
 <div class="container">
-  <div class="back-button">
+  <div class="back-button" id="back">
     <svg
       width="27"
       height="50"
@@ -19,20 +19,23 @@
     <div class="navigation">
       <ul>
         <li><a id="selected" href="." data-router-link>Account</a></li>
-        <li><a href="/Security" data-router-link>Security</a></li>
-        <li><a href="/Appearance" data-router-link>Appearance</a></li>
-        <li><a href="/Stats" data-router-link>Stats</a></li>
+        <li><a href="/security" data-router-link>Security</a></li>
+        <li><a href="/appearance" data-router-link>Appearance</a></li>
+        <li><a href="/stats" data-router-link>Stats</a></li>
       </ul>
     </div>
     <div id="content">
-      <form class="element">
+      <form class="element" id="picture">
         <p>Profile Picture</p>
+        <div>
         <img
           id="profile-photo"
           src="profile-photo.jpg"
           alt="Profile Photo"
           class="profile-photo"
         />
+        <input class="button edit-button" name="profile_photo" type="file" id="upload-photo" />
+        </div>
       </form>
       <form class="element">
         <label for="displayname">displayname</label>
@@ -187,10 +190,11 @@
           </button>
         </div>
       </form>
-      <form class="element">
+      <div class="element">
         <label for="delete">Delete Account</label>
         <button class="dangerous-button" id="delete">Delete your account</button>
-      </form>
+      </div>
+      <div class="element" id="alertContainer"></div>
     </div>
   </div>
 </div>
