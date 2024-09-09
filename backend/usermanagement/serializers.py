@@ -58,8 +58,7 @@ class TOTPSetupSerializer(serializers.Serializer):
     qr_code = serializers.CharField()
 
 class TOTPVerifySerializer(serializers.Serializer):
-    token = serializers.CharField()
-    refresh = serializers.CharField()
+    code_2fa = serializers.CharField()
 
 class GenerateOTPSerializer(serializers.Serializer):
     id = serializers.IntegerField()
