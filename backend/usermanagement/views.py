@@ -95,12 +95,39 @@ class EditUserView(generics.RetrieveUpdateDestroyAPIView):
         return Response(serializer.data)
 
     @extend_schema(
+        request=UserSerializer,
         responses={
             status.HTTP_200_OK: UserSerializer,
-            status.HTTP_400_BAD_REQUEST: OpenApiResponse(description="Please check arguments"),
+            status.HTTP_400_BAD_REQUEST: OpenApiTypes.OBJECT,
             status.HTTP_401_UNAUTHORIZED: OpenApiResponse(description="Please login"),
             status.HTTP_404_NOT_FOUND: OpenApiResponse(description="User not found")
         },
+        examples=[
+            OpenApiExample(
+                'Invalid Email',
+                summary="Invalid Email",
+                description="Custom user with this email already exists",
+                value={
+                    "message": "Please check arguments",
+                    "errors": {"email": ["custom user with this email already exists"]}
+                },
+                request_only=False,
+                response_only=True,
+                status_codes=['400']
+            ),
+            OpenApiExample(
+                'Invalid displayname',
+                summary="Invalid displayname",
+                description="Ensure this field has no more than 20 characters.",
+                value={
+                    "message": "Please check arguments",
+                    "errors": {"displayname": ["Ensure this field has no more than 20 characters."]}
+                },
+                request_only=False,
+                response_only=True,
+                status_codes=['400']
+            ),
+        ],
         description="Update user information."
     )
 
@@ -253,14 +280,6 @@ class TOTPVerifyView(APIView, CookieCreationMixin):
         # Decode the token to get the user ID
         decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
         user_id = decoded_token.get('user_id')
-        # Get the refresh token from the request data
-        refresh_token = request.data['refresh']
-        if not refresh_token:
-            return Response({'detail': 'Refresh token not provided'}, status=status.HTTP_400_BAD_REQUEST)
-        try:
-            token = RefreshToken(refresh_token)
-        except Exception as e:
-            return Response({'detail': 'Invalid refresh token'}, status=status.HTTP_401_UNAUTHORIZED)
 
         # Get the user using the user ID
         user = get_object_or_404(CustomUser, id=user_id)
@@ -366,7 +385,6 @@ class CustomTokenRefreshView(TokenRefreshView, CookieCreationMixin):
             response.delete_cookie(settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH'], path=settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH_PATH'])
             return response
         response = super().post(request, *args, **kwargs)
-        token.blacklist()
         self.createCookies(response)
         response.data = {'detail': 'Access and refresh tokens successfully created'}
         return response
@@ -568,3 +586,27 @@ class LogoutView(APIView):
             return response
         except Exception as e:
             return Response(status=status.HTTP_400_BAD_REQUEST)
+
+class CheckLoginView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={
+            (200, 'application/json'): {
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'bool', 'enum': ['True']}
+                },
+            },
+            (401, 'application/json'): {
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'string', 'enum': ['Authentication credentials were not provided.']}
+                },
+            },
+        },
+    )
+
+    def get(self, request):
+        # If the token is valid, the user is authenticated, and we return a success response
+        return Response ({"logged-in": True}, status=status.HTTP_200_OK)
