@@ -1,7 +1,7 @@
 import json
 import logging
 import time
-from typing import Any, Callable, List, Optional, Union
+from typing import Any, Callable, List, Optional, Union, Tuple
 from .constants import RedisKeys, MatchSessionFields, MatchState, MatchOutcome, REDIS_INSTANCE, GeneralChannels
 from .pub_sub_manager import PubSubManager as rsPubSub
 from redis.asyncio import WatchError
@@ -187,7 +187,7 @@ class Match:
             return None
     
     @staticmethod
-    async def get_outcome(match_id: str) -> Optional[str]:
+    async def get_outcome(match_id: str) -> Optional[Tuple[str, Optional[str]]]:
         '''Get the outcome of the match'''
         try:
             # Retrieve the match data from the Redis hash
@@ -196,7 +196,17 @@ class Match:
             if match_data_json:
                 # Decode the JSON string back to a Python dictionary
                 match_data = json.loads(match_data_json)
-                return match_data.get(MatchSessionFields.OUTCOME)
+                outcome = match_data.get(MatchSessionFields.OUTCOME)
+                winner_id = match_data.get(MatchSessionFields.WINNER_ID)
+                
+                if outcome is not None:
+                    return outcome, winner_id
+                else:
+                    logger.warning(f"Outcome not found for match_id: {match_id}")
+                    return None
+            else:
+                logger.warning(f"No match data found for match_id: {match_id}")
+                return None
         except (json.JSONDecodeError, KeyError) as e:
             logger.error(f"Error decoding match data: {e}")
         except Exception as e:
@@ -282,7 +292,7 @@ class Match:
             logger.error(f"Unexpected error: {e}")
 
     @staticmethod
-    async def set_outcome(match_id: str, outcome: MatchOutcome) -> None:
+    async def set_outcome(match_id: str, outcome: MatchOutcome, winner_id: str) -> None:
         '''Set the outcome of the match'''
         try:
             match_data_json = await REDIS_INSTANCE.hget(RedisKeys.MATCHES, match_id)
@@ -290,6 +300,7 @@ class Match:
             if match_data_json:
                 match_data = json.loads(match_data_json)
                 match_data[MatchSessionFields.OUTCOME] = outcome
+                match_data[MatchSessionFields.WINNER_ID] = winner_id
                 
                 await REDIS_INSTANCE.hset(RedisKeys.MATCHES, match_id, json.dumps(match_data))
         except (json.JSONDecodeError, KeyError) as e:

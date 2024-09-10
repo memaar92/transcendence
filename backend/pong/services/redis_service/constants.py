@@ -17,6 +17,7 @@ class MatchSessionFields:
     STATE = "state"
     CREATION_TIME = "creation_time"
     OUTCOME = "outcome"
+    WINNER_ID = "winner_id"
     ASSIGNED_USERS = "assigned_users" # List of user IDs assigned to the match
     REGISTERED_USERS = "registered_users" # List of user IDs registered for the match
     CONNECTED_USERS = "connected_users" # List of user IDs connected to the match
