@@ -310,7 +310,7 @@ class TOTPVerifyView(APIView, CookieCreationMixin):
         serializer.is_valid(raise_exception=True)
         totp = pyotp.TOTP(user.totp_secret)
 
-        if totp.verify(serializer.validated_data['token']):
+        if totp.verify(serializer.validated_data['code_2fa']):
             if not user.is_2fa_enabled:
                 user.is_2fa_enabled = True
                 user.save()
