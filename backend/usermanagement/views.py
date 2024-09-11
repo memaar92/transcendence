@@ -172,6 +172,30 @@ class GameHistoryList(APIView):
         description="Retrieve the game history for a specific user. Can be more than one game."
     )
 
+    def get(self, request):
+        auth_header = self.request.headers.get('Authorization')
+        token = auth_header.split(' ')[1]
+        decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+        user_id = decoded_token.get('user_id')
+        user = get_object_or_404(CustomUser, pk=user_id)
+        home_games = Games.objects.filter(home_id=user)
+        visitor_games = Games.objects.filter(visitor_id=user)
+        all_games = home_games | visitor_games
+        games_serializer = GameSerializer(all_games, many=True)
+        return Response(games_serializer.data)
+
+class GameHistoryListUser(APIView):
+    permission_classes = [IsAuthenticated, Check2FA]
+
+    @extend_schema(
+        responses={
+            status.HTTP_200_OK: GameSerializer(many=True),
+            status.HTTP_401_UNAUTHORIZED: OpenApiResponse(description="Please login"),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(description="No CustomUser matches the given query.")
+        },
+        description="Retrieve the game history for a specific user. Can be more than one game."
+    )
+
     def get(self, request, id):
         user = get_object_or_404(CustomUser, pk=id)
         home_games = Games.objects.filter(home_id=user)
@@ -179,7 +203,6 @@ class GameHistoryList(APIView):
         all_games = home_games | visitor_games
         games_serializer = GameSerializer(all_games, many=True)
         return Response(games_serializer.data)
-
 
 class ProfilePictureDeleteView(APIView):
     # not discussed with Wayne yet
@@ -287,7 +310,7 @@ class TOTPVerifyView(APIView, CookieCreationMixin):
         serializer.is_valid(raise_exception=True)
         totp = pyotp.TOTP(user.totp_secret)
 
-        if totp.verify(serializer.validated_data['token']):
+        if totp.verify(serializer.validated_data['code_2fa']):
             if not user.is_2fa_enabled:
                 user.is_2fa_enabled = True
                 user.save()
