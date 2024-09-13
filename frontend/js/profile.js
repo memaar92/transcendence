@@ -4,7 +4,6 @@ import { router } from "./app.js";
 await update_userinfo()
 
 document.getElementById("back").addEventListener("click", async (e) => {
-  console.log("going back");
   history.back();
 });
 
@@ -15,14 +14,13 @@ document.getElementById("upload-photo").addEventListener("change", async (e) => 
   formData.append("profile_picture", photo);
   await fetch('/api/profile/', {method: "PATCH", body: formData});
   
-  console.log("uploading photo");
   await update_userinfo();
 });
 
-document.body.addEventListener('click', async function (event) {
+document.getElementById("content").addEventListener('click', async function (event) {
   const target = event.target;
   const form = target.closest('form');
-
+  
   if (!form) return;
   if (form.id == "picture") return;
   
@@ -121,7 +119,6 @@ function resetButtons(form, editBtn, confirmBtn, cancelBtn) {
 }
 
 async function update_userinfo() {
-  console.log("updating user_info");
   const result = await api.get("/profile/");
   const profile_info = await result.json()
 
