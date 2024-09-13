@@ -33,10 +33,13 @@
 
   display: grid;
   grid-template-areas: 
-    "title    title    title"
-    "content  content  navigation"
-    "content  content  navigation";
-  grid-template-rows: 6em 1fr;
+    "title    title"
+    "content  navigation"
+    "content  navigation";
+  /* grid-template-rows: 6em 1fr; */
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) ;
+
 }
 
 #profile > .header {
@@ -52,7 +55,7 @@
 }
 
 .navigation {
-  width: 2rem;
+  width: 16rem;
   border-left: 1px solid white;
 }
 
@@ -90,9 +93,9 @@
 }
 
 #profile-photo {
-  height: 8rem;
-  width: 8rem;
-  border: 3px solid var(--color-accent);
+  height: 16rem;
+  width: 16rem;
+  border: 3px solid #7A35EC;
   border-radius: 1rem;
 }
 
