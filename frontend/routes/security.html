@@ -32,6 +32,18 @@
         >Enable 2FA</button>
         <div id="qrCode"></div>
         <form action="POST"></form>
+        <form id="check-2fa" style="display:none">
+          <input
+            type="text"
+            name="token"
+            id="token"
+            class="login-form-field"
+            placeholder="2fa code"
+            inputmode="numeric"
+            pattern="[0-9]*"
+          />
+          <input class="button " type="submit" value="verify" id="check-2fa-submit" />
+        </form>
     </div>
   </div>
 </div>
