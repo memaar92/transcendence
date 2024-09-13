@@ -21,35 +21,28 @@ class Router {
     this.routes.push({ path, templateUrl });
   }
 
-  async navigate(path, pushState = true) {
+  async navigate(path) {
     const route = this.routes.find((route) => route.path === path);
-    if (route) {
-      this.currentRoute = route;
-      if (pushState) {
-        this.currentHistoryPosition++;
-        this.maxHistoryPosition = this.currentHistoryPosition;
-        const title_temp = document.title;
-        document.title = route.path.slice(1).replace("_", "-");
-        history.pushState({ position: this.currentHistoryPosition }, "", path);
-        document.title = title_temp;
-      }
-      await this.updateView();
-    } else {
-      this.currentRoute = this.routes.find((route) => route.path === "/404");
-      if (pushState) {
-        this.currentHistoryPosition++;
-        this.maxHistoryPosition = this.currentHistoryPosition;
-        history.pushState(
-          { position: this.currentHistoryPosition },
-          "",
-          "/404"
-        );
-      }
-      await this.updateView();
+    this.currentRoute = route;
+
+    if (path.startsWith("/users/")) {
+      this.currentRoute = {};
+      localStorage.setItem("UID", path.substr(7));
+      this.currentRoute.templateUrl = "/routes/users.html";
+      this.currentRoute.path = "User";
+    } else if (!route) {
+      this.currentRoute = {};
+      this.currentRoute.path = "/404";
+      this.currentRoute.templateUrl = "/routes/404.html";
     }
-    if (this.onNavigate) {
-      this.onNavigate();
-    }
+
+    this.currentHistoryPosition++;
+    this.maxHistoryPosition = this.currentHistoryPosition;
+    const title_temp = document.title;
+    document.title = this.currentRoute.path;
+    history.pushState({ position: this.currentHistoryPosition }, "", path);
+    document.title = title_temp;
+    await this.updateView();
   }
 
   handlePopState(event) {
@@ -74,42 +67,47 @@ class Router {
   }
 
   async updateView() {
-    console.log("before updated view");
-    if (this.app && this.currentRoute) {
-      try {
-        const response = await fetch(this.currentRoute.templateUrl);
-        const html = await response.text();
-        const parser = new DOMParser();
-        const content = parser.parseFromString(html, "text/html");
+    if (!this.app || !this.currentRoute) return;
 
-        const oldScripts = document.querySelectorAll("body script");
-        oldScripts.forEach((script) => script.remove());
+    try {
+      const response = await fetch(this.currentRoute.templateUrl);
+      const html = await response.text();
+      const doc = new DOMParser().parseFromString(html, "text/html");
 
-        this.app.innerHTML = "";
+      this.app.innerHTML = "";
+      document
+        .querySelectorAll("script[data-dynamic-script]")
+        .forEach((script) => script.remove());
 
-        Array.from(content.body.childNodes).forEach((node) => {
-          this.app.appendChild(node.cloneNode(true));
-        });
+      this.app.append(...doc.body.childNodes);
 
-        const scripts = content.querySelectorAll("script");
-        scripts.forEach((oldScript) => {
+      const loadScript = (scriptElement) => {
+        return new Promise((resolve, reject) => {
           const newScript = document.createElement("script");
-          if (oldScript.src) {
-            newScript.src = `${oldScript.src}?v=${new Date().getTime()}`; // cache busting
-          } else {
-            newScript.textContent = oldScript.textContent;
+
+          Array.from(scriptElement.attributes).forEach((attr) => {
+            newScript.setAttribute(attr.name, attr.value);
+          });
+
+          if (newScript.src) {
+            newScript.src = `${newScript.src}?v=${Date.now()}`;
           }
-          newScript.type = oldScript.type || "text/javascript";
-          newScript.defer = oldScript.defer || false;
-          newScript.async = oldScript.async || false;
+
+          newScript.setAttribute("data-dynamic-script", "true");
+          newScript.onload = resolve;
+          newScript.onerror = reject;
+
           document.body.appendChild(newScript);
         });
-      } catch (error) {
-        console.error("Error loading template:", error);
-        this.app.innerHTML = "<p>Error loading content</p>";
+      };
+
+      const scripts = Array.from(doc.querySelectorAll("script"));
+      for (const script of scripts) {
+        await loadScript(script);
       }
+    } catch (error) {
+      this.app.innerHTML = "<p>Error loading content</p>";
     }
-    console.log("after updated view");
   }
 }
 

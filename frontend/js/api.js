@@ -1,5 +1,5 @@
 import { router } from "./app.js";
-const API_BASE_URL = "api";
+const API_BASE_URL = "http://localhost/api";
 
 export const api = {
   get: async (endpoint) => {
