@@ -302,10 +302,12 @@ class TOTPVerifyView(APIView, CookieCreationMixin):
         token = auth_header.split(' ')[1]
         # Decode the token to get the user ID
         decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-        refresh_token = request.data['refresh']
-        if not refresh_token:
-            return Response({'detail': 'Refresh token not provided'}, status=400)
+       
+        #refresh_token = request.data['refresh']
+        #if not refresh_token:
+        #    return Response({'detail': 'Refresh token not provided'}, status=400)
         try:
+            refresh_token = request.COOKIES.get("refresh_token")
             old_refresh_token = RefreshToken(refresh_token)
         except Exception as e:
             return Response({'detail': 'Invalid refresh token'}, status=status.HTTP_400_BAD_REQUEST)

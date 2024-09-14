@@ -15,6 +15,7 @@ class AuthorizationMiddleware:
         refresh_token = request.COOKIES.get('refresh_token')
         if refresh_token and (request.path == '/api/token/refresh/' or request.path == '/api/token/2fa/verify/'):
             temp = request.POST.copy()
+            print("temp: ", temp)
             temp['refresh'] = refresh_token
             request.POST = temp
             print("request.POST:", request.POST)
