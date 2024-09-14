@@ -1,5 +1,6 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 from pong.match_tournament.match_session_handler import MatchSessionHandler
+from pong.match_tournament.data_managment import User
 import json
 import logging
 
@@ -37,11 +38,11 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
-        running_match = await MatchSessionHandler.get_user_match_id(self.user_id)
-        if running_match and not MatchSessionHandler.is_user_connected(self.user_id):
+        current_match_id = User.get_user_match_id(self.user_id)
+        if current_match_id and not User.is_user_connected_to_match(self.user_id, current_match_id):
             await self.send(text_data=json.dumps({
                 'type': 'match_assigned',
-                'match_id': running_match
+                'match_id': current_match_id
             }))
     
     async def disconnect(self, close_code):
@@ -53,8 +54,8 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             self._user_connections[self.user_id] -= 1
             if self._user_connections[self.user_id] == 0:
                 del self._user_connections[self.user_id]
-                await MatchSessionHandler.disconnect_user(self.user_id)
-                
+                MatchSessionHandler.remove_from_matchmaking_queue(self.user_id)
+
                 # Remove user from the group only when all connections are closed
                 await self.channel_layer.group_discard(
                     self.group_name,

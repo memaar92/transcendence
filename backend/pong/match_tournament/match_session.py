@@ -22,7 +22,7 @@ class EndReason(Enum):
 class MatchSession:
     def __init__(self, user1: str, user2: Optional[str], on_match_finished: Optional[Callable[[str], None]] = None):
         '''Initialize and start a match between two users'''
-        self._id = str(id(self))  # Generating a unique id
+        self._match_id = str(id(self))  # Generating a unique id
         self._assigned_users = {user1, user2} if user2 is not None else {user1}
         self._connected_users = set()
         self._disconnect_count = {user1: 0, user2: 0} if user2 is not None else {user1: 0}
@@ -59,7 +59,7 @@ class MatchSession:
 
         # Call the on_match_finished callback
         if self._on_match_finished is not None:
-            await self._on_match_finished(self._id)
+            await self._on_match_finished(self._match_id)
 
         # Call the MatchConsumer to disconnect the users
         for user_id, callback in self._on_match_finished_user_callbacks.items():
@@ -119,16 +119,17 @@ class MatchSession:
             return
         self._connected_users.add(user_id)
         self._on_match_finished_user_callbacks[user_id] = on_match_finished
-        logger.info(f"User {user_id} connected to match {self._id}")
+        logger.info(f"User {user_id} connected to match {self._match_id}")
 
     async def disconnect_user(self, user_id: str) -> bool:
         '''Disconnect a user from the match'''
-        logger.info(f"Disconnecting user {user_id} from match {self._id}")
+        logger.info(f"Disconnecting user {user_id} from match {self._match_id}")
         try:
             self._connected_users.remove(user_id)
+            self._on_match_finished_user_callbacks[user_id] = None
             logger.info(f"Removed user {user_id} from connected users")
         except KeyError:
-            logger.error(f"Cannot disconnect user {user_id} from match {self._id} as they are not connected to it")
+            logger.error(f"Cannot disconnect user {user_id} from match {self._match_id} as they are not connected to it")
             return False
         await self._send_player_disconnected_message(user_id)
         self._disconnect_count[user_id] += 1
@@ -202,4 +203,4 @@ class MatchSession:
     
     def get_id(self) -> str:
         '''Get the match id'''
-        return self._id
+        return self._match_id
