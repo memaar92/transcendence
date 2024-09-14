@@ -1,16 +1,17 @@
 <script src="/js/2fa.js" type="module"></script>
 <div class="position-absolute top-50 start-50 translate-middle">
-  <h1>Enter your password</h1>
+  <h1>Enter your 2FA token</h1>
   <form id="check-2fa">
     <input
       type="text"
-      name="token"
-      id="token"
+      name="code"
+      id="code"
       class="login-form-field"
       placeholder="2fa code"
       inputmode="numeric"
       pattern="[0-9]*"
     />
-    <input class="button" type="submit" value="verify" id="check-2fa-submit" />
+    <input class="button" type="submit" value="verify" id="code-form-submit" />
   </form>
+  <div id="alertContainer"></div>
 </div>

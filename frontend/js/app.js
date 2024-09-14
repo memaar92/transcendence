@@ -19,6 +19,7 @@ const routes = [
   { path: "/security", templateUrl: "/routes/security.html" },
   { path: "/appearance", templateUrl: "/routes/appearance.html" },
   { path: "/stats", templateUrl: "/routes/stats.html" },
+  { path: "/verify_2fa", templateUrl: "/routes/verify_2fa.html" },
 ];
 
 export const router = new Router(routes);

@@ -16,7 +16,10 @@ document.getElementById("login-form-submit").addEventListener("click", async (e)
   const user_info = await result.json();
   console.log("uid " + user_info["id"]);
   if (result.ok) {
-    router.navigate("/main_menu");
+    if (user_info["2fa"])
+      router.navigate("/verify_2fa")
+    else
+      router.navigate("/main_menu");
   } else {
     const wrong_password = document.getElementById('wrong_password');
     let bsAlert = new bootstrap.Toast(wrong_password);

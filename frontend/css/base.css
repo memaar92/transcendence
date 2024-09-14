@@ -258,3 +258,8 @@ td {
 td {
   text-align: center;
 }
+
+#qrPhoto {
+  width: 15rem;
+  height: 15rem;
+}
