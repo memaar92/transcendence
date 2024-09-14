@@ -40,7 +40,7 @@
             matchmakingSocket.onmessage = function(e) {
                 const data = JSON.parse(e.data);
                 console.log('Received matchmaking message:', data);
-                if (data.state === "match_assigned") {
+                if (data.type === "match_assigned") {
                     if (data.match_id) {
                         console.log('Match found! Match ID: ' + data.match_id);
                         match_id = data.match_id;
@@ -71,8 +71,9 @@
             function joinQueue() {
                 console.log('Joining queue...');
                 matchmakingSocket.send(JSON.stringify({
+                    "type": "matchmaking",
+                    "request": "match",
                     "match_type": "online",
-                    "action": "join"
                 }))
             }
 
