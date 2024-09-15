@@ -14,7 +14,7 @@ class MatchSessionHandler:
         cls,
         user1: str,
         user2: Optional[str] = None,
-        on_match_finished: Optional[Callable[[str], None]] = None
+        on_match_finished: Optional[Callable[[str, str], None]] = None # on_match_finished(match_id: str, winner(user_id): str) -> None
     ) -> 'MatchSession':
         '''Create a match between two users'''
         match = MatchSession(user1, user2, on_match_finished)
@@ -24,7 +24,7 @@ class MatchSessionHandler:
         
         # Run the match asynchronously in the background
         # asyncio.create_task(match.start())
-        
+
         return match
 
     @classmethod
@@ -33,7 +33,7 @@ class MatchSessionHandler:
         return cls.create_match(user1, None, on_match_finished)
 
     @classmethod
-    async def remove_match(cls, match_id: str) -> None:
+    async def remove_match(cls, match_id: str, winner: str) -> None:
         '''Remove a match reference'''
         Matches.remove_match(match_id)
     

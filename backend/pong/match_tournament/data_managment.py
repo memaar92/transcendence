@@ -1,38 +1,15 @@
 import logging
 from pong.match_tournament.match_session import MatchSession
 from pong.match_tournament.tournament_session import TournamentSession
+from typing import Dict, Any, Set, Optional
 
 
 logger = logging.getLogger("PongConsumer")
 
 class User:
-    users = set()
 
     @classmethod
-    def add_user(self, user):
-        self.users.append(user)
-
-    @classmethod
-    def get_user(self, user_id):
-        for user in self.users:
-            if user.id == user_id:
-                return user
-        return None
-
-    @classmethod
-    def get_users(self):
-        return self.users
-
-    @classmethod
-    def remove_user(self, user_id):
-        for user in self.users:
-            if user.id == user_id:
-                self.users.remove(user)
-                return True
-        return False
-
-    @classmethod
-    def is_user_registered(self, user_id):
+    def is_user_registered(self, user_id) -> bool:
         '''Check if a user is registered for the matchmaking queue, a match or a tournament'''
         return MatchmakingQueue.is_user_registered(user_id) or Matches.is_user_registered(user_id) # or Tournaments.is_user_registered(user_id)
 
@@ -45,22 +22,22 @@ class User:
         return False
 
     @classmethod
-    def get_user_match_id(self, user_id) -> str:
+    def get_user_match_id(self, user_id) -> Optional[str]:
         '''Get the match id of a user'''
         return Matches.get_user_match_id(user_id)
 
     
 class MatchmakingQueue:
-    queue = set()
+    queue: Set[str] = set()
 
     @classmethod
-    def add_to_queue(cls, user_id: str):
+    def add_to_queue(cls, user_id: str) -> None:
         '''Add a user to the matchmaking queue'''
         cls.queue.add(user_id)
         logger.info(f"User {user_id} added to matchmaking queue")
 
     @classmethod
-    def remove_from_queue(cls, user_id: str):
+    def remove_from_queue(cls, user_id: str) -> None:
         '''Remove a user from the matchmaking queue'''
         if user_id in cls.queue:
             cls.queue.remove(user_id)
@@ -72,7 +49,7 @@ class MatchmakingQueue:
         return cls.queue
     
     @classmethod
-    def get_queue_length(cls):
+    def get_queue_length(cls) -> int:
         '''Get the length of the matchmaking queue'''
         return len(cls.queue)
     
@@ -82,7 +59,7 @@ class MatchmakingQueue:
         return user_id in cls.queue
     
     @classmethod
-    def pop_next_user(cls) -> str:
+    def pop_next_user(cls) -> Optional[str]:
         '''Pop the next user from the queue'''
         if cls.queue:
             return cls.queue.pop()
@@ -90,10 +67,10 @@ class MatchmakingQueue:
     
     
 class Matches:
-    matches = {}
+    matches: Dict[str, MatchSession] = {}
 
     @classmethod
-    def add_match(cls, match: MatchSession):
+    def add_match(cls, match: MatchSession) -> None:
         match_id = match.get_id()
         cls.matches[match_id] = match
 
@@ -105,15 +82,16 @@ class Matches:
     def remove_match(cls, match_id) -> bool:
         if match_id in cls.matches:
             del cls.matches[match_id]
+            logger.info(f"Match {match_id} removed")
             return True
         return False
 
     @classmethod
-    def get_matches(cls) -> dict[str, MatchSession]:
+    def get_matches(cls) -> Dict[str, MatchSession]:
         return cls.matches
     
     @classmethod
-    def get_user_match_id(cls, user_id: str) -> str:
+    def get_user_match_id(cls, user_id: str) -> Optional[str]:
         '''Get the match id of a user'''
         for match in cls.matches.values():
             if match.is_user_assigned(user_id):
@@ -142,46 +120,46 @@ class Matches:
         return False
     
 class Tournaments:
-    tournaments = {}
+    tournaments: Dict[str, TournamentSession] = {} 
 
     @classmethod
-    def add_tournament(cls, tournament_id: str, tournament: TournamentSession):
+    def add(cls, tournament_id: str, tournament: TournamentSession) -> None:
         cls.tournaments[tournament_id] = tournament
 
     @classmethod
-    def get_tournament(cls, tournament_id: str) -> TournamentSession:
+    def get(cls, tournament_id: str) -> TournamentSession:
         return cls.tournaments.get(tournament_id)
 
     @classmethod
-    def remove_tournament(cls, tournament_id):
+    def remove(cls, tournament_id) -> bool:
         if tournament_id in cls.tournaments:
             del cls.tournaments[tournament_id]
             return True
         return False
 
     @classmethod
-    def get_tournaments(cls):
+    def get_all(cls) -> dict[str, TournamentSession]:
         return cls.tournaments
 
     @classmethod
-    def get_user_tournament_id(cls, user_id: str) -> str:
+    def get_user_tournament_id(cls, user_id: str) -> Optional[str]:
         '''Get the tournament id of a user'''
         for tournament in cls.tournaments.values():
-            if user_id in tournament.get_tournament_players():
+            if user_id in tournament.get_players():
                 return tournament.get_id()
         return None
     
     @classmethod
     def get_tournament_players(cls, tournament_id: str) -> set:
         '''Get the players of a tournament'''
-        tournament = cls.get_tournament(tournament_id)
+        tournament = cls.get(tournament_id)
         if tournament:
-            return tournament.get_tournament_players()
+            return tournament.get_players()
         return set()
     
     @classmethod
     def is_user_registered(cls, user_id: str) -> bool:
-        '''Check if a user is registered to a match or the matchmaking queue'''
+        '''Check if a user is registered to a tournament'''
         for tournament in cls.tournaments.values():
             if user_id in tournament.get_tournament_players():
                 return True

@@ -1,5 +1,6 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 from pong.match_tournament.match_session_handler import MatchSessionHandler
+from pong.match_tournament.tournament_session_handler import TournamentSessionHandler
 from pong.match_tournament.data_managment import User
 import json
 import logging
@@ -34,6 +35,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
 
         await self._add_active_connection()
 
+        # Check if the user is already connected to a match and offer to reconnect
         current_match_id = User.get_user_match_id(self.user_id)
         if current_match_id and not User.is_user_connected_to_match(self.user_id, current_match_id):
             await self.send(text_data=json.dumps({
@@ -45,11 +47,13 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
         if self.user_id is None:
             return
         
+        # Remove the connection from the user's active connections
         await self._remove_connection()
 
         if self.user_id in self._user_connections and len(self._user_connections[self.user_id]["connections"]) == 0:
             logger.info(f"User {self.user_id} has no open connections")
             MatchSessionHandler.remove_from_matchmaking_queue(self.user_id)
+            TournamentSessionHandler.remove_user_from_all_inactive_tournaments(self.user_id)
 
             # Remove user from the group only when all connections are closed
             await self.channel_layer.group_discard(
@@ -118,6 +122,8 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
         self._user_connections[self.user_id]["active"] = self.channel_name
     
     async def _remove_connection(self) -> None:
+        '''Remove a connection from the user's active connections'''
+
         # Remove this connection from the set of connections
         self._user_connections[self.user_id]["connections"].discard(self.channel_name)
 
@@ -129,12 +135,19 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             else:
                 self._user_connections[self.user_id]["active"] = None
 
+    ##############################
+    #    Message Handlers        #
+    ##############################
+
     async def match_assigned(self, event):
         '''Handle the match_assigned message'''
+
+        # Check if the user is in the _user_connections dictionary (Should always be the case)
         if self.user_id not in self._user_connections:
             logger.warning(f"User {self.user_id} not found in _user_connections")
             return
 
+        # Check if the current connection is the active connection (Current tab in the browser)
         if self._user_connections[self.user_id]["active"] != self.channel_name:
             return
 

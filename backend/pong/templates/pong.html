@@ -14,6 +14,7 @@
     <canvas id="gameCanvas" width="800" height="800"></canvas>
     <button id="join-queue-button">Join Queue</button>
     <button id="reconnectButton" style="display: none;">Reconnect</button>
+    <button id="connectToMatchButton" style="display: none;">Connect to Match</button>
 </body>
     <script>
         window.onload = function() {
@@ -22,8 +23,25 @@
             const maxRetries = 5;
             const retryDelay = 2000; // Milliseconds
             let match_id = null;
-    
+            let isActiveTab = false;
+
             const matchmakingSocket = new WebSocket('ws://' + window.location.host + '/ws/pong/matchmaking/');
+
+            document.addEventListener("visibilitychange", function() {
+                if (document.visibilityState === "visible") {
+                    isActiveTab = true;
+                    // Notify the server that this tab is now active
+                    notifyTabActive();
+                } else {
+                    isActiveTab = false;
+                }
+            });
+
+            function notifyTabActive() {
+                matchmakingSocket.send(JSON.stringify({
+                    "active": isActiveTab
+                }))
+            }
             
             matchmakingSocket.onopen = function(e) {
                 console.log('Matchmaking WebSocket connection established.');
@@ -45,17 +63,17 @@
                         console.log('Match found! Match ID: ' + data.match_id);
                         match_id = data.match_id;
                         // register_to_match(match_id);
-                        // connectToMatch(match_id);
+                        connectToMatch(match_id);
                     }
-                } else if (data.state === "match_in_progress") {
+                } else if (data.type === "match_in_progress") {
                     console.log('Match in progress.');
                     showReconnectButton(data.match_id); // Pass the correct match_id
-                } else if (data.state === "registered") {
+                } else if (data.type === "registered") {
                     console.log('Registered to match.');
                     connectToMatch(match_id);
-                } else if (data.state === "registration_timeout") {
+                } else if (data.type === "registration_timeout") {
                     console.log('Registration timeout.');
-                } else if (data.state === "registration_error") {
+                } else if (data.type === "registration_error") {
                     console.error('Registration error:', data.error);
                 }
             }
@@ -105,6 +123,23 @@
                 matchSocket.onmessage = function(e) {
                     const data = JSON.parse(e.data);
                     console.log('Received match message:', data);
+                }
+            }
+
+            function showConnectToMatchButton(match_id) {
+                const connectToMatchButton = document.getElementById('connectToMatchButton');
+                if (connectToMatchButton) {
+                    connectToMatchButton.style.display = 'block';
+                    connectToMatchButton.onclick = function() {
+                        connectToMatch(match_id);
+                    };
+                }
+            }
+
+            function hideConnectToMatchButton() {
+                const connectToMatchButton = document.getElementById('connectToMatchButton');
+                if (connectToMatchButton) {
+                    connectToMatchButton.style.display = 'none';
                 }
             }
             

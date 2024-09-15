@@ -20,25 +20,26 @@ class EndReason(Enum):
     SCORE = auto()
 
 class MatchSession:
-    def __init__(self, user1: str, user2: Optional[str], on_match_finished: Optional[Callable[[str], None]] = None):
+    def __init__(self, user_id_1: str, user_id_2: Optional[str], on_match_finished: Optional[Callable[[str, str], None]] = None):
         '''Initialize and start a match between two users'''
         self._match_id = str(id(self))  # Generating a unique id
-        self._assigned_users = {user1, user2} if user2 is not None else {user1}
+        self._assigned_users = {user_id_1, user_id_2} if user_id_2 is not None else {user_id_1}
         self._connected_users = set()
-        self._disconnect_count = {user1: 0, user2: 0} if user2 is not None else {user1: 0}
-        self._player_mapping = {user1: "p1", user2: "p2"} if user2 is not None else {user1: "p1"}
-        self._is_local_match = user2 is None
-        self._score = {"player1": 0, "player2": 0}
+        self._disconnect_count = {user_id_1: 0, user_id_2: 0} if user_id_2 is not None else {user_id_1: 0}
+        self._player_mapping = {user_id_1: "p1", user_id_2: "p2"} if user_id_2 is not None else {user_id_1: "p1"}
+        self._is_local_match = user_id_2 is None
+        self._score = {user_id_1: 0, user_id_1: 0}
         self._gamehandler = None
         self._main_loop_task: Optional[asyncio.Task] = asyncio.create_task(self._main_loop())
         self._on_match_finished = on_match_finished
-        self._on_match_finished_user_callbacks = {user1: None, user2: None} if user2 is not None else {user1: None}
+        self._on_match_finished_user_callbacks = {user_id_1: None, user_id_2: None} if user_id_2 is not None else {user_id_1: None}
         self._tick_speed = 1 / TICK_RATE
         self._is_match_running = False
+        self._stop_requested = False
 
     async def _main_loop(self) -> None:
         '''Main loop of the match'''
-        while True:
+        while not self._stop_requested:
             if not self._is_match_running:
                 await self._monitor_match_start()
                 self._is_match_running = True
@@ -48,18 +49,22 @@ class MatchSession:
 
     async def _end_match(self, reason: EndReason) -> None:
         '''End the match'''
+        self._stop_requested = True
+        logger.info(f"Ending match {self._match_id}")
         if reason == EndReason.DISCONNECT_TIMEOUT:
-            logger.info("Match ended due to disconnect")
+            await self._match_finished(self._match_id, self._connected_users.pop())
+            logger.info("Match ended due to disconnect timeout")
         elif reason == EndReason.MATCH_START_TIMEOUT:
+            await self._match_finished(self._match_id, None)
             logger.info("Match ended due to timeout")
         elif reason == EndReason.DISCONNECTED_TOO_MANY_TIMES:
             logger.info("Match ended due to too many disconnects")
+            await self._match_finished(self._match_id, self._connected_users.pop())
         elif reason == EndReason.SCORE:
+            winner = max(self._score, key=self._score.get)
+            await self._match_finished(self._match_id, winner)
             logger.info("Match ended due to score")
 
-        # Call the on_match_finished callback
-        if self._on_match_finished is not None:
-            await self._on_match_finished(self._match_id)
 
         # Call the MatchConsumer to disconnect the users
         for user_id, callback in self._on_match_finished_user_callbacks.items():
@@ -75,6 +80,13 @@ class MatchSession:
 
         # Delete itself
         del self
+
+    async def _match_finished(self, match_id: str, winner: str) -> None:
+        '''Callback when the match is finished'''
+        logger.info(f"Match {match_id} finished, winner: {winner}")
+        await self._write_score_to_database()
+        if self._on_match_finished is not None:
+            await self._on_match_finished(match_id, winner)
 
     #############################
     #      Timer functions      #
@@ -114,6 +126,9 @@ class MatchSession:
 
     async def connect_user(self, user_id: str, on_match_finished: Callable[[], None]) -> None:
         '''Connect a user to the match'''
+        if self._stop_requested:
+            logger.error(f"Match {self._match_id} has already ended")
+            return
         if user_id not in self._assigned_users:
             logger.error(f"User {user_id} not assigned to the match")
             return

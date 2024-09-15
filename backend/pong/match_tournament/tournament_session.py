@@ -1,54 +1,145 @@
+import logging
+import asyncio
+from typing import Set, List, Tuple, Optional
+from pong.match_tournament.match_session import MatchSession
+
+logger = logging.getLogger("PongConsumer")
+
 class TournamentSession:
-    def __init__(self, tournament_id: str, tournament_name: str, tournament_type: str, tournament_size: int, tournament_players: list):
-        self.tournament_id = tournament_id
-        self.tournament_name = tournament_name
-        self.tournament_type = tournament_type
-        self.tournament_size = tournament_size
-        self.tournament_players = tournament_players
-        self.tournament_matches = []
-        self.tournament_winner = None
+    def __init__(self, id: str, name: str, size: int):
+        self._id = id
+        self._size = size
+        self._users: Set[str] = set()
+        self._matches: List[Tuple[str, str]] = []
+        self._results: List[Optional[str]] = []
+        self._winner: Optional[str] = None
+        self._running = False
+        self._condition = asyncio.Condition()
 
-    def get_tournament_id(self):
-        return self.tournament_id
+    async def start(self) -> None:
+        self._running = True
+        
+        while self._running:
+            self._reset_tracking_variables()
+            self._generate_round_robin_schedule()
+            await self._start_matches()
+            self._determine_winner()
+            
+            if self._winner is not None: # TODO: Notify the winner
+                self._running = False
 
-    def get_tournament_name(self):
-        return self.tournament_name
+    def _generate_round_robin_schedule(self) -> None:
+        users = list(self._users)
+        n = len(users)
+        for i in range(n):
+            for j in range(i + 1, n):
+                self._matches.append((users[i], users[j]))
 
-    def get_tournament_type(self):
-        return self.tournament_type
+    def _determine_winner(self) -> None:
+        # Initialize the score dictionary
+        score = {user: 0 for user in self._users}
 
-    def get_tournament_size(self):
-        return self.tournament_size
+        # Calculate the scores based on the results
+        for result in self._results:
+            if result is not None:
+                score[result] += 1
 
-    def get_tournament_players(self):
-        return self.tournament_players
+        # Print the number of wins for each user
+        for user, points in score.items():
+            print(f"User {user} has {points} wins.")
 
-    def get_tournament_matches(self):
-        return self.tournament_matches
+        # Determine the maximum score
+        max_score = max(score.values())
 
-    def get_tournament_winner(self):
-        return self.tournament_winner
+        # If no matches were played, there is no winner
+        if max_score == 0:
+            self._winner = None
+            self._running = False
+            logger.info("No winner found, maybe no matches were played")
+            return
 
-    def set_tournament_winner(self, winner):
-        self.tournament_winner = winner
+        # Find the users with the maximum score
+        winners = [user for user, points in score.items() if points == max_score]
 
-    def add_tournament_match(self, match):
-        self.tournament_matches.append(match)
+        # Determine the winner or if it's a draw
+        if len(winners) == 1:
+            self._winner = winners[0]
+            return  # Early return if a winner is found
+        else:
+            self._winner = None  # It's a draw
 
-    def remove_tournament_match(self, match):
-        self.tournament_matches.remove(match)
+        # Filter users with the maximum score
+        self._users = {user for user in self._users if score[user] == max_score}
 
-    def is_tournament_full(self):
-        return len(self.tournament_players) == self.tournament_size
+    def _reset_tracking_variables(self) -> None:
+        '''Reset the tracking variables for a new round'''
+        self._matches = []
+        self._results = []
+        self._winner = None
 
-    def is_tournament_ready(self):
-        return len(self.tournament_matches) == self.tournament_size
+    async def _start_matches(self) -> None:
+        for match in self._matches:
+            async with self._condition:
+                # Create a new match session
+                MatchSession(match[0], match[1], self._on_match_finished)
+                # Wait until the match is finished
+                await self._condition.wait()
 
-    def is_tournament_over(self):
-        return self.tournament_winner is not None
+    def _on_match_finished(self, match_id: str, winner: str) -> None:
+        self._results.append(winner)
+        # Notify the condition variable that the match is finished
+        async def notify():
+            async with self._condition:
+                self._condition.notify()
+        asyncio.create_task(notify())
 
-    def __str__(self):
-        return f'Tournament: {self.tournament_name} - {self.tournament_type} - {self.tournament_size} players'
+    def add_user(self, user_id: str):
+        self._users.add(user_id)
 
-    def __repr__(self):
-        return f'Tournament: {self.tournament_name} - {self.tournament_type} - {self.tournament_size} players'
+    def remove_user(self, user_id: str):
+        self._users.remove(user_id)
+
+    def get_id(self) -> str:
+        return self._id
+
+    def get_name(self) -> str:
+        return self._name
+
+    def get_size(self) -> int:
+        return self._size
+
+    def get_users(self) -> Set[str]:
+        return self._users
+
+    def get_matches(self) -> list:
+        return self._matches
+
+    def get_winner(self) -> str:
+        return self._winner
+
+    def set_winner(self, winner) -> None:
+        self._winner = winner
+
+    def add_match(self, match) -> None:
+        self._matches.append(match)
+
+    def remove_match(self, match) -> None:
+        self._matches.remove(match)
+
+    def is_full(self) -> bool:
+        return len(self._users) == self._size
+    
+    def is_running(self) -> bool:
+        return self._running
+
+    def is_ready(self) -> bool:
+        return len(self._matches) == self._size
+
+    def is_finished(self) -> bool:
+        return self._winner is not None
+
+    def __str__(self) -> str:
+        return f': {self._name} - {self._size} players'
+
+    def __repr__(self) -> str:
+        return f': {self._name} - {self._size} players'

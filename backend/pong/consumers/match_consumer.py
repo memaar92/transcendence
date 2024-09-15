@@ -29,7 +29,7 @@ class MatchConsumer(AsyncWebsocketConsumer):
         self._group_name = f"match_{self._match_id}"
 
         # Check if the connection is valid
-        if not self.is_valid_connection(self._match_id, self._user_id):
+        if not await self.is_valid_connection(self._match_id, self._user_id):
             await self.close()
             logger.info(f"User {self._user_id} is not allowed to connect to match {self._match_id}")
             return
@@ -93,4 +93,3 @@ class MatchConsumer(AsyncWebsocketConsumer):
     async def _match_session_is_finished_callback(self):
         self._connection_established = False
         self.close()
-        logger.info(f"Match {self._match_id} finished for user {self._user_id}")
