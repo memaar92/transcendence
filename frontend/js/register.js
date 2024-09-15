@@ -14,14 +14,17 @@ password.oninput = function () {
     power.style.backgroundColor = colorPower[result.score];
 };
 
+if (!localStorage.getItem("email")) {
+  console.log(localStorage.getItem("email"));
+  alert("Error: No email provided");
+  router.navigate("/home");
+} else {
+  document.getElementById("email").name = localStorage.getItem("email");
+}
+
 document.getElementById("register").addEventListener("click", async (e) => {
   e.preventDefault();
-  // TODO check password strength
-  if (!localStorage.getItem("email")) {
-    console.log(localStorage.getItem("email"));
-    alert("Error: No email provided");
-    router.navigate("/home");
-  }
+  if (zxcvbn(password.value).score < 3) return;
   const result = await api.post("/register/", {
     email: localStorage.getItem("email"),
     password: document.getElementById("password").value,

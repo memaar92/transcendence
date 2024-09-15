@@ -1,8 +1,14 @@
 <script src="/js/register.js" type="module"></script>
 <script type="module" src="/js/zxcvbn.js"></script>
 <span class="d-flex justify-content-center">
-  <form class="login d-inline-flex justify-content-center flex-column">
+  <form autocomplete="new-password" class="login d-inline-flex justify-content-center flex-column">
     <h2>Register now</h2>
+    <input
+        id="email"
+        type="email"
+        style="display: none;"
+        autocomplete="email"
+    />
     <label for="password">Password</label>
     <input
       type="password"

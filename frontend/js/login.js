@@ -1,6 +1,16 @@
 import { api } from "./api.js";
 import { router } from "./app.js";
 
+if (!localStorage.getItem("email")) {
+  console.log(localStorage.getItem("email"));
+  alert("Error: No email provided");
+  router.navigate("/home");
+} else {
+  console.log(localStorage.getItem("email"))
+  document.getElementById("email").value = localStorage.getItem("email");
+  console.log(document.getElementById("email").value)
+}
+
 document.getElementById("login-form-submit").addEventListener("click", async (e) => {
   e.preventDefault();
   if (!localStorage.getItem("email")) {
