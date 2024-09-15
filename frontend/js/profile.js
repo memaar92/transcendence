@@ -55,7 +55,6 @@ document.getElementById("content").addEventListener('click', async function (eve
           });
 
       }
-      console.log(await result.json());
     }
     if (form.querySelector('input').id == "email") {
       const result = await api.patch("/profile/", {
@@ -76,7 +75,7 @@ document.getElementById("content").addEventListener('click', async function (eve
             });
 
         }
-      console.log(await result.json());
+      (await result.json());
     }
     resetButtons(form, editBtn, confirmBtn, cancelBtn);
   } else if (target.closest('.cancel-button')) {

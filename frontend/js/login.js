@@ -2,19 +2,19 @@ import { api } from "./api.js";
 import { router } from "./app.js";
 
 if (!localStorage.getItem("email")) {
-  console.log(localStorage.getItem("email"));
+  (localStorage.getItem("email"));
   alert("Error: No email provided");
   router.navigate("/home");
 } else {
-  console.log(localStorage.getItem("email"))
+  (localStorage.getItem("email"))
   document.getElementById("email").value = localStorage.getItem("email");
-  console.log(document.getElementById("email").value)
+  (document.getElementById("email").value)
 }
 
 document.getElementById("login-form-submit").addEventListener("click", async (e) => {
   e.preventDefault();
   if (!localStorage.getItem("email")) {
-    console.log(localStorage.getItem("email"));
+    (localStorage.getItem("email"));
     alert("Error: No email provided");
     router.navigate("/home");
   }
@@ -22,9 +22,9 @@ document.getElementById("login-form-submit").addEventListener("click", async (e)
     email: localStorage.getItem("email"),
     password: document.getElementById("password-field").value,
   });
-  console.log("register call finished");
+  ("register call finished");
   const user_info = await result.json();
-  console.log("uid " + user_info["id"]);
+  ("uid " + user_info["id"]);
   if (result.ok) {
     if (user_info["2fa"])
       router.navigate("/verify_2fa")

@@ -4,10 +4,10 @@ import { router } from "./app.js";
 const result = await api.get("/games/");
 const games = await result.json();
 
-console.log(games);
+(games);
 
 document.getElementById("back").addEventListener("click", async (e) => {
-  console.log("going back");
+  ("going back");
   history.back();
 });
 

@@ -15,7 +15,7 @@ password.oninput = function () {
 };
 
 if (!localStorage.getItem("email")) {
-  console.log(localStorage.getItem("email"));
+  (localStorage.getItem("email"));
   alert("Error: No email provided");
   router.navigate("/home");
 } else {
@@ -29,9 +29,9 @@ document.getElementById("register").addEventListener("click", async (e) => {
     email: localStorage.getItem("email"),
     password: document.getElementById("password").value,
   });
-  console.log("register call finished");
+  ("register call finished");
   const user_info = await result.json();
-  console.log("uid " + user_info["id"]);
+  ("uid " + user_info["id"]);
   if (result.ok) {
     localStorage.setItem("uid", user_info["id"]);
     router.navigate("/email_verification");

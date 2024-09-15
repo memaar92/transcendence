@@ -9,12 +9,12 @@ document.getElementById('displayname').innerText = profile_info["displayname"];
 
 
 const games_html = await api.get("/games/");
-const games = await games.json();
+const games = await games_html.json();
 
-console.log(games);
+(games);
 
 document.getElementById("back").addEventListener("click", async (e) => {
-  console.log("going back");
+  ("going back");
   history.back();
 });
 
@@ -63,7 +63,7 @@ async function tableCreate() {
   document.getElementById("losses").textContent = losses;
 }
 
-await tableCreate();
+// await tableCreate();
 
 async function getUsername(id) {
   const result = await api.get(`/users/${id}/`);
@@ -72,7 +72,7 @@ async function getUsername(id) {
 }
 
 async function getMyId() {
-  const result = await api.get(`/profile/${get}`);
+  const result = await api.get(`/profile/`);
   const info = await result.json();
   return info["id"];
 }

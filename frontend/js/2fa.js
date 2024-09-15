@@ -8,7 +8,7 @@ document.getElementById("code-form-submit").addEventListener("click", async (e) 
     code_2fa: document.getElementById("code").value
   });
   const user_info = await result.json();
-  console.log(user_info);
+  (user_info);
   if (result.ok) {
       router.navigate("/main_menu");
   } else {
