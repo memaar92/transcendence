@@ -67,7 +67,7 @@ class CreateUserView(generics.CreateAPIView):
 class EditUserView(generics.RetrieveUpdateDestroyAPIView):
     # not discussed with Wayne yet
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated, IsSelf]
+    permission_classes = [IsAuthenticated, IsSelf, Check2FA]
     http_method_names = ['patch', 'delete', 'get']
     queryset = CustomUser.objects.all()
 
@@ -206,7 +206,7 @@ class GameHistoryListUser(APIView):
 
 class ProfilePictureDeleteView(APIView):
     # not discussed with Wayne yet
-    permission_classes = [IsAuthenticated, IsSelf]
+    permission_classes = [IsAuthenticated, IsSelf, Check2FA]
 
     def get_object(self):
         auth_header = self.request.headers.get('Authorization')
