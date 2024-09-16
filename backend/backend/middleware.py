@@ -13,12 +13,10 @@ class AuthorizationMiddleware:
         if access_token and not request.path == '/api/token/refresh/':
             request.META['HTTP_AUTHORIZATION'] = f'Bearer {access_token}'
         refresh_token = request.COOKIES.get('refresh_token')
-        if refresh_token and (request.path == '/api/token/refresh/' or request.path == '/api/token/2fa/verify/'):
+        if refresh_token and (request.path == '/api/token/refresh/'):
             temp = request.POST.copy()
-            print("temp: ", temp)
             temp['refresh'] = refresh_token
             request.POST = temp
-            print("request.POST:", request.POST)
         return self.get_response(request)
     
 redis_instance = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0)
