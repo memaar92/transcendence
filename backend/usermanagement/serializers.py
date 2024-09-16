@@ -9,7 +9,7 @@ from django.contrib.auth.hashers import make_password
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['id', 'email', 'displayname', 'profile_picture', 'password']
+        fields = ['id', 'email', 'displayname', 'profile_picture', 'password', 'is_2fa_enabled']
         extra_kwargs = {'password': {'write_only': True}}
 
     def update(self, instance, validated_data):
@@ -22,11 +22,7 @@ class UserNameSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ['id', 'displayname', 'profile_picture']  # Add other user fields as needed
-
-    # def get_game_history(self, obj):
-    #     games = Games.objects.filter(home_id=obj) | Games.objects.filter(visitor_id=obj)
-    #     return GameSerializer(games, many=True).data
+        fields = ['id', 'displayname', 'profile_picture']
 
 class GameSerializer(serializers.ModelSerializer):
     class Meta:
