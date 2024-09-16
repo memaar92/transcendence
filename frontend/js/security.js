@@ -1,5 +1,9 @@
 import { api } from "./api.js";
 
+document.getElementById("back").addEventListener("click", async (e) => {
+  ("going back");
+  history.back();
+});
 
 const result = await api.get("/2fa/setup/");
 ("register call finished");
