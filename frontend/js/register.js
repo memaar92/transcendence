@@ -24,7 +24,6 @@ if (!localStorage.getItem("email")) {
 
 document.getElementById("register").addEventListener("click", async (e) => {
   e.preventDefault();
-  if (zxcvbn(password.value).score < 3) return;
   const result = await api.post("/register/", {
     email: localStorage.getItem("email"),
     password: document.getElementById("password").value,
