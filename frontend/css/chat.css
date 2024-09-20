@@ -180,18 +180,18 @@
   flex: 1;
   overflow-y: auto;
   transition: width 0.3s ease-in-out;
-  padding: 1rem;
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-}  
+  padding: 0;
+}
 
 .chats-scroll-container {
+  width: 100%; /* Ensure the scroll container takes full width */
+  max-width: 100%; /* Prevent constraining the width */
   overflow-y: hidden;
-  width: 100%;
-  max-width: 600px;
-}  
+}
 
 .chat-wrapper {
   position: absolute;
@@ -209,7 +209,7 @@
 .chat-window {
   --all: 0px;
   --b: #7A35EC;
-
+  
   position: relative;
   width: 100%;
   height: 100%;
@@ -224,41 +224,41 @@
     linear-gradient(45deg, var(--b) 0 calc(var(--bottom-left, var(--all)) + 10px), #202021 0) bottom left / 50% 50%,
     linear-gradient(-45deg, var(--b) 0 calc(var(--bottom-right, var(--all)) + 60px), #202021 0) bottom right / 50% 50%,
     #202021;
-  background-origin: border-box;  
-  background-repeat: no-repeat;
-  -webkit-mask:
-  linear-gradient(135deg, transparent 0 calc(var(--top-left, var(--all)) + 50px), #fff 0) top left,
-  linear-gradient(-135deg, transparent 0 calc(var(--top-right, var(--all))), #fff 0) top right,
-  linear-gradient(45deg, transparent 0 calc(var(--bottom-left, var(--all))), #fff 0) bottom left,
-  linear-gradient(-45deg, transparent 0 calc(var(--bottom-right, var(--all)) + 50px), #fff 0) bottom right;
+    background-origin: border-box;  
+    background-repeat: no-repeat;
+    -webkit-mask:
+    linear-gradient(135deg, transparent 0 calc(var(--top-left, var(--all)) + 50px), #fff 0) top left,
+    linear-gradient(-135deg, transparent 0 calc(var(--top-right, var(--all))), #fff 0) top right,
+    linear-gradient(45deg, transparent 0 calc(var(--bottom-left, var(--all))), #fff 0) bottom left,
+    linear-gradient(-45deg, transparent 0 calc(var(--bottom-right, var(--all)) + 50px), #fff 0) bottom right;
     -webkit-mask-size: 51% 51%;
-  -webkit-mask-repeat: no-repeat;  
-}  
-
-.chat-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 17px;
-  position: relative;
-  z-index: 2;
-}  
-
-.chat-header-content {
-  flex-grow: 1;
-  text-align: center;
-}  
-
-.chat-title {
-  margin: 0;
-  color: #ffffff;
-  text-shadow: 
+    -webkit-mask-repeat: no-repeat;  
+  }  
+  
+  .chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 17px;
+    position: relative;
+    z-index: 2;
+  }  
+  
+  .chat-header-content {
+    flex-grow: 1;
+    text-align: center;
+  }  
+  
+  .chat-title {
+    margin: 0;
+    color: #ffffff;
+    text-shadow: 
     0 0 10px #7A35EC,
     0 0 20px #7A35EC,
     0 0 30px #7A35EC;
-}    
-
-.chat-input {
+  }    
+  
+  .chat-input {
   display: flex;
   align-items: center;
   padding: 0 10px;
@@ -279,6 +279,8 @@
   width: 100%;
   position: relative;
   font-weight: lighter;
+  box-sizing: border-box; /* Ensure padding and border are included in the width */
+  justify-content: center;
 }
 
 .chats-item:last-child {
@@ -287,6 +289,10 @@
 
 .friends-scroll-container {
   overflow: hidden;
+}
+
+.friends-list-container {
+  padding: 0;
 }
 
 .friends-name {
@@ -298,6 +304,7 @@
   font-weight:lighter;
   font-size: 1.5rem;
   border-bottom: 1px solid #e9ecef !important;
+  padding: 10px;
 }
 
 .friends-item img {
@@ -485,11 +492,18 @@
   width: 100%;
   padding-left: 0; /* Remove default padding for proper alignment */
   margin-bottom: 0; /* Remove bottom margin to align with tab content */
+  font-size: 1.5rem;
+  font-weight: 550;
+  line-height: 1.2;
+}
+
+.nav-tabs {
+  border : none !important;
 }
 
 .nav-tabs .nav-link {
   border-radius: 0% !important;
-  border: 2px solid white;
+  border: 1px solid white;
   background-color: transparent;
   color: white;
 }
@@ -513,7 +527,8 @@
 .nav-tabs .nav-link.active {
   background-color: #a376ec;
   border-color: #7A35EC;
-  color: white
+  color: white;
+  border: 2px solid #7A35EC;
 }
 
 .nav-tabs .nav-link:focus {
@@ -524,9 +539,10 @@
 .show {
   display: flex;
   align-items: center;
-  padding: 10px;
+  padding-bottom: 10px;
   width: 100%;
   position: relative;
+  justify-content:center;
 }
 
 .filter-container {
@@ -601,4 +617,32 @@
 
 .overflow-auto {
   overflow-y: scroll !important;
+}
+
+.request-name {
+  font-size: 1.5rem;
+  color: white;
+  margin-right: 10px;
+}
+
+.request-msg {
+  font-size: 1.5rem;
+  color: #cfcfcfb5;
+  font-style: italic;
+  margin-right: 10px;
+}
+
+.request-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.mainButton.reject {
+  background-color: #ff4d4d;
+  box-shadow: 0 4px 0px 0px #ff3333cc;
+}
+
+.mainButton.reject:hover {
+  background-color: #ff6868
 }

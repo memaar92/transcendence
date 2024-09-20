@@ -23,6 +23,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     active_connections = {}
 
     async def send_message_to_user(self, receiver_id, message_info):
+        print (f"Message type: {message_info.get('message_type')}")
         await self.channel_layer.group_send(
             str(receiver_id),
             {
@@ -82,14 +83,27 @@ class ChatConsumer(AsyncWebsocketConsumer):
             })
             await self.send_message_to_user(user_id, {'message': user_list_message, 'message_type': 'user_list', 'message_key': 'users'})
 
-    # async def send_pending_chat_notifications(self, user_id):
-    #     pending_requests = await self.get_pending_requests(user_id)
-    #     for request in pending_requests:
-    #         sender_id = request.user1_id
-    #         if user_id == request.user2_id:
-    #             sender_name = await self.get_user_displayname(sender_id)
-    #             await self.send_message_to_user(sender_id, "Pending chat request", 'chat_request_notification', 'message')
+    async def send_pending_chat_notifications(self, user_id):
+        pending_requests = await self.get_pending_requests(user_id)
+        pending_requests_info = []
 
+        for request in pending_requests:
+            requester_id = request.requester_id
+            requester_name = await self.get_user_field(requester_id, 'displayname')
+            profile_picture = await self.get_user_field(requester_id, 'profile_picture')
+            requester_profile_picture_url = profile_picture.url if profile_picture else None
+
+            pending_requests_info.append({
+                'requester_id': requester_id,
+                'requester_name': requester_name,
+                'requester_profile_picture': requester_profile_picture_url
+            })
+
+        await self.send_message_to_user(user_id, {
+            'message': pending_requests_info,
+            'message_type': 'pending_requests',
+            'message_key': 'requests'
+        })
 
     async def connect(self):
         if self.scope['user'] and not isinstance(self.scope['user'], AnonymousUser):
@@ -160,6 +174,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     if self.context == 'home':
                         await self.send_friends_info(self.user_id)
                         await self.send_unread_messages_count(self.user_id)
+                        await self.send_pending_chat_notifications(self.user_id)
                     await self.broadcast_user_list()
                 case _:
                     await self.send(text_data=json.dumps({
@@ -383,7 +398,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def get_pending_requests(self, user_id):
         pending_requests = Relationship.objects.filter(
-            Q(user2_id=user_id, status=RelationshipStatus.PENDING) | Q(user1_id=user_id, status=RelationshipStatus.PENDING)
+            #filter all relationship objects where the user is either user1 or user2 and the status is pending and the user is not the requester
+            (Q(user1_id=user_id) | Q(user2_id=user_id)) & Q(status=RelationshipStatus.PENDING) & ~Q(requester_id=user_id)
         )
         return list(pending_requests)
 

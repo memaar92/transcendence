@@ -93,6 +93,8 @@ class ChatHandler {
         this.incrementUnreadMessageCount(content.sender_id);
         this.showLatestMessage(content.message, content.sender_id, content.sender_id);
         break;
+      case 'request_status'
+        this.displayModal(content.message);
       case 'message_preview':
         const chatItems = document.querySelectorAll('.chats-item');
         chatItems.forEach(chatItem => {
@@ -111,6 +113,9 @@ class ChatHandler {
             }
           }
         });
+        break;
+      case "pending_requests":
+        this.displayChatRequest(content.requests);
         break;
       default:
         console.error('Unknown context:', content.type);
@@ -228,26 +233,46 @@ class ChatHandler {
   //   this.updateUnreadMessageIndicator(content.sender_id);
   // }
 
-  displayChatRequest(content) {
-    const requests = document.getElementById('friends-scroll-container');
-    if (requests) {
+  /* add request items to the friends-scroll-container and requests filter */
+  displayChatRequest(requests) {
+    const requestsListElement = document.querySelector('.friends-scroll-container');
+    requests.forEach((request) => {
       const requestItem = document.createElement('div');
-      requestItem.textContent = `Chat request from ${content.sender_name}`;
-      // console.log(content);
+      requestItem.className = 'friends-item requests';
+      requestItem.setAttribute('data-id', request.requester_id);
+      requestItem.setAttribute('data-name', request.requester_name);
 
-      const acceptButton = this.createButton('Accept', content.sender_id, content.receiver_id, true);
-      const denyButton = this.createButton('Deny', content.sender_id, content.receiver_id, false);
+      const requestName = document.createElement('div');
+      requestName.className = 'request-name';
+      requestName.textContent = request.requester_name;
 
-      requestItem.appendChild(acceptButton);
-      requestItem.appendChild(denyButton);
-      requests.appendChild(requestItem);
-    } else {
-      console.warn('Chat window not found');
-    }
+      const requestMsg = document.createElement('div');
+      requestMsg.className = 'request-msg';
+      requestMsg.textContent = ' wants to chat with you';
+
+      const buttonsContainer = document.createElement('div');
+      buttonsContainer.className = 'request-buttons';
+      const acceptButton = this.createButton('Accept', request.requester_id, this.senderId, true);
+      const denyButton = this.createButton('Deny', request.requester_id, this.senderId, false);
+
+      buttonsContainer.appendChild(acceptButton);
+      buttonsContainer.appendChild(denyButton);
+
+      requestItem.appendChild(requestName);
+      requestItem.appendChild(requestMsg);
+      requestItem.appendChild(buttonsContainer);
+  
+      requestsListElement.appendChild(requestItem);
+    });
+    this.applyFilter();
   }
 
   createButton(text, senderId, receiverId, isAccept) {
     const button = document.createElement('button');
+    if (!isAccept)
+      button.className = 'mainButton reject';
+    else 
+      button.className = 'mainButton';
     button.textContent = text;
 
     button.onclick = () => {
@@ -256,7 +281,7 @@ class ChatHandler {
         'sender_id': senderId,
         'receiver_id': receiverId
       }));
-      button.parentNode.remove();
+      button.parentNode.parentNode.remove();
     };
     return button;
   }
@@ -325,17 +350,19 @@ class ChatHandler {
         console.warn('Image not found for chat item:', friendId);
       }
     });
-
+  
     const friendItems = document.querySelectorAll('.friends-item');
     friendItems.forEach(friendItem => {
-      const friendId = friendItem.getAttribute('data-id');
-      const isOnline = this.onlineUserIds.includes(friendId);
-      const friendImg = friendItem.querySelector('img');
-      if (friendImg) {
-        console.log('Updating friend status indicator:', friendId, isOnline);
-        friendImg.style.border = isOnline ? '4px solid #7A35EC' : '4px solid grey';
-      } else {
-        console.warn('Image not found for friend item:', friendId);
+      if (!friendItem.classList.contains('requests')) { // Check if the item does not have the 'requests' class
+        const friendId = friendItem.getAttribute('data-id');
+        const isOnline = this.onlineUserIds.includes(friendId);
+        const friendImg = friendItem.querySelector('img');
+        if (friendImg) {
+          console.log('Updating friend status indicator:', friendId, isOnline);
+          friendImg.style.border = isOnline ? '4px solid #7A35EC' : '4px solid grey';
+        } else {
+          console.warn('Image not found for friend item:', friendId);
+        }
       }
     });
   }
