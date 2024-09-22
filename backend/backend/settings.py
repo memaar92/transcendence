@@ -42,10 +42,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'drf_spectacular',
-	'usermanagement',
+    'usermanagement',
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
-	'corsheaders',
+    'corsheaders',
     'matchmaking',
     'pong',
 ]
@@ -133,12 +133,14 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+# can this be defined somewhere else as it is also in usermanagement/utils.py
 def get_secret(secret_name):
     try:
         with open(f'/run/secrets/{secret_name}') as secret_file:
             return secret_file.read().strip()
     except IOError as e:
             raise Exception(f'Critical error reading secret {secret_name}: {e}')
+
 
 DATABASES = {
     'default': {
@@ -213,13 +215,13 @@ CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOWS_CREDENTIALS = True
 
 REST_FRAMEWORK = {
-	"DEFAULT_AUTHENTICATION_CLASSES": (
-		#"rest_framework_simplejwt.authentication.JWTAuthentication",
-		'rest_framework_simplejwt.authentication.JWTStatelessUserAuthentication',
-	),
-	"DEFAULT_PERMISSION_CLASSES": [
-		"rest_framework.permissions.IsAuthenticated",
-	],
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        #"rest_framework_simplejwt.authentication.JWTAuthentication",
+        'rest_framework_simplejwt.authentication.JWTStatelessUserAuthentication',
+    ),
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
@@ -234,12 +236,13 @@ SIMPLE_JWT = {
     "AUTH_COOKIE_SAMESITE": 'Strict',
     "AUTH_HEADER_TYPES": ("Bearer",),
     "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
-	"ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
-	"REFRESH_TOKEN_LIFETIME": timedelta(days=1),
-	"ROTATE_REFRESH_TOKENS": True,
-	"BLACKLIST_AFTER_ROTATION": True,
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
     #add additional settings, e.g. algo?
 }
+
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Transcendence Pongo API',
@@ -248,6 +251,7 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
     # OTHER SETTINGS
 }
+
 
 AUTH_USER_MODEL = 'usermanagement.CustomUser'
 
