@@ -1,13 +1,15 @@
 import logging
 import asyncio
-from typing import Set, List, Tuple, Optional
+from typing import Set, List, Tuple, Optional, Callable
 from pong.match_tournament.match_session import MatchSession
+from uuid import uuid4
 
 logger = logging.getLogger("PongConsumer")
 
 class TournamentSession:
-    def __init__(self, id: str, name: str, size: int):
-        self._id = id
+    def __init__(self, owner_user_id, name: str, size: int, on_finished: Callable[[str], None]):
+        self._id = uuid4().hex
+        self._owner_user_id = owner_user_id
         self._size = size
         self._users: Set[str] = set()
         self._matches: List[Tuple[str, str]] = []
@@ -15,6 +17,9 @@ class TournamentSession:
         self._winner: Optional[str] = None
         self._running = False
         self._condition = asyncio.Condition()
+        self._on_finished = on_finished
+
+        self._users.add(owner_user_id)
 
     async def start(self) -> None:
         self._running = True
@@ -27,6 +32,7 @@ class TournamentSession:
             
             if self._winner is not None: # TODO: Notify the winner
                 self._running = False
+                self._on_finished(self._id)
 
     def _generate_round_robin_schedule(self) -> None:
         users = list(self._users)
@@ -94,6 +100,7 @@ class TournamentSession:
         asyncio.create_task(notify())
 
     def add_user(self, user_id: str):
+        '''Add a user to the tournament set'''
         self._users.add(user_id)
 
     def remove_user(self, user_id: str):
@@ -101,6 +108,9 @@ class TournamentSession:
 
     def get_id(self) -> str:
         return self._id
+    
+    def get_owner_user_id(self) -> str:
+        return self._owner_user_id
 
     def get_name(self) -> str:
         return self._name
@@ -137,6 +147,9 @@ class TournamentSession:
 
     def is_finished(self) -> bool:
         return self._winner is not None
+    
+    def has_user(self, user_id: str) -> bool:
+        return user_id in self._users
 
     def __str__(self) -> str:
         return f': {self._name} - {self._size} players'

@@ -1,7 +1,7 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 from pong.match_tournament.match_session_handler import MatchSessionHandler
 from pong.match_tournament.tournament_session_handler import TournamentSessionHandler
-from pong.match_tournament.data_managment import User
+from pong.match_tournament.data_managment import User, Tournaments
 import json
 import logging
 
@@ -83,6 +83,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             
 
     async def _handle_matchmaking_request(self, data: dict) -> None:
+        '''Handle matchmaking requests'''
         if data.get("request") == "match":
             if data.get("match_type") == "online":
                 await MatchSessionHandler.add_to_matchmaking_queue(self.user_id)
@@ -92,6 +93,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                 logger.error("Invalid match type")
 
     async def _handle_tournament_request(self, data: dict) -> None:
+        '''Handle tournament requests'''
         if data.get("request") == "create":
             await self._create_tournament(data)
         elif data.get("request") == "register":
@@ -100,6 +102,8 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             await self._unregister_from_tournament(data)
         elif data.get("request") == "start":
             await self._start_tournament(data)
+        elif data.get("request") == "get_tournaments":
+            await self._get_tournaments(data)
 
     async def _send_connect_to_match_message(self, match_id: str) -> None:
         logger.debug(f"Sending connect to match message for match {match_id}")
@@ -107,6 +111,11 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             'type': 'match_assigned',
             'match_id': match_id
         }))
+
+
+    ###################################################################
+    #   Functions to handle and track active connections for a user   #
+    ###################################################################
 
     async def _add_active_connection(self) -> None:
         '''Add a connection to the user's active connections'''
@@ -137,6 +146,9 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
 
     ##############################
     #    Message Handlers        #
+    #    (Event Handlers)        #
+    #    Handle messages from    #
+    #    the channel layer       #
     ##############################
 
     async def match_assigned(self, event):
@@ -156,4 +168,100 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             'type': 'match_assigned',
             'match_id': match_id
+        }))
+
+    async def tournament_cancelled(self, event):
+        '''Handle the tournament_cancelled message'''
+        logger.debug(f"Received tournament_cancelled event: {event}")
+        await self.send(text_data=json.dumps({
+            'type': 'tournament_cancelled'
+        }))
+
+    ##############################
+    #    Tournament Handlers     #
+    ##############################
+
+    async def _create_tournament(self, data: dict) -> None:
+        '''Create a tournament'''
+        try:
+            tournament_id = TournamentSessionHandler.create_online_tournament_session(self.user_id, data.get("name"), data.get("size"))
+        except ValueError as e:
+            logger.error(f"Failed to create tournament: {e}")
+            self._send_error_message(str(e))
+            return
+        
+        await self.send(text_data=json.dumps({
+            'type': 'tournament_created',
+            'tournament_id': tournament_id.get_id()
+        }))
+
+    async def _register_for_tournament(self, data: dict) -> None:
+        '''Register for a tournament'''
+        try:
+            TournamentSessionHandler.add_user_to_tournament(data.get("tournament_id"), self.user_id)
+        except ValueError as e:
+            logger.error(f"Failed to register for tournament: {e}")
+            self._send_error_message(str(e))
+            return
+        
+        await self.send(text_data=json.dumps({
+            'type': 'registered_for_tournament',
+            'tournament_id': data.get("tournament_id")
+        }))
+
+    async def _unregister_from_tournament(self, data: dict) -> None:
+        '''Unregister from a tournament'''
+        tournament_id = data.get("tournament_id")
+        if not tournament_id:
+            self._send_error_message("Tournament id is required")
+            return
+        try:
+            tournament = Tournaments.get(tournament_id)
+            if tournament:
+                if tournament.get_owner_user_id() == self.user_id:
+                    await TournamentSessionHandler.cancel_tournament(tournament_id)
+                else:
+                    await TournamentSessionHandler.remove_user_from_tournament(tournament_id, self.user_id)
+        except ValueError as e:
+            logger.error(f"Failed to unregister from tournament: {e}")
+            self._send_error_message(str(e))
+            return
+        
+        await self.send(text_data=json.dumps({
+            'type': 'unregistered_from_tournament',
+            'tournament_id': data.get("tournament_id")
+        }))
+
+
+    async def _start_tournament(self, data: dict) -> None:
+        '''Start a tournament'''
+        try:
+            await TournamentSessionHandler.start_tournament(self.user_id, data.get("tournament_id"))
+        except ValueError as e:
+            logger.error(f"Failed to start tournament: {e}")
+            self._send_error_message(str(e))
+            return
+
+    async def _get_tournaments(self, data: dict) -> None:
+        '''Get all tournaments'''
+        tournaments = Tournaments.get_all()
+        tournament_data = []
+        for tournament in tournaments.values():
+            tournament_data.append({
+                'id': tournament.get_id(),
+                'name': tournament.get_name(),
+                'size': tournament.get_size(),
+                'users': list(tournament.get_users())
+            })
+        
+        await self.send(text_data=json.dumps({
+            'type': 'tournaments',
+            'tournaments': tournament_data
+        }))
+
+    async def _send_error_message(self, message: str) -> None:
+        '''Send an error message to the user'''
+        await self.send(text_data=json.dumps({
+            'type': 'error',
+            'message': message
         }))

@@ -11,7 +11,7 @@ class User:
     @classmethod
     def is_user_registered(self, user_id) -> bool:
         '''Check if a user is registered for the matchmaking queue, a match or a tournament'''
-        return MatchmakingQueue.is_user_registered(user_id) or Matches.is_user_registered(user_id) # or Tournaments.is_user_registered(user_id)
+        return MatchmakingQueue.is_user_registered(user_id) or Matches.is_user_registered(user_id) or Tournaments.is_user_registered(user_id)
 
     @classmethod
     def is_user_connected_to_match(self, user_id: str, match_id: str) -> bool:
@@ -145,7 +145,7 @@ class Tournaments:
     def get_user_tournament_id(cls, user_id: str) -> Optional[str]:
         '''Get the tournament id of a user'''
         for tournament in cls.tournaments.values():
-            if user_id in tournament.get_players():
+            if user_id in tournament.get_users():
                 return tournament.get_id()
         return None
     
@@ -154,13 +154,21 @@ class Tournaments:
         '''Get the players of a tournament'''
         tournament = cls.get(tournament_id)
         if tournament:
-            return tournament.get_players()
+            return tournament.get_users()
         return set()
     
     @classmethod
     def is_user_registered(cls, user_id: str) -> bool:
         '''Check if a user is registered to a tournament'''
         for tournament in cls.tournaments.values():
-            if user_id in tournament.get_tournament_players():
+            if tournament.has_user(user_id):
                 return True
         return False
+    
+    @classmethod
+    def get_by_name(cls, tournament_name: str) -> Optional[TournamentSession]:
+        '''Get a tournament by name'''
+        for tournament in cls.tournaments.values():
+            if tournament.get_name() == tournament_name:
+                return tournament
+        return None
