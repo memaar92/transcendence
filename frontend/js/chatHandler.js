@@ -93,8 +93,9 @@ class ChatHandler {
         this.incrementUnreadMessageCount(content.sender_id);
         this.showLatestMessage(content.message, content.sender_id, content.sender_id);
         break;
-      case 'request_status'
+      case 'request_status':
         this.displayModal(content.message);
+        break;
       case 'message_preview':
         const chatItems = document.querySelectorAll('.chats-item');
         chatItems.forEach(chatItem => {
@@ -164,6 +165,58 @@ class ChatHandler {
         console.error('Error:', content.type);
         break;
     }
+  }
+
+  displayModal(message) {
+    // Create the modal container
+    const modalContainer = document.createElement('div');
+    modalContainer.className = 'modal fade';
+
+    // Define the full modal structure
+    modalContainer.innerHTML = `
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Notification</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            ${message}
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary">Understood</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Append the modal container to the body
+
+    document.body.prepend(modalContainer);
+
+    
+    const modalInstance = new bootstrap.Modal(modalContainer, {
+      keyboard: true,
+      backdrop: 'static'
+    });
+    
+    modalInstance.show();
+    
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape') {
+        modalInstance.hide();
+      }
+    };
+  
+    document.addEventListener('keydown', handleEscapeKey);
+  
+    // Clean up event listeners and modal instance when the modal is hidden
+    modalContainer.addEventListener('hidden.bs.modal', () => {
+      modalContainer.remove();
+      modalInstance.dispose();
+      document.removeEventListener('keydown', handleEscapeKey);
+    });
   }
 
   sendMessage(receiverId) {
@@ -248,7 +301,7 @@ class ChatHandler {
 
       const requestMsg = document.createElement('div');
       requestMsg.className = 'request-msg';
-      requestMsg.textContent = ' wants to chat with you';
+      requestMsg.textContent = ' wants to be friends with you';
 
       const buttonsContainer = document.createElement('div');
       buttonsContainer.className = 'request-buttons';
@@ -442,11 +495,33 @@ class ChatHandler {
       const friendName = document.createElement('div');
       friendName.className = 'friends-name';
       friendName.textContent = friend.name;
-  
+
+      const chatButton = document.createElement('button');
+      chatButton.id = 'chat-button';
+      chatButton.onclick = () => {
+        this.router.navigate(`/live_chat/chat_room?recipient=${friend.name}`);
+      };
+
+      // Directly insert the SVG content as innerHTML
+      const svgContent = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="50" height="50" fill="grey" stroke="white" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="transform: scale(1, -1); transform: translate(0, 6px);">
+          <!-- Chat bubble -->
+          <path d="M21 15a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H3a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h4l2 2 2-2h6z"/>
+      
+          <!-- Three dots -->
+          <circle cx="7" cy="8.5" r="0.5" fill="white"/>
+          <circle cx="12" cy="8.5" r="0.5" fill="white"/>
+          <circle cx="17" cy="8.5" r="0.5" fill="white"/>
+        </svg>
+      `;    
+
+      chatButton.innerHTML = svgContent;
+
       friendInfo.appendChild(friendName);
       friendItem.appendChild(friendImg);
       friendItem.appendChild(friendInfo);
-  
+      friendItem.appendChild(chatButton);
+
       friendsListElement.appendChild(friendItem);
     });
     

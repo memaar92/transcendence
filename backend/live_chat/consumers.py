@@ -193,6 +193,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 case 'update_status':
                     await self.update_status(data['user_id_1'], data['user_id_2'], data['status'])
                     await self.send_friends_info(data['user_id_1'])
+                case 'chat_request_accepted':
+                    await self.chat_request_accepted(data)
+                case 'chat_request_denied':
+                    await self.chat_request_denied(data)
                 case _:
                     await self.send(text_data=json.dumps({
                         'type': 'error',
@@ -316,21 +320,30 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'traceback': error_traceback
             }))
 
-    # async def chat_request_accepted(self, data):
-    #     sender_id = data['sender_id']
-    #     receiver_id = data['receiver_id']
-    #     await self.update_status(sender_id, receiver_id, RelationshipStatus.BEFRIENDED)
+    async def chat_request_accepted(self, data):
+        sender_id = data['sender_id']
+        receiver_id = data['receiver_id']
+        await self.update_status(sender_id, receiver_id, RelationshipStatus.BEFRIENDED)
 
-    #     await self.send_message_to_user(sender_id, f"You are now friends with {await self.get_user_displayname(receiver_id)}", 'chat_message', 'message')
-    #     await self.send_message_to_user(receiver_id, f"You are now friends with {self.scope['user'].displayname}", 'chat_message', 'message')
+        await self.send_message_to_user(sender_id, {
+            'message': 'You are now friends with ' + await self.get_user_field(receiver_id, 'displayname'),
+            'message_type': 'request_status',
+            'message_key': 'message'
+        })
+        await self.send_message_to_user(receiver_id, {
+            'message': 'You are now friends with ' + await self.get_user_field(sender_id, 'displayname'),
+            'message_type': 'request_status',
+            'message_key': 'message'
+        })
 
-    #     await self.send_friends_info(sender_id)
-    #     await self.send_friends_info(receiver_id)
-
-    # async def chat_request_denied(self, data):
-    #     receiver_displayname = await self.get_user_displayname(data['receiver_id'])
-    #     await self.update_status(data['sender_id'], data['receiver_id'], RelationshipStatus.DEFAULT)
-    #     await self.send_message_to_user(data['sender_id'], receiver_displayname, 'chat_request_denied', 'message')
+    async def chat_request_denied(self, data):
+        receiver_displayname = await self.get_user_displayname(data['receiver_id'])
+        # await self.update_status(data['sender_id'], data['receiver_id'], RelationshipStatus.DEFAULT)
+        await self.send_message_to_user(data['sender_id'], {
+            'message': f'Your chat request to {receiver_displayname} was denied.',
+            'message_type': 'request_status',
+            'message_key': 'message'
+        })
 
     async def chat_history(self, data, receiver_id):
         sender_id = data['sender_id']
@@ -386,7 +399,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def update_status(self, user_id_1, user_id_2, status):
         try:
-            print(f"Updating status to {status} for {user_id_1} and {user_id_2}")
             relationship = Relationship.objects.get(
                 Q(user1_id=user_id_1, user2_id=user_id_2) | Q(user1_id=user_id_2, user2_id=user_id_1)
             )

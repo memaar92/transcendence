@@ -297,6 +297,7 @@
 
 .friends-name {
   font-size: 1.5rem;
+  margin-right: 10px;
 }
 
 .friends-item {
@@ -537,12 +538,12 @@
 }
 
 .show {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  justify-items: center;
+  gap: 1rem;
   padding-bottom: 10px;
   width: 100%;
-  position: relative;
-  justify-content:center;
 }
 
 .filter-container {
@@ -645,4 +646,30 @@
 
 .mainButton.reject:hover {
   background-color: #ff6868
+}
+
+.modal-header {
+  background-color: #7A35EC;
+  color: white;
+}
+
+.modal-body {
+  color: #202021;
+}
+
+#close-chat {
+  filter: invert(1);
+  transform: scale(1.5);
+}
+
+#chat-button {
+  background-color: transparent;
+  box-sizing: content-box;
+  width: 2em;
+  height: 2em;
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
