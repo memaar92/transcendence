@@ -1,21 +1,26 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Pong Game</title>
-    <style>
-        #gameCanvas {
-            background-color: #000;
-            display: none; /* Hide the canvas by default */
-            margin: 0 auto;
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tournament Creation</title>
+    {% load static %}
 </head>
 <body>
-    <canvas id="gameCanvas" width="800" height="800"></canvas>
-    <button id="join-queue-button">Join Queue</button>
-    <button id="reconnectButton" style="display: none;">Reconnect</button>
-    <button id="connectToMatchButton" style="display: none;">Connect to Match</button>
-    {% load static %}
-    <script src="{% static 'tournament.js' %}"></script>
+    <h1>Tournament</h1>
+        <form id="tournament-form">
+        <label for="tournament-name">Tournament Name:</label>
+        <input type="text" id="tournament-name" name="tournament-name" required>
+        
+        <label for="max-players">Max Players (up to 12):</label>
+        <input type="number" id="max-players" name="max-players" min="1" max="12" required>
+        
+        <button type="submit">Create Tournament</button>
+    </form>
+    <!-- Load matchmaking.js as a module -->
+    <script type="module" src="{% static 'matchmaking.js' %}"></script>
+
+    <!-- Load tournament.js as a module -->
+    <script type="module" src="{% static 'tournament.js' %}"></script>
 </body>
 </html>

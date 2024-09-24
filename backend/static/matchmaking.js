@@ -1,4 +1,4 @@
-import { sendWebSocketMessage } from "./webSocketHelper";
+import { sendWebSocketMessage } from "./webSocketHelper.js";
 
 let retryCount = 0;
 const maxRetries = 5;
@@ -6,7 +6,7 @@ const retryDelay = 2000; // Milliseconds
 let match_id = null;
 let isActiveTab = false;
 
-const matchmakingSocket = new WebSocket('ws://' + window.location.host + '/ws/pong/matchmaking/');
+export const matchmakingSocket = new WebSocket('ws://' + window.location.host + '/ws/pong/matchmaking/');
 
 // Monitor which tab is active
 document.addEventListener("visibilitychange", function() {
@@ -80,7 +80,7 @@ function hideReconnectButton() {
 }
 
 class MatchmakingRequests {
-    static sendRequest(requestType, data) {
+    static sendRequest = (requestType, data) => {
         console.log(`${requestType} request with data:`, data);
         sendWebSocketMessage(matchmakingSocket, {
             "type": "matchmaking",
@@ -89,44 +89,13 @@ class MatchmakingRequests {
         });
     }
 
-    static joinOnlineMatchmakingQueue() {
+    static joinOnlineMatchmakingQueue = () => {
         this.sendRequest("match", { match_type: "online" });
     }
 
-    static createLocalMatch() {
+    static createLocalMatch = () => {
         this.sendRequest("match", { match_type: "local" });
     }
 }
 
-class TournamentRequests {
-    static sendRequest(requestType, data) {
-        console.log(`${requestType} request with data:`, data);
-        sendWebSocketMessage(matchmakingSocket, {
-            "type": "tournament",
-            "request": requestType,
-            ...data,
-        });
-    }
-
-    static create(name, max_players) {
-        this.sendRequest("create", { name, max_players });
-    }
-
-    static register(tournament_id) {
-        this.sendRequest("register", { tournament_id });
-    }
-
-    static unregister(tournament_id) {
-        this.sendRequest("unregister", { tournament_id });
-    }
-
-    static start(tournament_id) {
-        this.sendRequest("start", { tournament_id });
-    }
-
-    static getTournaments() {
-        this.sendRequest("get_open_tournaments", {});
-    }
-}
-
-document.getElementById('join-queue-button').onclick = MatchmakingRequests.joinOnlineMatchmakingQueue;
+// document.getElementById('join-queue-button').onclick = MatchmakingRequests.joinOnlineMatchmakingQueue;

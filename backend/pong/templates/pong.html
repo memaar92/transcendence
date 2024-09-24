@@ -9,14 +9,18 @@
             margin: 0 auto;
         }
     </style>
+    {% load static %}
 </head>
 <body>
     <canvas id="gameCanvas" width="800" height="800"></canvas>
     <button id="join-queue-button">Join Queue</button>
     <button id="reconnectButton" style="display: none;">Reconnect</button>
     <button id="connectToMatchButton" style="display: none;">Connect to Match</button>
-    {% load static %}
-    <script src="{% static 'matchmaking.js' %}"></script>
-    <script src="{% static 'match.js' %}"></script>
+
+    <!-- Load matchmaking.js as a module -->
+    <script type="module" src="{% static 'matchmaking.js' %}"></script>
+
+    <!-- Load match.js as a module (if it uses ES6 imports/exports) -->
+    <script type="module" src="{% static 'match.js' %}"></script>
 </body>
 </html>

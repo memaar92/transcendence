@@ -5,10 +5,12 @@ from pong.match_tournament.match_session import MatchSession
 from uuid import uuid4
 
 logger = logging.getLogger("PongConsumer")
+logger.setLevel(logging.DEBUG)
 
 class TournamentSession:
     def __init__(self, owner_user_id, name: str, size: int, on_finished: Callable[[str], None]):
         self._id = uuid4().hex
+        self._name = name
         self._owner_user_id = owner_user_id
         self._max_players = size
         self._users: Set[str] = set()
@@ -20,6 +22,7 @@ class TournamentSession:
         self._on_finished = on_finished
 
         self._users.add(owner_user_id)
+        logger.debug(f"Created tournament session {self}")
 
     async def start(self) -> None:
         self._running = True

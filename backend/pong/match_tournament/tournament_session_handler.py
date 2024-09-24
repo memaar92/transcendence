@@ -4,6 +4,7 @@ from pong.match_tournament.data_managment import Tournaments, User
 from channels.layers import get_channel_layer
 
 logger = logging.getLogger("PongConsumer")
+logger.setLevel(logging.DEBUG)
 
 class TournamentSessionHandler:
     channel_layer = get_channel_layer()
@@ -70,14 +71,25 @@ class TournamentSessionHandler:
         if tournament.is_running() or tournament.is_finished():
             raise ValueError(f"Cannot remove user {user_id} from tournament {tournament_id} as it is running or finished")
 
-        tournament.remove_user(user_id)
+        logger.debug(f"Owner user id: {tournament.get_owner_user_id()}")
+        if user_id == tournament.get_owner_user_id():
+            await cls.cancel_tournament(tournament_id)
+        else:
+            tournament.remove_user(user_id)
 
     @classmethod
     async def remove_user_from_all_inactive_tournaments(cls, user_id: str) -> None:
         '''Remove a user from all tournaments if they are not running or finished'''
-        for tournament in Tournaments.get_all().values():
+        logger.debug(f"All tournaments: {Tournaments.get_all()}")
+        tournaments = list(Tournaments.get_all().values())
+        for tournament in tournaments:
+            logger.debug(f"Checking tournament {tournament.get_id()}")
             if not tournament.is_running() and not tournament.is_finished():
-                tournament.remove_user(user_id)
+                logger.debug(f"Removing user {user_id} from tournament {tournament.get_id()}")
+                try:
+                    await cls.remove_user_from_tournament(tournament.get_id(), user_id)
+                except Exception as e:
+                    logger.error(f"Failed to remove user {user_id} from tournament {tournament.get_id()}: {e}")
 
     @classmethod
     async def start_tournament(cls, user_id, tournament_id: str) -> None:
@@ -100,6 +112,7 @@ class TournamentSessionHandler:
     @classmethod
     async def cancel_tournament(cls, tournament_id: str) -> None:
         '''Cancel a tournament'''
+        logger.debug(f"Cancelling tournament {tournament_id}")
         if not tournament_id:
             raise ValueError("Tournament id is required")
         tournament = Tournaments.get(tournament_id)

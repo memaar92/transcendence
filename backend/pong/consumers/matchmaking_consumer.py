@@ -53,7 +53,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
         if self.user_id in self._user_connections and len(self._user_connections[self.user_id]["connections"]) == 0:
             logger.info(f"User {self.user_id} has no open connections")
             MatchSessionHandler.remove_from_matchmaking_queue(self.user_id)
-            TournamentSessionHandler.remove_user_from_all_inactive_tournaments(self.user_id)
+            await TournamentSessionHandler.remove_user_from_all_inactive_tournaments(self.user_id)
 
             # Remove user from the group only when all connections are closed
             await self.channel_layer.group_discard(
@@ -221,10 +221,9 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
         try:
             tournament = Tournaments.get(tournament_id)
             if tournament:
-                if tournament.get_owner_user_id() == self.user_id:
-                    await TournamentSessionHandler.cancel_tournament(tournament_id)
-                else:
-                    await TournamentSessionHandler.remove_user_from_tournament(tournament_id, self.user_id)
+                await TournamentSessionHandler.remove_user_from_tournament(tournament_id, self.user_id)
+            else:
+                self._send_error_message(f"Tournament {tournament_id} not found")
         except ValueError as e:
             logger.error(f"Failed to unregister from tournament: {e}")
             self._send_error_message(str(e))

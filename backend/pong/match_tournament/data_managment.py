@@ -131,7 +131,8 @@ class Tournaments:
     tournaments: Dict[str, TournamentSession] = {} 
 
     @classmethod
-    def add(cls, tournament_id: str, tournament: TournamentSession) -> None:
+    def add(cls, tournament: TournamentSession) -> None:
+        tournament_id = tournament.get_id()
         cls.tournaments[tournament_id] = tournament
 
     @classmethod
