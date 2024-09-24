@@ -41,9 +41,43 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div>ID: ${tournament.id}</div>
                 <div>Name: ${tournament.name}</div>
                 <div>Max Players: ${tournament.max_players}</div>
+                <div>Owner: ${tournament.owner}</div>
                 <div>Users: ${tournament.users.join(', ')}</div>
+                <button class="register-button" data-id="${tournament.id}">Register</button>
+                <button class="unregister-button" data-id="${tournament.id}">Unregister</button>
+                <button class="start-button" data-id="${tournament.id}" ${tournament.is_owner ? '' : 'disabled'}>Start</button>
+                <button class="cancel-button" data-id="${tournament.id}" ${tournament.is_owner ? '' : 'disabled'}>Cancel</button>
             `;
             tournamentList.appendChild(row);
+        });
+
+        // Add event listeners to the buttons
+        document.querySelectorAll('.register-button').forEach(button => {
+            button.addEventListener('click', (event) => {
+                const tournamentId = event.target.getAttribute('data-id');
+                TournamentRequests.register(tournamentId);
+            });
+        });
+
+        document.querySelectorAll('.unregister-button').forEach(button => {
+            button.addEventListener('click', (event) => {
+                const tournamentId = event.target.getAttribute('data-id');
+                TournamentRequests.unregister(tournamentId);
+            });
+        });
+
+        document.querySelectorAll('.start-button').forEach(button => {
+            button.addEventListener('click', (event) => {
+                const tournamentId = event.target.getAttribute('data-id');
+                TournamentRequests.start(tournamentId);
+            });
+        });
+
+        document.querySelectorAll('.cancel-button').forEach(button => {
+            button.addEventListener('click', (event) => {
+                const tournamentId = event.target.getAttribute('data-id');
+                TournamentRequests.unregister(tournamentId);
+            });
         });
     }
 
@@ -78,6 +112,10 @@ class TournamentRequests {
 
     static start(tournament_id) {
         this.sendRequest("start", { tournament_id });
+    }
+
+    static cancel(tournament_id) {
+        this.sendRequest("cancel", { tournament_id });
     }
 
     static getTournaments() {

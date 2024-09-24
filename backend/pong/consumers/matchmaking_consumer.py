@@ -269,7 +269,9 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                 'id': tournament.get_id(),
                 'name': tournament.get_name(),
                 'max_players': tournament.get_max_players(),
-                'users': list(tournament.get_users())
+                'owner': tournament.get_owner_user_id(),
+                'users': list(tournament.get_users()),
+                'is_owner': self.user_id == tournament.get_owner_user_id()
             })
         
         await self.send(text_data=json.dumps({

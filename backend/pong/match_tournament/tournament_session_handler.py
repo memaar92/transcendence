@@ -53,6 +53,7 @@ class TournamentSessionHandler:
             raise ValueError(f"Tournament {tournament_id} is running or finished")
 
         tournament.add_user(user_id)
+        logger.debug(f"User {user_id} added to tournament {tournament_id}")
 
     @classmethod
     async def remove_user_from_tournament(cls, tournament_id: str, user_id: str) -> None:

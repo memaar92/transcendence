@@ -98,4 +98,9 @@ class MatchmakingRequests {
     }
 }
 
-// document.getElementById('join-queue-button').onclick = MatchmakingRequests.joinOnlineMatchmakingQueue;
+document.addEventListener('DOMContentLoaded', () => {
+    const joinQueueButton = document.getElementById('join-queue-button');
+    if (joinQueueButton) {
+        joinQueueButton.onclick = MatchmakingRequests.joinOnlineMatchmakingQueue;
+    }
+});
