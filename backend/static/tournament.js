@@ -35,6 +35,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateTournamentList(tournaments) {
         tournamentList.innerHTML = ''; // Clear the list
         tournaments.forEach(tournament => {
+            const userCount = tournament.users.length; // Number of users registered in the tournament
+            const isOwner = tournament.is_owner; // Is the current user the owner of the tournament
+            const canStart = isOwner && userCount >= 2; // At least 2 players required to start
+
             const row = document.createElement('div');
             row.className = 'tournament-row';
             row.innerHTML = `
@@ -45,8 +49,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div>Users: ${tournament.users.join(', ')}</div>
                 <button class="register-button" data-id="${tournament.id}">Register</button>
                 <button class="unregister-button" data-id="${tournament.id}">Unregister</button>
-                <button class="start-button" data-id="${tournament.id}" ${tournament.is_owner ? '' : 'disabled'}>Start</button>
-                <button class="cancel-button" data-id="${tournament.id}" ${tournament.is_owner ? '' : 'disabled'}>Cancel</button>
+                <button class="start-button" data-id="${tournament.id}" ${canStart ? '' : 'disabled'}>Start</button>
+                <button class="cancel-button" data-id="${tournament.id}" ${isOwner ? '' : 'disabled'}>Cancel</button>
             `;
             tournamentList.appendChild(row);
         });
@@ -76,14 +80,16 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.cancel-button').forEach(button => {
             button.addEventListener('click', (event) => {
                 const tournamentId = event.target.getAttribute('data-id');
-                TournamentRequests.unregister(tournamentId);
+                TournamentRequests.cancel(tournamentId);
             });
         });
     }
 
-    // Automatically update the list every 2 seconds
+    // Automatically update the list every 2 seconds if the socket is still connected
     setInterval(() => {
-        TournamentRequests.getTournaments();
+        if (matchmakingSocket.readyState === WebSocket.OPEN) {
+            TournamentRequests.getTournaments();
+        }
     }, 2000);
 });
 

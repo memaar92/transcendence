@@ -18,6 +18,8 @@ class TournamentSessionHandler:
             raise ValueError("Tournament name is required")
         if not size:
             raise ValueError("Tournament size is required")
+        if size < 2:
+            raise ValueError("Tournament size must be at least 2")
         if Tournaments.get_by_name(tournament_name):
             raise ValueError(f"Tournament with name {tournament_name} already exists")
         if User.is_user_registered(owner_user_id):
