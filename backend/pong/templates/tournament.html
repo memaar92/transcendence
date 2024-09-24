@@ -1,1 +1,21 @@
-Hello World
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pong Game</title>
+    <style>
+        #gameCanvas {
+            background-color: #000;
+            display: none; /* Hide the canvas by default */
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="800"></canvas>
+    <button id="join-queue-button">Join Queue</button>
+    <button id="reconnectButton" style="display: none;">Reconnect</button>
+    <button id="connectToMatchButton" style="display: none;">Connect to Match</button>
+    {% load static %}
+    <script src="{% static 'tournament.js' %}"></script>
+</body>
+</html>

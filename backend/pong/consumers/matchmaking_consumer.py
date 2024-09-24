@@ -102,8 +102,8 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             await self._unregister_from_tournament(data)
         elif data.get("request") == "start":
             await self._start_tournament(data)
-        elif data.get("request") == "get_tournaments":
-            await self._get_tournaments(data)
+        elif data.get("request") == "get_open_tournaments":
+            await self._get_open_tournaments(data)
 
     async def _send_connect_to_match_message(self, match_id: str) -> None:
         logger.debug(f"Sending connect to match message for match {match_id}")
@@ -184,7 +184,9 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
     async def _create_tournament(self, data: dict) -> None:
         '''Create a tournament'''
         try:
-            tournament_id = TournamentSessionHandler.create_online_tournament_session(self.user_id, data.get("name"), data.get("size"))
+            name = data.get("name")
+            max_players = data.get("max_players")
+            tournament_id = TournamentSessionHandler.create_online_tournament_session(self.user_id, name, max_players)
         except ValueError as e:
             logger.error(f"Failed to create tournament: {e}")
             self._send_error_message(str(e))
@@ -198,7 +200,8 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
     async def _register_for_tournament(self, data: dict) -> None:
         '''Register for a tournament'''
         try:
-            TournamentSessionHandler.add_user_to_tournament(data.get("tournament_id"), self.user_id)
+            tournament_id = data.get("tournament_id")
+            TournamentSessionHandler.add_user_to_tournament(tournament_id, self.user_id)
         except ValueError as e:
             logger.error(f"Failed to register for tournament: {e}")
             self._send_error_message(str(e))
@@ -236,21 +239,22 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
     async def _start_tournament(self, data: dict) -> None:
         '''Start a tournament'''
         try:
-            await TournamentSessionHandler.start_tournament(self.user_id, data.get("tournament_id"))
+            tournament_id = data.get("tournament_id")
+            await TournamentSessionHandler.start_tournament(self.user_id, tournament_id)
         except ValueError as e:
             logger.error(f"Failed to start tournament: {e}")
             self._send_error_message(str(e))
             return
 
-    async def _get_tournaments(self, data: dict) -> None:
-        '''Get all tournaments'''
-        tournaments = Tournaments.get_all()
+    async def _get_open_tournaments(self, data: dict) -> None:
+        '''Get all open tournaments'''
+        tournaments = Tournaments.get_open_tournaments()
         tournament_data = []
         for tournament in tournaments.values():
             tournament_data.append({
                 'id': tournament.get_id(),
                 'name': tournament.get_name(),
-                'size': tournament.get_size(),
+                'max_players': tournament.get_max_players(),
                 'users': list(tournament.get_users())
             })
         

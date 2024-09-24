@@ -140,6 +140,15 @@ class Tournaments:
     @classmethod
     def get_all(cls) -> dict[str, TournamentSession]:
         return cls.tournaments
+    
+    @classmethod
+    def get_open_tournaments(cls) -> dict[str, TournamentSession]:
+        '''Get all open tournaments'''
+        open_tournaments = {}
+        for tournament_id, tournament in cls.tournaments.items():
+            if not tournament.is_running() and not tournament.is_finished():
+                open_tournaments[tournament_id] = tournament
+        return open_tournaments
 
     @classmethod
     def get_user_tournament_id(cls, user_id: str) -> Optional[str]:

@@ -10,7 +10,7 @@ class TournamentSession:
     def __init__(self, owner_user_id, name: str, size: int, on_finished: Callable[[str], None]):
         self._id = uuid4().hex
         self._owner_user_id = owner_user_id
-        self._size = size
+        self._max_players = size
         self._users: Set[str] = set()
         self._matches: List[Tuple[str, str]] = []
         self._results: List[Optional[str]] = []
@@ -115,8 +115,8 @@ class TournamentSession:
     def get_name(self) -> str:
         return self._name
 
-    def get_size(self) -> int:
-        return self._size
+    def get_max_players(self) -> int:
+        return self._max_players
 
     def get_users(self) -> Set[str]:
         return self._users
@@ -137,13 +137,13 @@ class TournamentSession:
         self._matches.remove(match)
 
     def is_full(self) -> bool:
-        return len(self._users) == self._size
+        return len(self._users) == self._max_players
     
     def is_running(self) -> bool:
         return self._running
 
     def is_ready(self) -> bool:
-        return len(self._matches) == self._size
+        return len(self._matches) == self._max_players
 
     def is_finished(self) -> bool:
         return self._winner is not None
@@ -152,7 +152,7 @@ class TournamentSession:
         return user_id in self._users
 
     def __str__(self) -> str:
-        return f': {self._name} - {self._size} players'
+        return f': {self._name} - {self._max_players} players'
 
     def __repr__(self) -> str:
-        return f': {self._name} - {self._size} players'
+        return f': {self._name} - {self._max_players} players'
