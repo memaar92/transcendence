@@ -1,4 +1,4 @@
-// matchmaking.js
+import { sendWebSocketMessage } from "./webSocketHelper";
 
 let retryCount = 0;
 const maxRetries = 5;
@@ -8,22 +8,22 @@ let isActiveTab = false;
 
 const matchmakingSocket = new WebSocket('ws://' + window.location.host + '/ws/pong/matchmaking/');
 
-// Notify the server when this is the active tab
-
+// Monitor which tab is active
 document.addEventListener("visibilitychange", function() {
     if (document.visibilityState === "visible") {
         isActiveTab = true;
-        // Notify the server that this tab is now active
         notifyTabActive();
     } else {
         isActiveTab = false;
     }
 });
 
+// Notify the server when the tab is active
 function notifyTabActive() {
-    matchmakingSocket.send(JSON.stringify({
-        "active": isActiveTab
-    }));
+    sendWebSocketMessage(matchmakingSocket, {
+        type: "tab_active",
+        active: isActiveTab,
+    });
 }
 
 // Socket event handlers
@@ -82,11 +82,11 @@ function hideReconnectButton() {
 class MatchmakingRequests {
     static sendRequest(requestType, data) {
         console.log(`${requestType} request with data:`, data);
-        matchmakingSocket.send(JSON.stringify({
+        sendWebSocketMessage(matchmakingSocket, {
             "type": "matchmaking",
             "request": requestType,
             ...data,
-        }));
+        });
     }
 
     static joinOnlineMatchmakingQueue() {
@@ -101,11 +101,11 @@ class MatchmakingRequests {
 class TournamentRequests {
     static sendRequest(requestType, data) {
         console.log(`${requestType} request with data:`, data);
-        matchmakingSocket.send(JSON.stringify({
+        sendWebSocketMessage(matchmakingSocket, {
             "type": "tournament",
             "request": requestType,
             ...data,
-        }));
+        });
     }
 
     static create(name, max_players) {

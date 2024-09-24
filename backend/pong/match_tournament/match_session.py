@@ -17,13 +17,16 @@ class EndReason(Enum):
     DISCONNECT_TIMEOUT = auto()
     DISCONNECTED_TOO_MANY_TIMES = auto()
     MATCH_START_TIMEOUT = auto()
+    DRAW = auto()
     SCORE = auto()
+    LOCAL_MATCH_ABORTED = auto()
 
 class MatchSession:
     def __init__(self, user_id_1: str, user_id_2: Optional[str], on_match_finished: Optional[Callable[[str, str], None]] = None):
         '''Initialize and start a match between two users'''
         self._match_id = str(id(self))  # Generating a unique id
         self._assigned_users = {user_id_1, user_id_2} if user_id_2 is not None else {user_id_1}
+        self._blocked_users = set()
         self._connected_users = set()
         self._disconnect_count = {user_id_1: 0, user_id_2: 0} if user_id_2 is not None else {user_id_1: 0}
         self._player_mapping = {user_id_1: "p1", user_id_2: "p2"} if user_id_2 is not None else {user_id_1: "p1"}
@@ -57,6 +60,9 @@ class MatchSession:
         elif reason == EndReason.MATCH_START_TIMEOUT:
             await self._match_finished(self._match_id, None)
             logger.info("Match ended due to timeout")
+        elif reason == EndReason.DRAW:
+            await self._match_finished(self._match_id, None)
+            logger.info("Match ended due to timeout and draw")
         elif reason == EndReason.DISCONNECTED_TOO_MANY_TIMES:
             logger.info("Match ended due to too many disconnects")
             await self._match_finished(self._match_id, self._connected_users.pop())
@@ -64,6 +70,9 @@ class MatchSession:
             winner = max(self._score, key=self._score.get)
             await self._match_finished(self._match_id, winner)
             logger.info("Match ended due to score")
+        elif reason == EndReason.LOCAL_MATCH_ABORTED:
+            await self._match_finished(self._match_id, None, False)
+            logger.info("Match ended due to local match abort")
 
 
         # Call the MatchConsumer to disconnect the users
@@ -81,10 +90,11 @@ class MatchSession:
         # Delete itself
         del self
 
-    async def _match_finished(self, match_id: str, winner: str) -> None:
+    async def _match_finished(self, match_id: str, winner: str, write_to_db: bool = True) -> None:
         '''Callback when the match is finished'''
         logger.info(f"Match {match_id} finished, winner: {winner}")
-        await self._write_score_to_database()
+        # if write_to_db:
+            # await self._write_score_to_database() # TODO: Implement this
         if self._on_match_finished is not None:
             await self._on_match_finished(match_id, winner)
 
@@ -96,10 +106,17 @@ class MatchSession:
         '''Monitor the disconnect timeout'''
         try:
             await asyncio.wait_for(self._wait_for_user_reconnect(user_id), timeout=RECONNECT_TIMEOUT)
-            logger.info(f"User {user_id} reconnected")
+            logger.debug(f"User {user_id} reconnected")
         except asyncio.TimeoutError:
-            logger.error(f"User {user_id} did not reconnect in time")
-            await self._end_match(EndReason.DISCONNECT_TIMEOUT)
+            logger.debug(f"User {user_id} did not reconnect in time")
+            self._blocked_users.add(user_id)
+            if not self._is_local_match:
+                if self._connected_users: # If there is still a user connected he wins
+                    await self._end_match(EndReason.DISCONNECT_TIMEOUT)
+                elif len(self._assigned_users) == len(self._blocked_users): # If all users are blocked (Did not reconnect in time) it's a draw
+                    await self._end_match(EndReason.DRAW)
+            else:
+                await self._end_match(EndReason.LOCAL_MATCH_ABORTED) # If it's a local match, end it
 
     async def _wait_for_user_reconnect(self, user_id: str) -> None:
         '''Wait for a user to reconnect'''
@@ -110,9 +127,9 @@ class MatchSession:
         '''Monitor the start of the match, will end the match if not all users connect in time'''
         try:
             await asyncio.wait_for(self._wait_for_users_to_connect(), timeout=MATCH_START_TIMEOUT)
-            logger.info("Both users connected, match starting.")
+            logger.debug("Both users connected, match starting.")
         except asyncio.TimeoutError:
-            logger.error("Match start timeout, not all users connected.")
+            logger.debug("Match start timeout, not all users connected.")
             await self._end_match(EndReason.MATCH_START_TIMEOUT)
 
     async def _wait_for_users_to_connect(self) -> None:
@@ -134,15 +151,19 @@ class MatchSession:
             return
         self._connected_users.add(user_id)
         self._on_match_finished_user_callbacks[user_id] = on_match_finished
-        logger.info(f"User {user_id} connected to match {self._match_id}")
+        logger.debug(f"User {user_id} connected to match {self._match_id}")
+
+        # Check if a blocked user exists and end the match if only one user is left
+        if len(self._blocked_users) == 1:
+            await self._end_match(EndReason.DISCONNECT_TIMEOUT)
 
     async def disconnect_user(self, user_id: str) -> bool:
         '''Disconnect a user from the match'''
-        logger.info(f"Disconnecting user {user_id} from match {self._match_id}")
+        logger.debug(f"Disconnecting user {user_id} from match {self._match_id}")
         try:
             self._connected_users.remove(user_id)
             self._on_match_finished_user_callbacks[user_id] = None
-            logger.info(f"Removed user {user_id} from connected users")
+            logger.debug(f"Removed user {user_id} from connected users")
         except KeyError:
             logger.error(f"Cannot disconnect user {user_id} from match {self._match_id} as they are not connected to it")
             return False
@@ -151,7 +172,7 @@ class MatchSession:
         if self._disconnect_count[user_id] >= DISCONNECT_THRESHOLD:
             await self._end_match(EndReason.DISCONNECTED_TOO_MANY_TIMES)
             return True
-        logger.info(f"Disconnect count: {self._disconnect_count[user_id]}")
+        logger.debug(f"Disconnect count: {self._disconnect_count[user_id]}")
         await self._monitor_disconnect_timeout(user_id)
         return True
 

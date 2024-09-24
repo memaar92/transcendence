@@ -1,5 +1,3 @@
-// match.js
-
 window.connectToMatch = function(match_id) {
     const matchSocket = new WebSocket('ws://' + window.location.host + '/ws/pong/match/' + match_id + '/');
     matchSocket.onopen = function(e) {
