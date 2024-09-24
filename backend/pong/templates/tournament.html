@@ -8,7 +8,7 @@
 </head>
 <body>
     <h1>Tournament</h1>
-        <form id="tournament-form">
+    <form id="tournament-form">
         <label for="tournament-name">Tournament Name:</label>
         <input type="text" id="tournament-name" name="tournament-name" required>
         
@@ -17,6 +17,10 @@
         
         <button type="submit">Create Tournament</button>
     </form>
+
+    <h2>Open Tournaments</h2>
+    <div id="tournament-list"></div>
+
     <!-- Load matchmaking.js as a module -->
     <script type="module" src="{% static 'matchmaking.js' %}"></script>
 

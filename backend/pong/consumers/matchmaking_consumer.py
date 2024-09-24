@@ -4,11 +4,15 @@ from pong.match_tournament.tournament_session_handler import TournamentSessionHa
 from pong.match_tournament.data_managment import User, Tournaments
 import json
 import logging
+import time
 
 logger = logging.getLogger("PongConsumer")
 
+RATE_LIMIT_GET_REQUESTS = 1.9 # Rate limit for get requests in seconds
+
 class MatchmakingConsumer(AsyncWebsocketConsumer):
     _user_connections = {} # Keep track of user connections and active the active tab
+    _last_request_time = {} # Keep track of the last request time for each user
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -247,6 +251,17 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
 
     async def _get_open_tournaments(self, data: dict) -> None:
         '''Get all open tournaments'''
+        current_time = time.time()
+        last_request_time = self._last_request_time.get(self.user_id, 0)
+
+        # Check if the user is rate limited
+        if current_time - last_request_time < RATE_LIMIT_GET_REQUESTS:
+            logger.info(f"Rate limit exceeded for user {self.user_id}")
+            return
+
+        # Update the last request time
+        self._last_request_time[self.user_id] = current_time
+
         tournaments = Tournaments.get_open_tournaments()
         tournament_data = []
         for tournament in tournaments.values():

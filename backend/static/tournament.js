@@ -3,6 +3,7 @@ import { matchmakingSocket } from './matchmaking.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('tournament-form');
+    const tournamentList = document.getElementById('tournament-list');
 
     form.addEventListener('submit', (event) => {
         event.preventDefault();
@@ -18,6 +19,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
         TournamentRequests.create(name, maxPlayers);
     });
+
+    matchmakingSocket.addEventListener('open', () => {
+        // Fetch the current tournament list immediately after connecting
+        TournamentRequests.getTournaments();
+    });
+
+    matchmakingSocket.addEventListener('message', (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === 'tournaments') {
+            updateTournamentList(data.tournaments);
+        }
+    });
+
+    function updateTournamentList(tournaments) {
+        tournamentList.innerHTML = ''; // Clear the list
+        tournaments.forEach(tournament => {
+            const row = document.createElement('div');
+            row.className = 'tournament-row';
+            row.innerHTML = `
+                <div>ID: ${tournament.id}</div>
+                <div>Name: ${tournament.name}</div>
+                <div>Max Players: ${tournament.max_players}</div>
+                <div>Users: ${tournament.users.join(', ')}</div>
+            `;
+            tournamentList.appendChild(row);
+        });
+    }
+
+    // Automatically update the list every 2 seconds
+    setInterval(() => {
+        TournamentRequests.getTournaments();
+    }, 2000);
 });
 
 class TournamentRequests {
