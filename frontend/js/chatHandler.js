@@ -502,18 +502,20 @@ class ChatHandler {
         this.router.navigate(`/live_chat/chat_room?recipient=${friend.name}`);
       };
 
-      // Directly insert the SVG content as innerHTML
       const svgContent = `
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="50" height="50" fill="grey" stroke="white" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="transform: scale(1, -1); transform: translate(0, 6px);">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -4 32 32" width="100%" height="100%" fill="#149a00" stroke="#149a00" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="transform: translate(0, 6px);">
+          <!-- Border with offset -->
+          <path class="border" d="M25 20a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h5l2 2 2-2h11z"
+                fill="none" stroke="#1f7112" stroke-width="2"
+                transform="translate(0, 1)"/>
+    
           <!-- Chat bubble -->
-          <path d="M21 15a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H3a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h4l2 2 2-2h6z"/>
-      
-          <!-- Three dots -->
-          <circle cx="7" cy="8.5" r="0.5" fill="white"/>
-          <circle cx="12" cy="8.5" r="0.5" fill="white"/>
-          <circle cx="17" cy="8.5" r="0.5" fill="white"/>
+          <path class="bubble" d="M25 20a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h5l2 2 2-2h11z"/>
+    
+          <!-- Chat bubble text -->
+          <text class="bubble" x="15" y="12.5" font-size="8" text-anchor="middle" fill="white" stroke="none" font-weight="600" dy=".3em">Chat</text>
         </svg>
-      `;    
+      `;
 
       chatButton.innerHTML = svgContent;
 

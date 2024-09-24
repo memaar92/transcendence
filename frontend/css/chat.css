@@ -538,12 +538,19 @@
 }
 
 .show {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  justify-items: center;
-  gap: 1rem;
+  display: flex; /* Use flexbox for a single line */
+  overflow-x: auto; /* Enable horizontal scrolling */
+  gap: 1rem; /* Space between items */
   padding-bottom: 10px;
-  width: 100%;
+  white-space: nowrap; /* Prevent text from wrapping */
+  max-width: 100%; /* Ensure it fits within the container */
+  justify-content: center;
+  align-items: center;
+}
+
+.show > * {
+  flex: 0 0 auto; /* Prevent items from growing or shrinking */
+  box-sizing: border-box; /* Include padding and border in the element's total width */
 }
 
 .filter-container {
@@ -665,11 +672,83 @@
 #chat-button {
   background-color: transparent;
   box-sizing: content-box;
-  width: 2em;
-  height: 2em;
+  width: 70px;
+  height: 70px;
   border: none;
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  /* box-shadow: 0 4px 0px 0px #8d8d8d; */
+}
+
+#chat-button:hover .bubble {
+  filter: brightness(1.2) saturate(0.7);
+}
+
+#chat-button:active {
+  transform: translateY(4px);
+}
+
+.btn-check:focus+.btn-outline-primary, .btn-outline-primary:focus {
+  box-shadow: 0 0 0 .25rem #a376ecbb;
+}
+
+.btn-check:checked+.btn-outline-primary {
+  color: #fff;
+  background-color: #a376ec;
+  border-color: #a376ec;
+}
+
+.btn-outline-primary {
+    color: #ffffff;
+    border-color: #ffffff;
+    background-color: transparent; /* Ensure no background color for default state */
+    transition: color .15s ease-in-out, background-color .15s ease-in-out, border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+}
+
+.btn-outline-primary:focus,
+.btn-outline-primary:active,
+.btn-outline-primary:hover {
+    color: #fff; /* White text when active, focused, or hovered */
+    background-color: #cfcfcf6b;
+    border-color: #ffffff;
+    outline: none; /* Remove blue outline */
+}
+
+.btn-check:checked + .btn-outline-primary,
+.btn-check:active + .btn-outline-primary,
+.btn-outline-primary.active,
+.btn-outline-primary.dropdown-toggle.show,
+.btn-outline-primary:active {
+    color: #fff;
+    background-color: #a376ec; /* Active state with purple background */
+    border-color: #a376ec;
+}
+
+.btn-group>.btn-group:not(:last-child)>.btn, 
+.btn-group>.btn:not(:last-child):not(.dropdown-toggle) {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.btn-group>.btn-group:not(:first-child)>.btn, 
+.btn-group>.btn:nth-child(n+3), 
+.btn-group>:not(.btn-check)+.btn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.btn-group>.btn-group:not(:first-child), 
+.btn-group>.btn:not(:first-child) {
+    margin-left: -1px;
+}
+
+.btn-group>.btn:hover, 
+.btn-group>.btn:focus {
+    z-index: 0; /* Ensure hovered or focused button has a higher stacking order */
+}
+
+.btn-group>.btn.active {
+    z-index: 3; /* Ensure active button has a higher z-index than hovered/focused buttons */
 }

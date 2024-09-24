@@ -336,6 +336,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'message_key': 'message'
         })
 
+        await self.send_friends_info(sender_id)
+        await self.send_friends_info(receiver_id)
+
     async def chat_request_denied(self, data):
         receiver_displayname = await self.get_user_displayname(data['receiver_id'])
         # await self.update_status(data['sender_id'], data['receiver_id'], RelationshipStatus.DEFAULT)
