@@ -25,6 +25,14 @@ class User:
     def get_user_match_id(self, user_id) -> Optional[str]:
         '''Get the match id of a user'''
         return Matches.get_user_match_id(user_id)
+    
+    @classmethod
+    def is_user_blocked(cls, user_id: str, match_id: str) -> bool:
+        '''Check if a user is blocked from the matchmaking queue'''
+        match = Matches.get_match(match_id)
+        if match:
+            return match.is_user_blocked(user_id)
+        return False
 
     
 class MatchmakingQueue:
@@ -64,7 +72,7 @@ class MatchmakingQueue:
         if cls.queue:
             return cls.queue.pop()
         return None
-    
+
     
 class Matches:
     matches: Dict[str, MatchSession] = {}

@@ -87,6 +87,11 @@ class MatchConsumer(AsyncWebsocketConsumer):
         if User.is_user_connected_to_match(self._user_id, self._match_id):
             logger.info(f"User {self._user_id} is already connected to a match")
             return False
+        
+        # Is the user blocked to connect to the match
+        if User.is_user_blocked(self._user_id, self._match_id):
+            logger.info(f"User {self._user_id} is blocked from connecting to match {self._match_id}")
+            return False
 
         return True
     

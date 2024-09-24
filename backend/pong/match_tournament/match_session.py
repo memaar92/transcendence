@@ -4,6 +4,7 @@ import logging
 from enum import Enum, auto
 
 logger = logging.getLogger("PongConsumer")
+logger.setLevel(logging.DEBUG)
 
 DISCONNECT_THRESHOLD = 3
 MATCH_START_TIMEOUT = 10
@@ -240,3 +241,7 @@ class MatchSession:
     def get_id(self) -> str:
         '''Get the match id'''
         return self._match_id
+    
+    def is_user_blocked(self, user_id: str) -> bool:
+        '''Check if a user is blocked from the match'''
+        return user_id in self._blocked_users
