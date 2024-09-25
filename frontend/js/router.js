@@ -1,102 +1,114 @@
-import { handleButtonClick } from './loginHandlers.js'
 class Router {
-    constructor(routes) {
-      this.routes = routes;
-      this.currentRoute = null;
-      this.app = null;
-      this.currentHistoryPosition = 0;
-      this.maxHistoryPosition = 0;
+  constructor(routes) {
+    this.routes = routes;
+    this.currentRoute = null;
+    this.app = null;
+    this.currentHistoryPosition = 0;
+    this.maxHistoryPosition = 0;
 
-      // TODO login check
-  
-      window.addEventListener('popstate', this.handlePopState.bind(this));
-      this.bindLinks();
+    // TODO login check
+
+    window.addEventListener("popstate", this.handlePopState.bind(this));
+    this.bindLinks();
+  }
+
+  init(app) {
+    this.app = app;
+    this.navigate(window.location.pathname);
+  }
+
+  addRoute(path, templateUrl) {
+    this.routes.push({ path, templateUrl });
+  }
+
+  async navigate(path) {
+    const route = this.routes.find((route) => route.path === path);
+    this.currentRoute = route;
+
+    if (path.startsWith("/users/")) {
+      this.currentRoute = {};
+      localStorage.setItem("UID", path.substr(7));
+      this.currentRoute.templateUrl = "/routes/users.html";
+      this.currentRoute.path = "User";
+    } else if (!route) {
+      this.currentRoute = {};
+      this.currentRoute.path = "/404";
+      this.currentRoute.templateUrl = "/routes/404.html";
     }
-  
-    init(app) {
-      this.app = app;
-      this.navigate(window.location.pathname);
+
+    this.currentHistoryPosition++;
+    this.maxHistoryPosition = this.currentHistoryPosition;
+    const title_temp = document.title;
+    document.title = this.currentRoute.path;
+    history.pushState({ position: this.currentHistoryPosition }, "", path);
+    document.title = title_temp;
+    await this.updateView();
+  }
+
+  handlePopState(event) {
+    if (event.state && event.state.position) {
+      if (event.state.position < this.currentHistoryPosition) {
+        this.currentHistoryPosition--;
+      } else {
+        this.currentHistoryPosition++;
+      }
     }
-  
-    addRoute(path, templateUrl) {
-      this.routes.push({ path, templateUrl });
-    }
-  
-    async navigate(path, pushState = true) {
-        const route = this.routes.find(route => route.path === path);
-        if (route) {
-            this.currentRoute = route;
-            if (pushState) {
-                this.currentHistoryPosition++;
-                this.maxHistoryPosition = this.currentHistoryPosition;
-                const title_temp = document.title;
-                document.title = route.path.slice(1).replace('_', "-");
-                history.pushState({ position: this.currentHistoryPosition }, '', path);
-                document.title = title_temp;
-            }
-            await this.updateView();
-        }
-        else
-        {
-          this.currentRoute = this.routes.find(route => route.path === "/404");
-            if (pushState) {
-                this.currentHistoryPosition++;
-                this.maxHistoryPosition = this.currentHistoryPosition;
-                history.pushState({ position: this.currentHistoryPosition }, '', "/404");
-            }
-            await this.updateView();
-        }
-        if (this.onNavigate) {
-            this.onNavigate();
+    this.navigate(window.location.pathname, false);
+  }
+
+  bindLinks() {
+    document.addEventListener("click", (e) => {
+      if (e.target.matches("[data-router-link]")) {
+        e.preventDefault();
+        const path = e.target.getAttribute("href");
+        this.navigate(path);
+      }
+    });
+  }
+
+  async updateView() {
+    if (!this.app || !this.currentRoute) return;
+
+    try {
+      const response = await fetch(this.currentRoute.templateUrl);
+      const html = await response.text();
+      const doc = new DOMParser().parseFromString(html, "text/html");
+
+      this.app.innerHTML = "";
+      document
+        .querySelectorAll("script[data-dynamic-script]")
+        .forEach((script) => script.remove());
+
+      this.app.append(...doc.body.childNodes);
+
+      const loadScript = (scriptElement) => {
+        return new Promise((resolve, reject) => {
+          const newScript = document.createElement("script");
+
+          Array.from(scriptElement.attributes).forEach((attr) => {
+            newScript.setAttribute(attr.name, attr.value);
+          });
+
+          if (newScript.src) {
+            newScript.src = `${newScript.src}?v=${Date.now()}`;
           }
-      
+
+          newScript.setAttribute("data-dynamic-script", "true");
+          newScript.onload = resolve;
+          newScript.onerror = reject;
+
+          document.body.appendChild(newScript);
+        });
+      };
+
+      const scripts = Array.from(doc.querySelectorAll("script"));
+      for (const script of scripts) {
+        await loadScript(script);
+      }
+    } catch (error) {
+      this.app.innerHTML = "<p>Error loading content</p>";
     }
-
-        handlePopState(event) {
-            if (event.state && event.state.position) {
-                if (event.state.position < this.currentHistoryPosition) {
-                    this.currentHistoryPosition--;
-                } else {
-                    this.currentHistoryPosition++;
-                }
-            }
-            this.navigate(window.location.pathname, false);
-        }
-
-        bindLinks() {
-            document.addEventListener('click', (e) => {
-                if (e.target.matches('[data-router-link]')) {
-                    e.preventDefault();
-                    const path = e.target.getAttribute('href');
-                    this.navigate(path);
-                }
-            });
-        }
-
-        async updateView() {
-            if (this.app && this.currentRoute) {
-              try {
-                const response = await fetch(this.currentRoute.templateUrl);
-                const html = await response.text();
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const content = doc.getElementById('content');
-                if (content) {
-                  this.app.innerHTML = content.innerHTML;
-                } else {
-                  console.error('No content div found in the loaded HTML');
-                }
-                const buttons = document.querySelectorAll('button');
-                buttons.forEach(button => {
-                  button.addEventListener('click', handleButtonClick);
-                });
-              } catch (error) {
-                console.error('Error loading template:', error);
-                this.app.innerHTML = '<p>Error loading content</p>';
-              }
-            }
-          }
+  }
 }
-  
+
 export default Router;
-  
