@@ -7,7 +7,7 @@ import json
 import logging
 import time
 
-logger = logging.getLogger("PongConsumer")
+logger = logging.getLogger("matchmaking_consumer")
 
 RATE_LIMIT_GET_REQUESTS = 1.9 # Rate limit for get requests in seconds
 

@@ -3,8 +3,7 @@ import asyncio
 import logging
 from enum import Enum, auto
 
-logger = logging.getLogger("PongConsumer")
-logger.setLevel(logging.DEBUG)
+logger = logging.getLogger("match")
 
 DISCONNECT_THRESHOLD = 3
 MATCH_START_TIMEOUT = 10

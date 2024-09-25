@@ -6,7 +6,7 @@ from pong.match_tournament.match_session import MatchSession
 from pong.match_tournament.data_managment import Matches, User
 
 import logging
-logger = logging.getLogger("PongConsumer")
+logger = logging.getLogger("match_consumer")
 
 class MatchConsumer(AsyncWebsocketConsumer):
 

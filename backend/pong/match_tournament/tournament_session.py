@@ -4,8 +4,7 @@ from typing import Set, List, Tuple, Optional, Callable
 from pong.match_tournament.match_session import MatchSession
 from uuid import uuid4
 
-logger = logging.getLogger("PongConsumer")
-logger.setLevel(logging.DEBUG)
+logger = logging.getLogger("tournament")
 
 class TournamentSession:
     def __init__(self, owner_user_id, name: str, size: int, on_finished: Callable[[str], None]):

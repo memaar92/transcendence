@@ -3,8 +3,7 @@ from pong.match_tournament.tournament_session import TournamentSession
 from pong.match_tournament.data_managment import Tournaments, User
 from channels.layers import get_channel_layer
 
-logger = logging.getLogger("PongConsumer")
-logger.setLevel(logging.DEBUG)
+logger = logging.getLogger("tournament")
 
 class TournamentSessionHandler:
     channel_layer = get_channel_layer()

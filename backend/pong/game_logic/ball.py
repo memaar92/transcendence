@@ -1,5 +1,5 @@
-from pong.utils.vector2 import Vector2
-from pong.utils.vector_utils import degree_to_vector
+from utils.vector2 import Vector2
+from utils.vector_utils import degree_to_vector
 import copy
 import logging
 

@@ -4,7 +4,7 @@ from .match_session import MatchSession
 from channels.layers import get_channel_layer
 from pong.match_tournament.data_managment import MatchmakingQueue, Matches, User
 
-logger = logging.getLogger("PongConsumer")
+logger = logging.getLogger("match")
 
 class MatchSessionHandler:
 
