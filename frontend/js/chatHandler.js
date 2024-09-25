@@ -402,10 +402,9 @@ class ChatHandler {
       const isOnline = this.onlineUserIds.includes(friendId);
       const friendImg = chatItem.querySelector('img');
       if (friendImg) {
-        if (isOnline) {
-          friendImg.style.border = '4px solid #7A35EC';
+        friendImg.style.border = isOnline ? '4px solid #7A35EC' : '4px solid grey';
         }
-      } else {
+      else {
         console.warn('Image not found for chat item:', friendId);
       }
     });
@@ -417,11 +416,9 @@ class ChatHandler {
         const isOnline = this.onlineUserIds.includes(friendId);
         const friendImg = friendItem.querySelector('img');
         if (friendImg) {
-          console.log('Updating friend status indicator:', friendId, isOnline);
-          if (isOnline) {
-            friendImg.style.border = '4px solid #7A35EC';
-          }
-        } else {
+          friendImg.style.border = isOnline ? '4px solid #7A35EC' : '4px solid grey';
+        }
+        else {
           console.warn('Image not found for friend item:', friendId);
         }
       }
