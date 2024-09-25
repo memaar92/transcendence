@@ -1,5 +1,5 @@
-from utils.vector2 import Vector2
-from utils.vector_utils import degree_to_vector
+from .utils.vector2 import Vector2
+from .utils.vector_utils import degree_to_vector
 import copy
 import logging
 
@@ -28,6 +28,7 @@ class Ball:
 
     def move(self):
         """Update the ball's position based on its speed and direction."""
+
         if self.is_colliding_with_wall():
             self.direction.y *= -1
         elif self.is_colliding():

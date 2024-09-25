@@ -1,4 +1,4 @@
-from utils.vector2 import Vector2
+from .utils.vector2 import Vector2
 
 class Paddle:
     def __init__(self, position: Vector2 = Vector2(0, 0), size: Vector2 = Vector2(20, 100), speed: float = 10.0, world_size: Vector2 = Vector2(10000, 10000)):

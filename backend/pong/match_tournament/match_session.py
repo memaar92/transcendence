@@ -1,4 +1,6 @@
 from typing import Optional, Callable
+from ..game_logic.game_session import GameSession
+from channels.layers import get_channel_layer
 import asyncio
 import logging
 from enum import Enum, auto
@@ -29,10 +31,10 @@ class MatchSession:
         self._blocked_users = set()
         self._connected_users = set()
         self._disconnect_count = {user_id_1: 0, user_id_2: 0} if user_id_2 is not None else {user_id_1: 0}
-        self._player_mapping = {user_id_1: "p1", user_id_2: "p2"} if user_id_2 is not None else {user_id_1: "p1"}
+        self._player_mapping = {user_id_1: 0, user_id_2: 1} if user_id_2 is not None else {user_id_1: 0}
         self._is_local_match = user_id_2 is None
-        self._score = {user_id_1: 0, user_id_1: 0}
-        self._gamehandler = None
+        self._score = {0: 0, 1: 0}
+        self._game_session = GameSession(self._user_scored)
         self._main_loop_task: Optional[asyncio.Task] = asyncio.create_task(self._main_loop())
         self._on_match_finished = on_match_finished
         self._on_match_finished_user_callbacks = {user_id_1: None, user_id_2: None} if user_id_2 is not None else {user_id_1: None}
@@ -46,7 +48,7 @@ class MatchSession:
             if not self._is_match_running:
                 await self._monitor_match_start()
                 self._is_match_running = True
-            # self._gamehandler.update()
+            await self._game_session.calculate_game_state()
             await self._send_game_state()
             await asyncio.sleep(self._tick_speed)
 
@@ -194,9 +196,9 @@ class MatchSession:
         
         # Update the direction of the player, depending on the match type
         if self._is_local_match:
-            await self._gamehandler.update_player_direction(player_key_id, direction)
+            self._game_session.update_player_direction(player_key_id, direction)
         else:
-            await self._gamehandler.update_player_direction(self._player_mapping[user_id], direction)
+            self._game_session.update_player_direction(self._player_mapping[user_id], direction)
 
     #############################
     #     Database functions    #
@@ -212,6 +214,7 @@ class MatchSession:
 
     async def _user_scored(self, player_id: str) -> None:
         '''Callback when a player scores'''
+        logger.debug(f"Player {player_id} scored")
         self._score[player_id] += 1
         if self._score[player_id] >= WINNING_SCORE:
             await self._end_match(EndReason.SCORE)
@@ -222,7 +225,12 @@ class MatchSession:
 
     async def _send_game_state(self) -> None:
         '''Send the game state to the users'''
-        pass
+        channel_layer = get_channel_layer()
+        game_state = self._game_session.to_dict()
+        await channel_layer.group_send(self._match_id, {
+            "type": "game_update",
+            "data": game_state
+        })
 
     async def _send_player_disconnected_message(self, user_id: str) -> None:
         '''Send a disconnect message to the users'''

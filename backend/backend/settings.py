@@ -85,6 +85,11 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': False,
         },
+        'game_session': {  # Logger for handling GameSession-specific logs
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
     },
 }
 

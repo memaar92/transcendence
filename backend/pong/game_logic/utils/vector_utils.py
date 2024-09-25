@@ -1,5 +1,5 @@
 import math
-from pong.utils.vector2 import Vector2
+from .vector2 import Vector2
 
 def degree_to_vector(value: float):
     new_vector = Vector2(0, 0)

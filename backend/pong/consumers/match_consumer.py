@@ -58,8 +58,17 @@ class MatchConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_discard(self._match_id, self.channel_name)
 
 
-    async def receive(self, text_data): # TODO: Implement this
-        pass
+    async def receive(self, text_data: str): # TODO: Implement this
+        try:
+            data = json.loads(text_data)
+            logger.info(f"Received data: {data}")
+            if data.get("type") == "player_update":
+                payload = data.get("payload")
+                if payload and "direction" in payload and "player_key_id" in payload:
+                    await self._match_session.update_player_direction(self._user_id, payload["direction"], payload["player_key_id"])
+        except json.JSONDecodeError:
+            logger.error(f"Failed to decode JSON data: {text_data}")
+            return
 
     async def is_valid_connection(self, match_id, user_id):
 
@@ -98,3 +107,7 @@ class MatchConsumer(AsyncWebsocketConsumer):
     async def _match_session_is_finished_callback(self):
         self._connection_established = False
         self.close()
+
+    async def game_update(self, event):
+        # logger.info(f"Sending game state to user {self._user_id}")
+        await self.send(text_data=json.dumps(event))
