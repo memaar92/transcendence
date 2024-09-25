@@ -338,6 +338,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         await self.send_friends_info(sender_id)
         await self.send_friends_info(receiver_id)
+        await self.broadcast_user_list()
 
     async def chat_request_denied(self, data):
         receiver_displayname = await self.get_user_displayname(data['receiver_id'])

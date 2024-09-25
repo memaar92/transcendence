@@ -94,7 +94,7 @@ class ChatHandler {
         this.showLatestMessage(content.message, content.sender_id, content.sender_id);
         break;
       case 'request_status':
-        this.displayModal(content.message);
+        this.displayModal(content);
         break;
       case 'message_preview':
         const chatItems = document.querySelectorAll('.chats-item');
@@ -167,50 +167,55 @@ class ChatHandler {
     }
   }
 
-  displayModal(message) {
+  displayModal(content) {
     // Create the modal container
     const modalContainer = document.createElement('div');
     modalContainer.className = 'modal fade';
+
+    // Extract the username from the message (last word in the string)
+    const usernameMatch = content.message.match(/(\b\w+\b)$/);
+    const username = usernameMatch ? usernameMatch[0] : 'User';
+    const messageWithHighlightedUsername = content.message.replace(username, `<span style="color: #0083e8;">${username}</span>`);
 
     // Define the full modal structure
     modalContainer.innerHTML = `
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Notification</h5>
+            <h5 class="modal-title">Friend Request Accepted!</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            ${message}
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            <button type="button" class="btn btn-primary">Understood</button>
+            ${messageWithHighlightedUsername} ...
           </div>
         </div>
       </div>
     `;
 
     // Append the modal container to the body
-
     document.body.prepend(modalContainer);
 
-    
-    const modalInstance = new bootstrap.Modal(modalContainer, {
-      keyboard: true,
-      backdrop: 'static'
-    });
-    
-    modalInstance.show();
-    
+    let modalInstance;
+    try {
+      modalInstance = new bootstrap.Modal(modalContainer, {
+        keyboard: true,
+        backdrop: 'static'
+      });
+      modalInstance.show();
+    } catch (error) {
+      console.error('Error initializing modal:', error);
+      modalContainer.remove();
+      return;
+    }
+
     const handleEscapeKey = (event) => {
       if (event.key === 'Escape') {
         modalInstance.hide();
       }
     };
-  
+
     document.addEventListener('keydown', handleEscapeKey);
-  
+
     // Clean up event listeners and modal instance when the modal is hidden
     modalContainer.addEventListener('hidden.bs.modal', () => {
       modalContainer.remove();
@@ -397,8 +402,9 @@ class ChatHandler {
       const isOnline = this.onlineUserIds.includes(friendId);
       const friendImg = chatItem.querySelector('img');
       if (friendImg) {
-        console.log('Updating friend status indicator:', friendId, isOnline);
-        friendImg.style.border = isOnline ? '4px solid #7A35EC' : '4px solid grey';
+        if (isOnline) {
+          friendImg.style.border = '4px solid #7A35EC';
+        }
       } else {
         console.warn('Image not found for chat item:', friendId);
       }
@@ -412,7 +418,9 @@ class ChatHandler {
         const friendImg = friendItem.querySelector('img');
         if (friendImg) {
           console.log('Updating friend status indicator:', friendId, isOnline);
-          friendImg.style.border = isOnline ? '4px solid #7A35EC' : '4px solid grey';
+          if (isOnline) {
+            friendImg.style.border = '4px solid #7A35EC';
+          }
         } else {
           console.warn('Image not found for friend item:', friendId);
         }
