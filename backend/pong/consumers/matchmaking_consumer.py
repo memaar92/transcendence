@@ -1,7 +1,7 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 from pong.match_tournament.match_session_handler import MatchSessionHandler
 from pong.match_tournament.tournament_session_handler import TournamentSessionHandler
-from pong.match_tournament.data_managment import User, Tournaments
+from pong.match_tournament.data_managment import User, Tournaments, MatchmakingQueue
 import asyncio
 import json
 import logging
@@ -89,13 +89,21 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
 
     async def _handle_matchmaking_request(self, data: dict) -> None:
         '''Handle matchmaking requests'''
-        if data.get("request") == "match":
+        if data.get("request") == "register":
             if data.get("match_type") == "online":
                 await MatchSessionHandler.add_to_matchmaking_queue(self.user_id)
             elif data.get("match_type") == "local":
                 await MatchSessionHandler.create_local_match(self.user_id)
             else:
                 logger.error("Invalid match type")
+        elif data.get("request") == "unregister":
+            MatchSessionHandler.remove_from_matchmaking_queue(self.user_id)
+        elif data.get("request") == "is_registered":
+            is_registered = MatchmakingQueue.is_user_registered(self.user_id)
+            await self.send(text_data=json.dumps({
+                'type': 'queue_status',
+                'is_registered': is_registered
+            }))
 
     async def _handle_tournament_request(self, data: dict) -> None:
         '''Handle tournament requests'''
@@ -109,13 +117,16 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             await self._start_tournament(data)
         elif data.get("request") == "get_open_tournaments":
             await self._get_open_tournaments(data)
-
-    async def _send_connect_to_match_message(self, match_id: str) -> None:
-        logger.debug(f"Sending connect to match message for match {match_id}")
-        await self.send(text_data=json.dumps({
-            'type': 'match_assigned',
-            'match_id': match_id
-        }))
+        elif data.get("request") == "is_registered":
+            is_registered = Tournaments.is_user_registered(self.user_id)
+            tournament_id = Tournaments.get_user_tournament_id(self.user_id)
+            tournament_name = Tournaments.get_name_by_id(tournament_id)
+            await self.send(text_data=json.dumps({
+                'type': 'tournament_status',
+                'is_registered': is_registered,
+                'tournament_id': tournament_id,
+                'tournament_name': tournament_name
+            }))
 
 
     ###################################################################
@@ -156,8 +167,8 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
     #    the channel layer       #
     ##############################
 
-    async def match_assigned(self, event):
-        '''Handle the match_assigned message'''
+    async def match_ready(self, event):
+        '''Handle the match_ready message'''
 
         # Check if the user is in the _user_connections dictionary (Should always be the case)
         if self.user_id not in self._user_connections:
@@ -168,10 +179,10 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
         if self._user_connections[self.user_id]["active"] != self.channel_name:
             return
 
-        logger.debug(f"Received match_assigned event: {event}")
+        logger.debug(f"Received match_ready event: {event}")
         match_id = event['match_id']
         await self.send(text_data=json.dumps({
-            'type': 'match_assigned',
+            'type': 'match_ready',
             'match_id': match_id
         }))
 

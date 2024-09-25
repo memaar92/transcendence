@@ -52,26 +52,34 @@ class MatchSessionHandler:
             user_id_2 = MatchmakingQueue.pop_next_user()
             if user_id_1 and user_id_2:
                 match = await cls.create_match(user_id_1, user_id_2, cls.remove_match)
-                match_id = match.get_id()
-                logger.debug(f"Match found: {user_id_1} vs {user_id_2}")
                 Matches.add_match(match)
 
                 # Send a message to both users
-                channel_layer = get_channel_layer()
-                await channel_layer.group_send(
-                    f"user_{user_id_1}",
-                    {
-                        'type': 'match_assigned',
-                        'match_id': match_id
-                    }
-                )
-                await channel_layer.group_send(
-                    f"user_{user_id_2}",
-                    {
-                        'type': 'match_assigned',
-                        'match_id': match_id
-                    }
-                )
+                match_id = match.get_id()
+                await cls.send_match_ready_message(match_id, user_id_1, user_id_2)
+
+                logger.debug(f"Match found: {user_id_1} vs {user_id_2}")
+
+    @classmethod
+    async def send_match_ready_message(cls, match_id: str, user1: str, user2: str) -> None:
+        '''Send a match ready message to both users'''
+        match = Matches.get_match(match_id)
+        if match:
+            channel_layer = get_channel_layer()
+            await channel_layer.group_send(
+                f"user_{user1}",
+                {
+                    'type': 'match_ready',
+                    'match_id': match_id
+                }
+            )
+            await channel_layer.group_send(
+                f"user_{user2}",
+                {
+                    'type': 'match_ready',
+                    'match_id': match_id
+                }
+            )
 
     @classmethod
     def remove_from_matchmaking_queue(cls, user_id: str) -> None:

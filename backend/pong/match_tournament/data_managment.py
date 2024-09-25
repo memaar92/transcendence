@@ -190,3 +190,11 @@ class Tournaments:
             if tournament.get_name() == tournament_name:
                 return tournament
         return None
+    
+    @classmethod
+    def get_name_by_id(cls, tournament_id: str) -> Optional[str]:
+        '''Get the name of a tournament by id'''
+        tournament = cls.get(tournament_id)
+        if tournament:
+            return tournament.get_name()
+        return None
