@@ -2,6 +2,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from pong.match_tournament.match_session_handler import MatchSessionHandler
 from pong.match_tournament.tournament_session_handler import TournamentSessionHandler
 from pong.match_tournament.data_managment import User, Tournaments
+import asyncio
 import json
 import logging
 import time
@@ -243,11 +244,19 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
         '''Start a tournament'''
         try:
             tournament_id = data.get("tournament_id")
+            # Run the start_tournament method in its own asyncio task
+            asyncio.create_task(self._start_tournament_task(tournament_id))
+        except ValueError as e:
+            logger.error(f"Failed to start tournament: {e}")
+            await self._send_error_message(str(e))
+
+    async def _start_tournament_task(self, tournament_id: str) -> None:
+        '''Task to start a tournament'''
+        try:
             await TournamentSessionHandler.start_tournament(self.user_id, tournament_id)
         except ValueError as e:
             logger.error(f"Failed to start tournament: {e}")
-            self._send_error_message(str(e))
-            return
+            await self._send_error_message(str(e))
 
     async def _get_open_tournaments(self, data: dict) -> None:
         '''Get all open tournaments'''

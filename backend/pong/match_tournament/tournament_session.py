@@ -35,7 +35,7 @@ class TournamentSession:
             
             if self._winner is not None: # TODO: Notify the winner
                 self._running = False
-                self._on_finished(self._id)
+        self._on_finished(self._id)
 
     def _generate_round_robin_schedule(self) -> None:
         users = list(self._users)
@@ -90,17 +90,15 @@ class TournamentSession:
         for match in self._matches:
             async with self._condition:
                 # Create a new match session
-                MatchSession(match[0], match[1], self._on_match_finished)
+                MatchSession(match[0], match[1], self.match_finished_callback)
                 # Wait until the match is finished
                 await self._condition.wait()
 
-    def _on_match_finished(self, match_id: str, winner: str) -> None:
+    async def match_finished_callback(self, match_id: str, winner: str) -> None:
         self._results.append(winner)
         # Notify the condition variable that the match is finished
-        async def notify():
-            async with self._condition:
-                self._condition.notify()
-        asyncio.create_task(notify())
+        async with self._condition:
+            self._condition.notify_all()
 
     def add_user(self, user_id: str):
         '''Add a user to the tournament set'''

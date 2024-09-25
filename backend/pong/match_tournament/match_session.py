@@ -97,7 +97,10 @@ class MatchSession:
         # if write_to_db:
             # await self._write_score_to_database() # TODO: Implement this
         if self._on_match_finished is not None:
-            await self._on_match_finished(match_id, winner)
+            if asyncio.iscoroutinefunction(self._on_match_finished):
+                await self._on_match_finished(match_id, winner)
+            else:
+                self._on_match_finished(match_id, winner)
 
     #############################
     #      Timer functions      #
@@ -142,7 +145,7 @@ class MatchSession:
     #    Connection functions   #
     #############################
 
-    async def connect_user(self, user_id: str, on_match_finished: Callable[[], None]) -> None:
+    async def connect_user(self, user_id: str, on_match_finished: Callable[[], None] = None) -> None:
         '''Connect a user to the match'''
         if self._stop_requested:
             logger.error(f"Match {self._match_id} has already ended")

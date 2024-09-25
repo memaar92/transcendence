@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tournamentList = document.getElementById('tournament-list');
 
     form.addEventListener('submit', (event) => {
-        event.preventDefault();
+        event.preventDefault(); // Prevent the form from submitting
 
         const name = document.getElementById('tournament-name').value;
         const maxPlayers = parseInt(document.getElementById('max-players').value, 10);
@@ -121,7 +121,7 @@ class TournamentRequests {
     }
 
     static cancel(tournament_id) {
-        this.sendRequest("cancel", { tournament_id });
+        this.sendRequest("unregister", { tournament_id });
     }
 
     static getTournaments() {
