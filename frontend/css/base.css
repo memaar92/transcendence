@@ -24,9 +24,9 @@ body {
   --color-secondary: #9a9996;
   --color-secondary-shadow: gray;
   --color-secondary-hover: #a4a3a0;
-  --color-SSO: #006e70;
-  --color-SSO-shadow: #005d5f;
-  --color-SSO-hover: #008284;
+  --color-remoteAuth: #006e70;
+  --color-remoteAuth-shadow: #005d5f;
+  --color-remoteAuth-hover: #008284;
 }
 
 h1 {
@@ -107,7 +107,7 @@ h2 {
   background-color: var(--color-secondary-hover);
 }
 
-.SSOButton {
+.remoteAuthButton {
   margin-top: 16px;
   margin-bottom: 21px;
   background-color: var(--color-SSO);
@@ -120,11 +120,11 @@ h2 {
   font-size: 16px;
   border-radius: 8px;
   font-weight: 700;
-  box-shadow: 0 4px 0px 0px var(--color-SSO-shadow);
+  box-shadow: 0 4px 0px 0px var(--color-remoteAuth-shadow);
 }
 
-.SSOButton:hover {
-  background-color: var(--color-SSO-hover);
+.remoteAuthButton:hover {
+  background-color: var(--color-remoteAuth-hover);
 }
 
 .invalid-feedback {
