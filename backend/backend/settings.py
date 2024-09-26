@@ -90,6 +90,11 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': False,
         },
+        'data_managment': {  # Logger for handling Datamanagment-specific logs (e.g., Matches, Users, etc.)
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
     },
 }
 

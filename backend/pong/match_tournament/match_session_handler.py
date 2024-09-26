@@ -2,7 +2,9 @@ import logging
 from typing import Dict, Optional, Callable
 from .match_session import MatchSession
 from channels.layers import get_channel_layer
-from pong.match_tournament.data_managment import MatchmakingQueue, Matches, User
+from pong.match_tournament.data_managment.matchmaking_queue import MatchmakingQueue
+from pong.match_tournament.data_managment.matches import Matches
+from pong.match_tournament.data_managment.user import User
 
 logger = logging.getLogger("match")
 
@@ -52,7 +54,6 @@ class MatchSessionHandler:
             user_id_2 = MatchmakingQueue.pop_next_user()
             if user_id_1 and user_id_2:
                 match = await cls.create_match(user_id_1, user_id_2, cls.remove_match)
-                Matches.add_match(match)
 
                 # Send a message to both users
                 match_id = match.get_id()

@@ -45,6 +45,10 @@ class MatchSession:
         self._channel_layer = get_channel_layer()
         self._is_game_stopped = True
 
+    def __del__(self):
+        '''Destructor'''
+        logger.debug(f"Deleted match session {self._match_id}")
+
     async def _main_loop(self) -> None:
         '''Main loop of the match'''
         while not self._stop_requested:
@@ -55,10 +59,11 @@ class MatchSession:
             if self._is_game_stopped:
                 await self._start_timer()
                 self._is_game_stopped = False
-            if self.is_every_user_connected():
+            if self.is_every_user_connected() and not self._stop_requested:
                 await self._game_session.calculate_game_state()
                 await self._send_game_state()
-            await asyncio.sleep(self._tick_speed)
+            if not self._stop_requested:
+                await asyncio.sleep(self._tick_speed)
 
     async def _end_match(self, reason: EndReason) -> None:
         '''End the match'''
@@ -88,7 +93,7 @@ class MatchSession:
         # Call the MatchConsumer to disconnect the users
         for user_id, callback in self._on_match_finished_user_callbacks.items():
             if callback is not None:
-                await callback()
+                await callback(winner)
 
         # Stop the main loop
         self._main_loop_task.cancel()
@@ -103,15 +108,14 @@ class MatchSession:
     async def _match_finished(self, match_id: str, winner: str, write_to_db: bool = True) -> None:
         '''Callback when the match is finished'''
         logger.info(f"Match {match_id} finished, winner: {winner}")
-        if write_to_db:
-            await self._send_game_over_message(winner)
+        # if write_to_db:
             # await self._write_score_to_database() # TODO: Implement this
         
         if self._on_match_finished is not None:
             if asyncio.iscoroutinefunction(self._on_match_finished):
-                await self._on_match_finished(match_id, winner)
+                await self._on_match_finished(match_id, self._playerID_to_userID(winner))
             else:
-                self._on_match_finished(match_id, winner)
+                self._on_match_finished(match_id, self._playerID_to_userID(winner))
 
     #############################
     #      Timer functions      #
@@ -140,6 +144,8 @@ class MatchSession:
 
     async def _monitor_match_start(self) -> None:
         '''Monitor the start of the match, will end the match if not all users connect in time'''
+        if self._stop_requested:
+            return
         try:
             await asyncio.wait_for(self._wait_for_users_to_connect(), timeout=MATCH_START_TIMEOUT)
             logger.debug("Both users connected, match starting.")
@@ -217,6 +223,8 @@ class MatchSession:
 
 
     async def _start_timer(self) -> None:
+        if self._stop_requested:
+            return
         '''Start the timer before the game starts'''
         for seconds in range(GAME_START_TIMER, -1, -1):
             await self._send_timer_message(seconds)
@@ -248,6 +256,8 @@ class MatchSession:
 
     async def _send_user_mapping(self) -> None:
         '''Send the user mapping to the users'''
+        if self._stop_requested:
+            return
         try:
             user_id_1 = list(self._assigned_users)[0]
             user_id_2 = list(self._assigned_users)[1] if not self._is_local_match else None
@@ -315,3 +325,14 @@ class MatchSession:
     def is_every_user_connected(self) -> bool:
         '''Check if all users are connected'''
         return len(self._assigned_users) == len(self._connected_users)
+    
+    def _playerID_to_userID(self, player_id: str) -> str:
+        '''Convert a player id to a user id'''
+        for user_id, p_id in self._player_mapping.items():
+            if p_id == player_id:
+                return user_id
+        return None
+    
+    def _userID_to_playerID(self, user_id: str) -> str:
+        '''Convert a user id to a player id'''
+        return self._player_mapping[user_id]

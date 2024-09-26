@@ -1,6 +1,7 @@
 import logging
 from pong.match_tournament.tournament_session import TournamentSession
-from pong.match_tournament.data_managment import Tournaments, User
+from pong.match_tournament.data_managment.tournaments import Tournaments
+from pong.match_tournament.data_managment.user import User
 from channels.layers import get_channel_layer
 
 logger = logging.getLogger("tournament")

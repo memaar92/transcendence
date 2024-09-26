@@ -20,6 +20,9 @@ class GameSession:
         self.paddle_right = Paddle(position=Vector2(WORLD_SIZE.x - PADDLE_SIZE.x, WORLD_SIZE.y / 2), size=PADDLE_SIZE, speed=PADDLE_SPEED, world_size=WORLD_SIZE)
         self.ball = Ball(Vector2(WORLD_SIZE.x / 2, WORLD_SIZE.y / 2), direction=degree_to_vector(55), speed=BALL_SPEED, size=BALL_SIZE, canvas_size=WORLD_SIZE, collider_list=[self.paddle_left, self.paddle_right])
 
+    def __del__(self):
+        logger.debug(f"Deleted game session {self}")
+
     def update_player_direction(self, player_id: int, direction: int) -> None:
         '''Direction is -1(up), 0(stop), or 1(down)'''
         if player_id == 0:
@@ -33,11 +36,11 @@ class GameSession:
         self.ball.move()
 
         if self.ball.position.x < 0:
-            await self._on_player_scored(0)
+            await self._on_player_scored(0) # Call the callback function
             self.ball.reset()
             self.ball.direction.x *= -1
         elif self.ball.position.x + self.ball.size > WORLD_SIZE.x:
-            await self._on_player_scored(1)
+            await self._on_player_scored(1) # Call the callback function
             self.ball.reset()
             self.ball.direction.x *= -1
 

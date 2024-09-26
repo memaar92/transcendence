@@ -7,8 +7,6 @@ window.connectToMatch = function(match_id) {
     const matchSocket = new WebSocket('ws://' + window.location.host + '/ws/pong/match/' + match_id + '/');
     matchSocket.onopen = function(e) {
         console.log('Match WebSocket connection established.');
-        const canvas = document.getElementById('gameCanvas');
-        canvas.style.display = 'block'; // Show the canvas
         hideReconnectButton();
     };
 
@@ -97,8 +95,15 @@ window.connectToMatch = function(match_id) {
         }
     }
 
+    // Create a new canvas element
+    const canvas = document.createElement('canvas');
+    canvas.id = 'gameCanvas';
+    canvas.width = 1600; // Set the desired width
+    canvas.height = 900; // Set the desired height
+    canvas.style.backgroundColor = '#000000'; // Set the background color
+    document.body.appendChild(canvas); // Append the canvas to the body or any other container
+
     // Initialize canvas and context
-    const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const canvasWidth = canvas.width;
     const canvasHeight = canvas.height;
@@ -276,7 +281,7 @@ window.connectToMatch = function(match_id) {
         ctx.font = 'bold 48px Arial';
         ctx.fillStyle = 'white';
         ctx.textAlign = 'center';
-        ctx.fillText('Winner: ' + winner + ' (This is the player number, not the user ID)', canvasWidth / 2, canvasHeight / 2);
+        ctx.fillText('Winner: ' + winner + ' (This is the player ID, not the user ID)', canvasWidth / 2, canvasHeight / 2);
     }
 
     function draw() {

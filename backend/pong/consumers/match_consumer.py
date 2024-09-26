@@ -1,9 +1,9 @@
 import json
-import asyncio
+import sys
 from channels.generic.websocket import AsyncWebsocketConsumer
-from pong.match_tournament.match_session_handler import MatchSessionHandler
 from pong.match_tournament.match_session import MatchSession
-from pong.match_tournament.data_managment import Matches, User
+from pong.match_tournament.data_managment.matches import Matches
+from pong.match_tournament.data_managment.user import User
 
 import logging
 logger = logging.getLogger("match_consumer")
@@ -12,11 +12,11 @@ class MatchConsumer(AsyncWebsocketConsumer):
 
     def __init__(self):
         super().__init__()
-        self._match_id = None
-        self._user_id = None
-        self._group_name = None
-        self._match_session = None
-        self._connection_established = False
+        self._match_id: str = None
+        self._user_id: str = None
+        self._group_name: str = None
+        self._match_session: MatchSession = None
+        self._connection_established: bool = False
 
     async def connect(self):
         # Extracting the match_id from the URL route parameters
@@ -52,10 +52,12 @@ class MatchConsumer(AsyncWebsocketConsumer):
         if not self._connection_established:
             logger.info(f"Connection not established for user {self._user_id}, so not disconnecting")
             return
-
-        await self._match_session.disconnect_user(self._user_id)
+        self._connection_established = False
 
         await self.channel_layer.group_discard(self._match_id, self.channel_name)
+        if self._match_session:
+            await self._match_session.disconnect_user(self._user_id)
+
 
 
     async def receive(self, text_data: str): # TODO: Implement this
@@ -104,32 +106,48 @@ class MatchConsumer(AsyncWebsocketConsumer):
 
         return True
     
-    async def _match_session_is_finished_callback(self):
-        self._connection_established = False
-        self.close()
+    async def _match_session_is_finished_callback(self, winner: str):
+        # self._connection_established = False
+        await self._send_game_over_message(winner)
+        self._match_session = None
+        await self.close()
+
+    async def _send_game_over_message(self, winner: str) -> None:
+        '''Send a game over message to the users'''
+        await self.send(text_data=json.dumps({
+            "type": "game_over",
+            "data": winner
+        }))
+
+
 
     ### Channel Layer Callbacks ###
 
     async def user_mapping(self, event):
         logger.info(f"User mapping: {event}")
-        await self.send(text_data=json.dumps(event))
+        await self.safe_send(text_data=json.dumps(event))
 
     async def game_update(self, event):
         # logger.info(f"Sending game state to user {self._user_id}")
-        await self.send(text_data=json.dumps(event))
-
-    async def game_over(self, event):
-        logger.info(f"Match {self._match_id} is over")
-        await self.send(text_data=json.dumps(event))
+        await self.safe_send(text_data=json.dumps(event))
 
     async def player_disconnected(self, event):
         logger.info(f"Player {event} disconnected")
-        await self.send(text_data=json.dumps(event))
+        await self.safe_send(text_data=json.dumps(event))
 
     async def player_reconnected(self, event):
         logger.info(f"Player {event} reconnected")
-        await self.send(text_data=json.dumps(event))
+        await self.safe_send(text_data=json.dumps(event))
     
     async def timer_update(self, event):
         logger.info(f"Timer update: {event}")
-        await self.send(text_data=json.dumps(event))
+        await self.safe_send(text_data=json.dumps(event))
+
+    async def safe_send(self, text_data: str):
+        if self._connection_established:
+            try:
+                await self.send(text_data=text_data)
+            except Exception as e:
+                logger.error(f"Failed to send message: {e}")
+        else:
+            logger.warning("Attempted to send message on closed connection")
