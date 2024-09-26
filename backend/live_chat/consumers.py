@@ -191,8 +191,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 case 'message_preview':
                     await self.send_latest_message()
                 case 'update_status':
-                    await self.update_status(data['user_id_1'], data['user_id_2'], data['status'])
-                    await self.send_friends_info(data['user_id_1'])
+                    await self.update_status(data['sender_id'], data['receiver_id'], data['status'])
+                    await self.send_friends_info(data['receiver_id'])
                 case 'chat_request_accepted':
                     await self.chat_request_accepted(data)
                 case 'chat_request_denied':
@@ -427,12 +427,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
         except get_user_model().DoesNotExist:
             return None
 
+    #get the friends list of the user including blocked users
     @database_sync_to_async
     def get_friends_list(self, user_id):
         friends = Relationship.objects.filter(
-            (Q(user1_id=user_id) | Q(user2_id=user_id)),
-            status=RelationshipStatus.BEFRIENDED
-        )
+            Q(user1_id=user_id) | Q(user2_id=user_id) & (Q(status=RelationshipStatus.BEFRIENDED) | Q(status=RelationshipStatus.BLOCKED)))
         friend_list = []
         user_model = get_user_model()
     
@@ -447,7 +446,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'id': str(friend_user.id),
                 'name': friend_user.displayname,
                 'profile_picture_url': friend_user.profile_picture.url if friend_user.profile_picture else None,
-                'chat': True if Message.objects.filter(Q(sender_id=user_id, receiver_id=friend_id) | Q(sender_id=friend_id, receiver_id=user_id)).exists() else False
+                'chat': True if Message.objects.filter(Q(sender_id=user_id, receiver_id=friend_id) | Q(sender_id=friend_id, receiver_id=user_id)).exists() else False,
+                'status': friend.status
             })
     
         return friend_list

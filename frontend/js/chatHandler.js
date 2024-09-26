@@ -3,11 +3,9 @@ class ChatHandler {
     this.ws = null;
     this.senderId = null;
     this.currentReceiverId = null;
-    this.friendsList = [];
     this.onlineUserIds = [];
     this.router = null;
     this.currentFilter = 'all';
-    this.friendsListReceived = false;
   }
 
   async init(params, router, context) {
@@ -90,6 +88,27 @@ class ChatHandler {
         this.updateUnreadMessages(content);
         break;
       case 'chat_message':
+        /* if there is not chats item with the receiver id, create one from the id, img url and name of the corresponding friend object */
+        if (!document.querySelector(`.chats-item[data-id="${content.sender_id}"]`)) {
+          const friendItem = document.querySelector(`.friends-item[data-id="${content.sender_id}"]`);
+          if (friendItem) {
+            const friend = {
+            id: friendItem.getAttribute('data-id'),
+            name: friendItem.getAttribute('data-name'),
+            profile_picture_url: friendItem.querySelector('img').src
+            };
+            document.querySelector('.chats-scroll-container').appendChild(this.createChatItem(friend));
+            const chatItem = document.querySelector(`.chats-item[data-id="${content.sender_id}"]`);
+            if (chatItem) {
+              const img = chatItem.querySelector('img');
+              if (img) {
+                img.style.border = '4px solid #7A35EC';
+              }
+            }
+          } else {
+            console.warn('Friend not found for sender ID:', content.sender_id);
+          }
+        }
         this.incrementUnreadMessageCount(content.sender_id);
         this.showLatestMessage(content.message, content.sender_id, content.sender_id);
         break;
@@ -344,6 +363,71 @@ class ChatHandler {
     return button;
   }
 
+  updateUserRelationship(senderId, receiverId, status) {
+    this.ws.send(JSON.stringify({
+      'type': 'update_status',
+      'sender_id': senderId,
+      'receiver_id': receiverId,
+      'status': status
+    }));
+  }
+  
+  blockFriend(senderId, receiverId) {
+    this.updateUserRelationship(senderId, receiverId, 'BL');
+    
+    const friendItem = document.querySelector(`.friends-item[data-id="${receiverId}"]`);
+  
+    if (friendItem) {
+      friendItem.classList.add('blocked');
+      friendItem.classList.remove('friends');
+      
+      // Remove the chat button
+      const chatButton = friendItem.querySelector('#chat-button');
+      if (chatButton) {
+        chatButton.remove();
+      }
+  
+      // Update the block button to unblock button
+      const blockButton = friendItem.querySelector('.mainButton.reject');
+      if (blockButton) {
+        blockButton.textContent = 'Unblock';
+        blockButton.classList.replace('reject', 'unblock');
+        blockButton.onclick = () => {
+          this.unblockFriend(senderId, receiverId);
+        };
+      }
+    }
+    
+    this.applyFilter();
+  }
+
+  unblockFriend(senderId, receiverId) {
+    this.updateUserRelationship(senderId, receiverId, 'BF');
+    
+    const friendItem = document.querySelector(`.friends-item[data-id="${receiverId}"]`);
+    
+    if (friendItem) {
+      friendItem.classList.remove('blocked');
+      friendItem.classList.add('friends');
+      
+      // Remove the unblock button
+      const unblockButton = friendItem.querySelector('.mainButton.unblock');
+      if (unblockButton) {
+        unblockButton.remove();
+      }
+  
+      // Re-add the necessary buttons using createFriendsFilterButtons
+      const friend = {
+        id: receiverId,
+        name: friendItem.getAttribute('data-name')
+      };
+      const buttons = this.createFriendsFilterButtons(friend);
+      buttons.forEach(button => friendItem.appendChild(button));
+    }
+    
+    this.applyFilter();
+  }
+
   displayUserList(data) {
     console.log('Displaying user list');
     const parsedData = JSON.parse(data);
@@ -424,6 +508,43 @@ class ChatHandler {
       }
     });
   }
+
+  createChatItem(friend) {
+    const chatItem = document.createElement('div');
+    chatItem.className = 'chats-item';
+    chatItem.setAttribute('data-id', friend.id);
+    chatItem.setAttribute('data-name', friend.name);
+    chatItem.onclick = () => {
+      if (this.router) {
+        this.router.navigate(`/live_chat/chat_room?recipient=${friend.name}`);
+      } else {
+        console.warn('Router instance is undefined');
+        return;
+      }
+    };
+    const chatImg = document.createElement('img');
+    chatImg.src = friend.profile_picture_url;
+    chatImg.alt = friend.name;
+    chatImg.className = 'friends-avatar';
+
+    const chatInfo = document.createElement('div');
+    chatInfo.className = 'friends-info';
+
+    const chatName = document.createElement('div');
+    chatName.className = 'friends-name';
+    chatName.textContent = friend.name;
+
+    const messagePreview = document.createElement('div');
+    messagePreview.className = 'message-preview';
+    messagePreview.textContent = 'Loading...';
+
+    chatInfo.appendChild(chatName);
+    chatInfo.appendChild(messagePreview);
+
+    chatItem.appendChild(chatImg);
+    chatItem.appendChild(chatInfo);
+    return chatItem;
+  }
   
   displayChatsList(friends) {
     const friendsListElement = document.querySelector('.friends-scroll-container');
@@ -447,45 +568,17 @@ class ChatHandler {
     }
     friends.forEach((friend) => {
       if (friend.chat) {
-        const chatItem = document.createElement('div');
-        chatItem.className = 'chats-item';
-        chatItem.setAttribute('data-id', friend.id);
-        chatItem.setAttribute('data-name', friend.name);
-        chatItem.onclick = () => {
-          if (this.router) {
-            this.router.navigate(`/live_chat/chat_room?recipient=${friend.name}`);
-          } else {
-            console.warn('Router instance is undefined');
-            return;
-          }
-        };
-        const chatImg = document.createElement('img');
-        chatImg.src = friend.profile_picture_url;
-        chatImg.alt = friend.name;
-        chatImg.className = 'friends-avatar';
-  
-        const chatInfo = document.createElement('div');
-        chatInfo.className = 'friends-info';
-  
-        const chatName = document.createElement('div');
-        chatName.className = 'friends-name';
-        chatName.textContent = friend.name;
-  
-        const messagePreview = document.createElement('div');
-        messagePreview.className = 'message-preview';
-        messagePreview.textContent = 'Loading...';
-  
-        chatInfo.appendChild(chatName);
-        chatInfo.appendChild(messagePreview);
-  
-        chatItem.appendChild(chatImg);
-        chatItem.appendChild(chatInfo);
-  
-        chatsListElement.appendChild(chatItem);
+        chatsListElement.appendChild(this.createChatItem(friend));
       }
-  
       const friendItem = document.createElement('div');
-      friendItem.className = 'friends-item friends';
+      const buttons = [];
+      if (friend.status === 'BF') {
+        friendItem.className = 'friends-item friends';
+        buttons = this.createFriendsFilterButtons(friend);
+      } else if (friend.status === 'BL') {
+        friendItem.className = 'friends-item blocked';
+        buttons = this.createBlockedFilterButtons(friend);
+      }
       friendItem.setAttribute('data-id', friend.id);
       friendItem.setAttribute('data-name', friend.name);
   
@@ -500,35 +593,11 @@ class ChatHandler {
       const friendName = document.createElement('div');
       friendName.className = 'friends-name';
       friendName.textContent = friend.name;
-
-      const chatButton = document.createElement('button');
-      chatButton.id = 'chat-button';
-      chatButton.onclick = () => {
-        this.router.navigate(`/live_chat/chat_room?recipient=${friend.name}`);
-      };
-
-      const svgContent = `
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -4 32 32" width="100%" height="100%" fill="#149a00" stroke="#149a00" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="transform: translate(0, 6px);">
-          <!-- Border with offset -->
-          <path class="border" d="M25 20a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h5l2 2 2-2h11z"
-                fill="none" stroke="#1f7112" stroke-width="2"
-                transform="translate(0, 1)"/>
     
-          <!-- Chat bubble -->
-          <path class="bubble" d="M25 20a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h5l2 2 2-2h11z"/>
-    
-          <!-- Chat bubble text -->
-          <text class="bubble" x="15" y="12.5" font-size="8" text-anchor="middle" fill="white" stroke="none" font-weight="600" dy=".3em">Chat</text>
-        </svg>
-      `;
-
-      chatButton.innerHTML = svgContent;
-
       friendInfo.appendChild(friendName);
       friendItem.appendChild(friendImg);
       friendItem.appendChild(friendInfo);
-      friendItem.appendChild(chatButton);
-
+      buttons.forEach(button => friendItem.appendChild(button));
       friendsListElement.appendChild(friendItem);
     });
     
@@ -543,6 +612,52 @@ class ChatHandler {
       'context': 'home'
     }));
     this.applyFilter();
+  }
+
+  createFriendsFilterButtons(friend) {
+    console.log('Friend:', friend);
+    const chatButton = document.createElement('button');
+    chatButton.id = 'chat-button';
+    chatButton.onclick = () => {
+      this.router.navigate(`/live_chat/chat_room?recipient=${friend.name}`);
+    };
+  
+    const svgContent = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="100%" height="100%" fill="#149a00" stroke="#149a00" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="transform: translate(0, 6px);">
+        <!-- Border with offset -->
+        <path class="border" d="M25 20a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h5l2 2 2-2h11z"
+              fill="none" stroke="#1f7112" stroke-width="2"
+              transform="translate(0, 1)"/>
+  
+        <!-- Chat bubble -->
+        <path class="bubble" d="M25 20a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h5l2 2 2-2h11z"/>
+  
+        <!-- Chat bubble text -->
+        <text class="bubble" x="15" y="12.5" font-size="8" text-anchor="middle" fill="white" stroke="none" font-weight="600" dy=".3em">Chat</text>
+      </svg>
+    `;
+  
+    chatButton.innerHTML = svgContent;
+  
+    const blockButton = document.createElement('button');
+    blockButton.className = 'mainButton reject';
+    blockButton.textContent = 'Block';
+    blockButton.onclick = () => {
+      this.blockFriend(this.senderId, friend.id);
+    };
+  
+    return [chatButton, blockButton];
+  }
+
+  createBlockedFilterButtons(friend) {
+    const unblockButton = document.createElement('button');
+
+    if (unblockButton) {
+      unblockButton.className = 'mainButton.blocked';
+      unblockButton.onclick = () => {
+        this.unblockFriend(senderId, receiverId);
+      };
+    }
   }
 
   openChatWindow(friendId) {
@@ -637,20 +752,6 @@ class ChatHandler {
     }
   }
 
-  removeFriend(friendId) {
-    if (this.ws && friendId) {
-      this.ws.send(JSON.stringify({
-        'type': 'update_status',
-        'user_id_1': friendId,
-        'user_id_2': this.senderId,
-        'status': 'DF'
-
-      }));
-    } else {
-      console.warn('Cannot remove friend, WebSocket is not initialized or friend ID is missing');
-    }
-  }
-
   sendChatHistoryRequest(senderId, receiverId) {
     return new Promise((resolve, reject) => {
       if (this.ws && senderId && receiverId) {
@@ -742,3 +843,4 @@ export default {
     return instance;
   }
 };
+
