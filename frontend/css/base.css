@@ -24,6 +24,9 @@ body {
   --color-secondary: #9a9996;
   --color-secondary-shadow: gray;
   --color-secondary-hover: #a4a3a0;
+  --color-SSO: #006e70;
+  --color-SSO-shadow: #005d5f;
+  --color-SSO-hover: #008284;
 }
 
 h1 {
@@ -104,6 +107,26 @@ h2 {
   background-color: var(--color-secondary-hover);
 }
 
+.SSOButton {
+  margin-top: 16px;
+  margin-bottom: 21px;
+  background-color: var(--color-SSO);
+  color: var(--color-text);
+  border: none;
+  padding-top: 9px;
+  padding-bottom: 9px;
+  text-align: center;
+  text-decoration: none;
+  font-size: 16px;
+  border-radius: 8px;
+  font-weight: 700;
+  box-shadow: 0 4px 0px 0px var(--color-SSO-shadow);
+}
+
+.SSOButton:hover {
+  background-color: var(--color-SSO-hover);
+}
+
 .invalid-feedback {
   color: var(--color-text);
 }
@@ -142,17 +165,10 @@ input:disabled {
   font-weight: 700;
   box-shadow: 0 4px 0px 0px var(--color-deny-shadow);
   color: var(--color-text);
-  /*background-color: var(--color-background);
-  border: var(--color-deny) solid 2px;
-  border-radius: 1rem; */
 }
 
 .dangerous-button:hover {
   background-color: var(--color-deny-hover);
-  /*transition: all 0.4s ease;
-  color: var(--color-background);
-  background-color: var(--color-deny);*/
-
 }
 
 .edit-button {
