@@ -11,6 +11,7 @@ const routes = [
   { path: "/register", templateUrl: "/routes/register.html" },
   { path: "/main_menu", templateUrl: "/routes/main_menu.html" },
   { path: "/404", templateUrl: "/routes/404.html" },
+  { path: "/auth_failed", templateUrl: "/routes/auth_failed.html" },
   { path: "/game_menu", templateUrl: "/routes/game_menu.html" },
   { path: "/play", templateUrl: "/routes/play.html" },
   { path: "/game_local", templateUrl: "/routes/game_local.html" },
