@@ -84,10 +84,76 @@ document.getElementById("content").addEventListener('click', async function (eve
   await update_userinfo()
 });
 
-document.getElementById("delete").addEventListener('click', async function (event) {
-  const result = await api.delete("/profile/");
-  router.navigate("/home")
-  event.preventDefault();
+
+document.getElementById("deleteModal").addEventListener('click', async function (event) {
+    const modalContainer = document.createElement('div');
+    modalContainer.className = 'modal fade';
+
+    modalContainer.innerHTML = `
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Account deletion</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Really want to delete your account?</p>
+            </div>
+            <div class="modal-footer" style="padding-right: 3rem;">
+                <button type="button" class="secondaryButton" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="dangerous-button" id="confirmDeletion">Delete</button>
+            </div>
+        </div>
+      </div>
+    `;
+
+    // Append the modal container to the body
+    document.body.prepend(modalContainer);
+
+    let modalInstance;
+    try {
+      modalInstance = new bootstrap.Modal(modalContainer, {
+        keyboard: true,
+        backdrop: 'static'
+      });
+      modalInstance.show();
+    } catch (error) {
+      console.error('Error initializing modal:', error);
+      modalContainer.remove();
+      return;
+    }
+
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape') {
+        modalInstance.hide();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscapeKey);
+
+    // Clean up event listeners and modal instance when the modal is hidden
+    modalContainer.addEventListener('hidden.bs.modal', () => {
+      modalContainer.remove();
+      modalInstance.dispose();
+      document.removeEventListener('keydown', handleEscapeKey);
+    });
+});
+
+
+document.addEventListener('click', async function (event) {
+  if (event.target && event.target.id === 'confirmDeletion') {
+    const modalContainer = document.querySelector('.modal.fade');
+    if (modalContainer) {
+        const modalInstance = bootstrap.Modal.getInstance(modalContainer);
+        if (modalInstance) {
+            modalInstance.hide();
+            modalContainer.remove();
+        }
+    }
+    const result = await api.delete("/profile/");
+    router.navigate("/home");
+    event.preventDefault();
+  }
 });
 
 function showAlert(message) {
