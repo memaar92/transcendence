@@ -108,6 +108,28 @@ class MatchConsumer(AsyncWebsocketConsumer):
         self._connection_established = False
         self.close()
 
+    ### Channel Layer Callbacks ###
+
+    async def user_mapping(self, event):
+        logger.info(f"User mapping: {event}")
+        await self.send(text_data=json.dumps(event))
+
     async def game_update(self, event):
         # logger.info(f"Sending game state to user {self._user_id}")
+        await self.send(text_data=json.dumps(event))
+
+    async def game_over(self, event):
+        logger.info(f"Match {self._match_id} is over")
+        await self.send(text_data=json.dumps(event))
+
+    async def player_disconnected(self, event):
+        logger.info(f"Player {event} disconnected")
+        await self.send(text_data=json.dumps(event))
+
+    async def player_reconnected(self, event):
+        logger.info(f"Player {event} reconnected")
+        await self.send(text_data=json.dumps(event))
+    
+    async def timer_update(self, event):
+        logger.info(f"Timer update: {event}")
         await self.send(text_data=json.dumps(event))

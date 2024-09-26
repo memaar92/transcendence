@@ -10,6 +10,7 @@ logger = logging.getLogger("match")
 DISCONNECT_THRESHOLD = 3
 MATCH_START_TIMEOUT = 10
 RECONNECT_TIMEOUT = 10
+GAME_START_TIMER = 3 # Time in seconds before the game starts
 
 TICK_RATE = 60
 
@@ -41,6 +42,8 @@ class MatchSession:
         self._tick_speed = 1 / TICK_RATE
         self._is_match_running = False
         self._stop_requested = False
+        self._channel_layer = get_channel_layer()
+        self._is_game_stopped = True
 
     async def _main_loop(self) -> None:
         '''Main loop of the match'''
@@ -48,8 +51,13 @@ class MatchSession:
             if not self._is_match_running:
                 await self._monitor_match_start()
                 self._is_match_running = True
-            await self._game_session.calculate_game_state()
-            await self._send_game_state()
+                await self._send_user_mapping()
+            if self._is_game_stopped:
+                await self._start_timer()
+                self._is_game_stopped = False
+            if self.is_every_user_connected():
+                await self._game_session.calculate_game_state()
+                await self._send_game_state()
             await asyncio.sleep(self._tick_speed)
 
     async def _end_match(self, reason: EndReason) -> None:
@@ -95,8 +103,10 @@ class MatchSession:
     async def _match_finished(self, match_id: str, winner: str, write_to_db: bool = True) -> None:
         '''Callback when the match is finished'''
         logger.info(f"Match {match_id} finished, winner: {winner}")
-        # if write_to_db:
+        if write_to_db:
+            await self._send_game_over_message(winner)
             # await self._write_score_to_database() # TODO: Implement this
+        
         if self._on_match_finished is not None:
             if asyncio.iscoroutinefunction(self._on_match_finished):
                 await self._on_match_finished(match_id, winner)
@@ -158,9 +168,14 @@ class MatchSession:
         self._on_match_finished_user_callbacks[user_id] = on_match_finished
         logger.debug(f"User {user_id} connected to match {self._match_id}")
 
+        await self._send_game_state()
+
         # Check if a blocked user exists and end the match if only one user is left
         if len(self._blocked_users) == 1:
             await self._end_match(EndReason.DISCONNECT_TIMEOUT)
+        
+        # Restart the game start timer
+        self._is_game_stopped = True
 
     async def disconnect_user(self, user_id: str) -> bool:
         '''Disconnect a user from the match'''
@@ -200,6 +215,14 @@ class MatchSession:
         else:
             self._game_session.update_player_direction(self._player_mapping[user_id], direction)
 
+
+    async def _start_timer(self) -> None:
+        '''Start the timer before the game starts'''
+        for seconds in range(GAME_START_TIMER, -1, -1):
+            await self._send_timer_message(seconds)
+            await asyncio.sleep(1)
+        logger.debug("Game timer ended, starting game")
+
     #############################
     #     Database functions    #
     #############################
@@ -223,18 +246,51 @@ class MatchSession:
     #    Message sending        #
     #############################
 
+    async def _send_user_mapping(self) -> None:
+        '''Send the user mapping to the users'''
+        try:
+            user_id_1 = list(self._assigned_users)[0]
+            user_id_2 = list(self._assigned_users)[1] if not self._is_local_match else None
+        except IndexError as e:
+            # Handle the case where there are not enough users assigned
+            logger.error(f"Error in _send_user_mapping: {e}")
+            return
+    
+        await self._channel_layer.group_send(self._match_id, {
+            "type": "user_mapping",
+            "is_local_match": self._is_local_match,
+            "player_1": user_id_1,
+            "player_2": user_id_2
+        })
+
     async def _send_game_state(self) -> None:
         '''Send the game state to the users'''
-        channel_layer = get_channel_layer()
         game_state = self._game_session.to_dict()
-        await channel_layer.group_send(self._match_id, {
+        await self._channel_layer.group_send(self._match_id, {
             "type": "game_update",
             "data": game_state
         })
 
     async def _send_player_disconnected_message(self, user_id: str) -> None:
         '''Send a disconnect message to the users'''
-        pass
+        await self._channel_layer.group_send(self._match_id, {
+            "type": "player_disconnected",
+            "data": user_id
+        })
+
+    async def _send_timer_message(self, time: int) -> None:
+        '''Send a timer message to the users'''
+        await self._channel_layer.group_send(self._match_id, {
+            "type": "timer_update",
+            "data": time
+        })
+
+    async def _send_game_over_message(self, winner: str) -> None:
+        '''Send a game over message to the users'''
+        await self._channel_layer.group_send(self._match_id, {
+            "type": "game_over",
+            "data": winner
+        })
 
     #############################
     #    Utility functions      #
@@ -255,3 +311,7 @@ class MatchSession:
     def is_user_blocked(self, user_id: str) -> bool:
         '''Check if a user is blocked from the match'''
         return user_id in self._blocked_users
+    
+    def is_every_user_connected(self) -> bool:
+        '''Check if all users are connected'''
+        return len(self._assigned_users) == len(self._connected_users)
