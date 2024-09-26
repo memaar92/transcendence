@@ -110,7 +110,7 @@ h2 {
 .remoteAuthButton {
   margin-top: 16px;
   margin-bottom: 21px;
-  background-color: var(--color-SSO);
+  background-color: var(--color-remoteAuth);
   color: var(--color-text);
   border: none;
   padding-top: 9px;
