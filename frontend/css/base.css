@@ -200,7 +200,6 @@ input:disabled {
     box-shadow: var(--color-accent) 0px 0px 15px;
     box-shadow: var(--color-accent) 0px 0px 10px;
     width: 100%;
-    height: 20vh;
     background: 
       linear-gradient(135deg, var(--b) 0 calc(var(--top-left, var(--all)) + 40px), #202021 0) top left / 50% 50%,
       linear-gradient(-135deg, var(--b) 0 calc(var(--top-right, var(--all))), #202021 0) top right / 50% 50%,
