@@ -29,11 +29,13 @@ function createWebSocket() {
     matchmakingSocket.onmessage = function(e) {
         const data = JSON.parse(e.data);
         console.log('Received matchmaking message:', data);
-        if (data.type === "match_ready") {
+        if (data.type === "remote_match_ready") {
             if (data.match_id) {
                 console.log('Match found! Match ID: ' + data.match_id);
                 match_id = data.match_id;
                 connectToMatch(match_id);
+            } else {
+                console.error('Match ID not found.');
             }
         } else if (data.type === "match_in_progress") {
             console.log('Match in progress.');

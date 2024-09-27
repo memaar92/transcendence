@@ -194,7 +194,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
         '''Check if the current connection is the active connection (Current tab in the browser)'''
         return self._user_connections[self.user_id]["active"] == self.channel_name
 
-    async def match_ready(self, event):
+    async def remote_match_ready(self, event):
         '''Handle the match_ready message'''
 
         # Check if the current connection is the active connection (Current tab in the browser)
@@ -203,7 +203,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
 
         match_id = event['match_id']
         await self.send(text_data=json.dumps({
-            'type': 'match_ready',
+            'type': 'remote_match_ready',
             'match_id': match_id
         }))
 

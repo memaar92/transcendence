@@ -82,23 +82,10 @@ class MatchSessionHandler:
         '''Send a match ready message to both users'''
         match = Matches.get_match(match_id)
         if match:
-            channel_layer = get_channel_layer()
             if user1:
-                await channel_layer.group_send(
-                    f"user_{user1}",
-                    {
-                        'type': 'match_ready',
-                        'match_id': match_id
-                    }
-                )
+                await cls._send_remote_match_ready_message(match_id, user1, user2)
             if user2:
-                await channel_layer.group_send(
-                    f"user_{user2}",
-                    {
-                        'type': 'match_ready',
-                        'match_id': match_id
-                    }
-                )
+                await cls._send_remote_match_ready_message(match_id, user2, user1)
 
     @classmethod
     def remove_from_matchmaking_queue(cls, user_id: str) -> None:
@@ -106,3 +93,16 @@ class MatchSessionHandler:
         is_removed = MatchmakingQueue.remove_from_queue(user_id)
         if not is_removed:
             raise ValueError(f"not in queue")
+        
+    @classmethod
+    async def _send_remote_match_ready_message(cls, match_id: str, user_id: str, opponent_id: str) -> None:
+        '''Send a match ready message to a user'''
+        channel_layer = get_channel_layer()
+        await channel_layer.group_send(
+            f"user_{user_id}",
+            {
+                'type': 'remote_match_ready',
+                'match_id': match_id,
+                'opponent_id': opponent_id
+            }
+        )
