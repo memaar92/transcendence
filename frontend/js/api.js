@@ -97,7 +97,13 @@ export const api = {
           bsAlert.show();
           await router.navigate("/home");
         }
-        return await fetch(`${API_BASE_URL}${endpoint}`);
+        return await fetch(`${API_BASE_URL}${endpoint}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        });
       }
     }
     return response;
@@ -141,7 +147,13 @@ export const api = {
           bsAlert.show();
           await router.navigate("/home");
         }
-        return await fetch(`${API_BASE_URL}${endpoint}`);
+        return await fetch(`${API_BASE_URL}${endpoint}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        });
       }
     }
     return response;
@@ -181,7 +193,9 @@ export const api = {
           bsAlert.show();
           await router.navigate("/home");
         }
-        return await fetch(`${API_BASE_URL}${endpoint}`);
+        return await fetch(`${API_BASE_URL}${endpoint}`, {
+          method: "DELETE",
+        });
       }
     }
     return response;
