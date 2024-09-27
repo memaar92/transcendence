@@ -7,12 +7,12 @@ const games = await result.json();
 (games);
 
 document.getElementById("back").addEventListener("click", async (e) => {
-  ("going back");
   history.back();
 });
 
 async function tableCreate() {
   const table = document.getElementById("matchDataBody");
+  if (!table) return;
   const myId = await getMyId();
 
   if (games.length == 0) {
