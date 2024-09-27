@@ -38,6 +38,9 @@ function createWebSocket() {
         } else if (data.type === "match_in_progress") {
             console.log('Match in progress.');
             showReconnectButton(data.match_id); // Pass the correct match_id
+        } else if (data.type === "tournament_canceled") {
+            console.log('Tournament canceled.');
+            showOverlay('Tournament Canceled', 'A tournament has been canceled.');
         } else if (data.state === "already_in_game") {
             console.log('User is already in a game.');
         } else if (data.state === "registered") {
@@ -139,6 +142,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     createWebSocket(); // Initialize WebSocket connection when the document is loaded
 });
+
+// Show overlay
+function showOverlay(title, message) {
+    const overlay = document.getElementById('overlay');
+    const overlayMessage = document.getElementById('overlay-message');
+    const overlayCloseButton = document.getElementById('overlay-close-button');
+
+    overlayMessage.textContent = `${title}: ${message}`;
+    overlay.style.display = 'block';
+
+    overlayCloseButton.onclick = function() {
+        overlay.style.display = 'none';
+    };
+}
 
 // Export matchmakingSocket to make it accessible from other modules
 export { matchmakingSocket };

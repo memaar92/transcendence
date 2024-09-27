@@ -190,19 +190,17 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
     #    the channel layer       #
     ##############################
 
+    def _is_active_connection(self) -> bool:
+        '''Check if the current connection is the active connection (Current tab in the browser)'''
+        return self._user_connections[self.user_id]["active"] == self.channel_name
+
     async def match_ready(self, event):
         '''Handle the match_ready message'''
 
-        # Check if the user is in the _user_connections dictionary (Should always be the case)
-        if self.user_id not in self._user_connections:
-            logger.warning(f"User {self.user_id} not found in _user_connections")
-            return
-
         # Check if the current connection is the active connection (Current tab in the browser)
-        if self._user_connections[self.user_id]["active"] != self.channel_name:
+        if not self._is_active_connection():
             return
 
-        logger.debug(f"Received match_ready event: {event}")
         match_id = event['match_id']
         await self.send(text_data=json.dumps({
             'type': 'match_ready',
@@ -214,6 +212,25 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
         logger.debug(f"Received tournament_cancelled event: {event}")
         await self.send(text_data=json.dumps({
             'type': 'tournament_cancelled'
+        }))
+
+    async def tournament_started(self, event):
+        '''Handle the tournament_started message'''
+        logger.debug(f"Received tournament_started event: {event}")
+        await self.send(text_data=json.dumps({
+            'type': 'tournament_started'
+        }))
+
+    async def tournament_canceled(self, event):
+        '''Handle the tournament_canceled message'''
+
+        # Check if the current connection is the active connection (Current tab in the browser)
+        if not self._is_active_connection():
+            return
+
+        logger.debug(f"Received tournament_canceled event: {event}")
+        await self.send(text_data=json.dumps({
+            'type': 'tournament_canceled'
         }))
 
     ###################################
@@ -284,7 +301,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
     async def _tournament_unregister(self, msg: TournamentUnregister) -> None:
         '''Unregister from a tournament'''
         try:
-            TournamentSessionHandler.remove_user_from_tournament(msg.tournament_id, self.user_id)
+            await TournamentSessionHandler.remove_user_from_tournament(msg.tournament_id, self.user_id)
             await self._send_success_message('tournament_unregistered')
         except ValueError as e:
             logger.error(f"Failed to unregister from tournament: {e}")

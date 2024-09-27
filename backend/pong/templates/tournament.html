@@ -6,8 +6,43 @@
     <title>Tournament Creation</title>
     {% load static %}
 </head>
+<style>
+    /* Overlay styles */
+.overlay {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1000; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(0,0,0,0.5); /* Black w/ opacity */
+}
+
+.overlay-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+#overlay-close-button {
+    margin-top: 10px;
+}
+</style>
 <body>
     <h1>Tournament</h1>
+    <div id="overlay" class="overlay">
+        <div class="overlay-content">
+            <p id="overlay-message"></p>
+            <button id="overlay-close-button">Close</button>
+        </div>
+    </div>
     <form id="tournament-form">
         <label for="tournament-name">Tournament Name:</label>
         <input type="text" id="tournament-name" name="tournament-name" required>

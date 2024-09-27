@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (matchmakingSocket.readyState === WebSocket.OPEN) {
             TournamentRequests.getTournaments();
         }
-    }, 500);
+    }, 2000);
 });
 
 class TournamentRequests {

@@ -78,6 +78,7 @@ class TournamentSessionHandler:
             await cls.cancel_tournament(tournament_id)
         else:
             tournament.remove_user(user_id)
+        logger.debug(f"User {user_id} removed from tournament {tournament_id}")
 
     @classmethod
     async def remove_user_from_all_inactive_tournaments(cls, user_id: str) -> None:
@@ -144,10 +145,8 @@ class TournamentSessionHandler:
                     await cls.channel_layer.group_send(
                         f"user_{user}",
                         {
-                            'type': 'tournament_cancelled',
-                            'tournament_id': tournament_id
-                        }
-                    )
+                            'type': 'tournament_canceled',
+                    });
                 except Exception as e:
                     logger.error(f"Failed to send cancellation message to user {user}: {e}")
             Tournaments.remove(tournament_id)
