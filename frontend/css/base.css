@@ -14,8 +14,13 @@ body {
   --color-background: #202021;
   --color-accent: #7a35ec;
   --color-accent-shadow: #651bdd;
+  --color-accent-hover: #813fed;
   --color-deny: #EC3535;
+  --color-deny-shadow: #941F1F;
+  --color-deny-hover: #ed3f3f;
   --color-confirm: #27D66A;
+  --color-confirm-shadow: #189548;
+  --color-confirm-hover: #3bdb79;
 }
 
 h1 {
@@ -50,24 +55,28 @@ h2 {
   transform: translateY(4px);
 }
 
+.button:hover {
+  background-color: var(--color-accent-hover);
+}
+
 .confirm-button {
   background-color: var(--color-confirm);
-  box-shadow: 0 4px 0px 0px #189548;
+  box-shadow: 0 4px 0px 0px var(--color-confirm-shadow);
   height: 3rem;
 }
 
 .confirm-button:hover {
-  background-color: #49b271;
+  background-color: var(--color-confirm-hover);
 }
 
 .cancel-button {
   background-color: var(--color-deny);
-  box-shadow: 0 4px 0px 0px #941F1F;
+  box-shadow: 0 4px 0px 0px var(--color-deny-shadow);
   height: 3rem;
 }
 
 .cancel-button:hover {
-  background-color: #b86363;
+  background-color: var(--color-deny-hover);
 }
 
 .secondaryButton {
@@ -92,21 +101,48 @@ input:focus {
 input:disabled {
   background-color: white;
   color: gray;
-  border: var(--color-accent) solid 0px;
+  border: gray solid 2px;
+  border-style: inset;
+  
 }
 
 .dangerous-button {
+  margin-top: 16px;
+  margin-bottom: 21px;
+  background-color: var(--color-deny);
   color: var(--color-text);
-  background-color: var(--color-background);
+  border: none;
+  padding-top: 9px;
+  padding-bottom: 9px;
+  text-align: center;
+  text-decoration: none;
+  font-size: 16px;
+  border-radius: 8px;
+  font-weight: 700;
+  box-shadow: 0 4px 0px 0px var(--color-deny-shadow);
+  color: var(--color-text);
+  /*background-color: var(--color-background);
   border: var(--color-deny) solid 2px;
-  border-radius: 1rem;
+  border-radius: 1rem; */
 }
 
 .dangerous-button:hover {
-  transition: all 0.4s ease;
+  background-color: var(--color-deny-hover);
+  /*transition: all 0.4s ease;
   color: var(--color-background);
-  background-color: var(--color-deny);
+  background-color: var(--color-deny);*/
 
+}
+
+.edit-button {
+  background-color: var(--color-accent);
+  box-shadow: 0 4px 0px 0px var(--color-accent-shadow);
+  height: 3rem;
+  width: 3rem;
+}
+
+.edit-button:hover {
+  background-color: var(--color-accent-hover);
 }
 
 .menu {
