@@ -195,7 +195,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
         return self._user_connections[self.user_id]["active"] == self.channel_name
 
     async def remote_match_ready(self, event):
-        '''Handle the match_ready message'''
+        '''Handle the remote_match_ready message'''
 
         # Check if the current connection is the active connection (Current tab in the browser)
         if not self._is_active_connection():
@@ -214,11 +214,16 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             'type': 'tournament_cancelled'
         }))
 
-    async def tournament_started(self, event):
-        '''Handle the tournament_started message'''
-        logger.debug(f"Received tournament_started event: {event}")
+    async def tournament_starting(self, event):
+        '''Handle the tournament_starting message'''
+
+        # Check if the current connection is the active connection (Current tab in the browser)
+        if not self._is_active_connection():
+            return
+
+        logger.debug(f"Received tournament_starting event: {event}")
         await self.send(text_data=json.dumps({
-            'type': 'tournament_started'
+            'type': 'tournament_starting'
         }))
 
     async def tournament_canceled(self, event):

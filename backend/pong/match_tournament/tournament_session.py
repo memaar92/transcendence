@@ -110,9 +110,8 @@ class TournamentSession:
 
 
     async def _create_match(self, user1: str, user2: str) -> None:
-        # Create match
-        # Send ready message
-        # remove after match is finished
+        '''Create a match between two users'''
+        
         match_session = MatchSession(user1, user2, self.match_finished_callback)
         Matches.add_match(match_session)
         await self._send_match_ready_message(match_session.get_id(), user1, user2)
@@ -121,20 +120,20 @@ class TournamentSession:
         '''Send a match ready message to both users'''
         match = Matches.get_match(match_id)
         if match:
-            await self._channel_layer.group_send(
-                f"user_{user1}",
-                {
-                    'type': 'match_ready',
-                    'match_id': match_id
-                }
-            )
-            await self._channel_layer.group_send(
-                f"user_{user2}",
-                {
-                    'type': 'match_ready',
-                    'match_id': match_id
-                }
-            )
+            await self._send_remote_match_ready_message(match_id, user1, user2)
+            await self._send_remote_match_ready_message(match_id, user2, user1)
+
+    async def _send_remote_match_ready_message(cls, match_id: str, user_id: str, opponent_id: str) -> None:
+        '''Send a match ready message to a user'''
+        channel_layer = get_channel_layer()
+        await channel_layer.group_send(
+            f"user_{user_id}",
+            {
+                'type': 'remote_match_ready',
+                'match_id': match_id,
+                'opponent_id': opponent_id
+            }
+        )
 
 
     def add_user(self, user_id: str):

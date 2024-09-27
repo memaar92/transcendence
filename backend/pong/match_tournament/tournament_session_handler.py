@@ -9,7 +9,7 @@ from channels.layers import get_channel_layer
 logger = logging.getLogger("tournament")
 
 class TournamentSessionHandler:
-    channel_layer = get_channel_layer()
+    _channel_layer = get_channel_layer()
 
     @classmethod
     def create_online_tournament_session(cls, owner_user_id: str, tournament_name: str, size: int) -> TournamentSession:
@@ -108,6 +108,12 @@ class TournamentSessionHandler:
             raise ValueError(f"tournament does not exist")
 
         if user_id == tournament.get_owner_user_id():
+            await cls._channel_layer.group_send(
+                f"user_{user_id}",
+                {
+                    'type': 'tournament_starting',
+                }
+            )
             await tournament.start()
         else:
             raise ValueError(f"not the tournament owner")
@@ -142,7 +148,7 @@ class TournamentSessionHandler:
         if tournament:
             for user in tournament.get_users():
                 try:
-                    await cls.channel_layer.group_send(
+                    await cls._channel_layer.group_send(
                         f"user_{user}",
                         {
                             'type': 'tournament_canceled',

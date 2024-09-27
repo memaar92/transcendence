@@ -37,6 +37,9 @@ function createWebSocket() {
             } else {
                 console.error('Match ID not found.');
             }
+        } else if (data.type === "tournament_starting") {
+            console.log('Tournament starting.');
+            showOverlay('Tournament Starting', 'A tournament is starting.');
         } else if (data.type === "match_in_progress") {
             console.log('Match in progress.');
             showReconnectButton(data.match_id); // Pass the correct match_id
