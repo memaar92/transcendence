@@ -21,6 +21,12 @@ body {
   --color-confirm: #27D66A;
   --color-confirm-shadow: #189548;
   --color-confirm-hover: #3bdb79;
+  --color-secondary: #9a9996;
+  --color-secondary-shadow: gray;
+  --color-secondary-hover: #a4a3a0;
+  --color-remoteAuth: #006e70;
+  --color-remoteAuth-shadow: #005d5f;
+  --color-remoteAuth-hover: #008284;
 }
 
 h1 {
@@ -81,6 +87,42 @@ h2 {
 
 .secondaryButton {
   margin-top: 16px;
+  margin-bottom: 21px;
+  background-color: var(--color-secondary);
+  color: var(--color-text);
+  border: none;
+  padding-top: 9px;
+  padding-bottom: 9px;
+  text-align: center;
+  text-decoration: none;
+  font-size: 16px;
+  border-radius: 8px;
+  font-weight: 700;
+  box-shadow: 0 4px 0px 0px var(--color-secondary-shadow);
+}
+
+.secondaryButton:hover {
+  background-color: var(--color-secondary-hover);
+}
+
+.remoteAuthButton {
+  margin-top: 16px;
+  margin-bottom: 21px;
+  background-color: var(--color-remoteAuth);
+  color: var(--color-text);
+  border: none;
+  padding-top: 9px;
+  padding-bottom: 9px;
+  text-align: center;
+  text-decoration: none;
+  font-size: 16px;
+  border-radius: 8px;
+  font-weight: 700;
+  box-shadow: 0 4px 0px 0px var(--color-remoteAuth-shadow);
+}
+
+.remoteAuthButton:hover {
+  background-color: var(--color-remoteAuth-hover);
 }
 
 .invalid-feedback {
@@ -121,17 +163,10 @@ input:disabled {
   font-weight: 700;
   box-shadow: 0 4px 0px 0px var(--color-deny-shadow);
   color: var(--color-text);
-  /*background-color: var(--color-background);
-  border: var(--color-deny) solid 2px;
-  border-radius: 1rem; */
 }
 
 .dangerous-button:hover {
   background-color: var(--color-deny-hover);
-  /*transition: all 0.4s ease;
-  color: var(--color-background);
-  background-color: var(--color-deny);*/
-
 }
 
 .edit-button {
@@ -144,6 +179,50 @@ input:disabled {
 .edit-button:hover {
   background-color: var(--color-accent-hover);
 }
+
+.modal-header {
+    background-color: #7A35EC;
+    color: white;
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1rem;
+    border: none;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    padding-left: 100px;
+  }
+  
+  .modal-content {
+    --all: 0px;
+    --b: var(--color-accent);
+    box-shadow: var(--color-accent) 0px 0px 15px;
+    box-shadow: var(--color-accent) 0px 0px 10px;
+    width: 100%;
+    height: 20vh;
+    background: 
+      linear-gradient(135deg, var(--b) 0 calc(var(--top-left, var(--all)) + 40px), #202021 0) top left / 50% 50%,
+      linear-gradient(-135deg, var(--b) 0 calc(var(--top-right, var(--all))), #202021 0) top right / 50% 50%,
+      linear-gradient(90deg, var(--b) 0 calc(var(--bottom-left, var(--all))), #202021 0) bottom left / 50% 50%,
+      linear-gradient(-45deg, var(--b) 0 calc(var(--bottom-right, var(--all)) + 51px), #202021 0) bottom right / 50% 50%,
+      #202021;
+      background-origin: border-box;  
+      background-repeat: no-repeat;
+      -webkit-mask:
+      linear-gradient(135deg, transparent 0 calc(var(--top-left, var(--all)) + 42px), #fff 0) top left,
+      linear-gradient(-135deg, transparent 0 calc(var(--top-right, var(--all))), #fff 0) top right,
+      linear-gradient(45deg, transparent 0 calc(var(--bottom-left, var(--all))), #fff 0) bottom left,
+      linear-gradient(-45deg, transparent 0 calc(var(--bottom-right, var(--all)) + 41px), #fff 0) bottom right;
+      -webkit-mask-size: 51% 51%;
+      -webkit-mask-repeat: no-repeat;  
+    border: #7A35EC 10px solid;
+  }
+  
+  .modal-body {
+    align-self: center;
+    align-content: center;
+  }
 
 .menu {
   display: flex;
