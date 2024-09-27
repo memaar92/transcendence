@@ -77,6 +77,26 @@ document.getElementById("content").addEventListener('click', async function (eve
         }
       (await result.json());
     }
+    if (form.querySelector('input').id == "password") {
+      const result = await api.patch("/profile/", {
+        password: form.querySelector('input').value,
+      });
+      if (result.status == 400)
+        {
+          await result.json()
+            .then(data => {
+              if (data.errors) {
+                showAlert(JSON.stringify(data.errors));
+              } else {
+                showAlert('No errors found');
+              }
+            })
+            .catch(error => {
+              showAlert(`Error parsing JSON: ${error.message}`);
+            });
+        }
+      (await result.json());
+    }
     resetButtons(form, editBtn, confirmBtn, cancelBtn);
   } else if (target.closest('.cancel-button')) {
     resetButtons(form, editBtn, confirmBtn, cancelBtn);

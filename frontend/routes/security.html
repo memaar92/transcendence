@@ -26,21 +26,35 @@
     </div>
     <div id="content" class="content">
         <h3>2 Factor Authentification</h3>
-        <div id="qrCode"></div>
-        <form action="POST"></form>
-        <form id="check-2fa">
-          <input
-            type="text"
-            name="token"
-            id="token"
-            class="login-form-field"
-            placeholder="2fa code"
-            inputmode="numeric"
-            pattern="[0-9]*"
-          />
-          <input class="button " type="submit" value="Enable 2FA" id="check-2fa-submit" />
-        </form>
-        <div id="alertContainer"></div>
+      <button type="button" class="button confirm-button" data-bs-toggle="modal" data-bs-target="#exampleModalCenter">
+        Add two Factor Authentication
+      </button>
+      <div class="modal fade" data-show="" id="exampleModalCenter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title text-bright" id="exampleModalLongTitle">Activate 2FA</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+              </button>
+            </div>
+            <div class="modal-body flex">
+              <div class="d-inline-flex justify-content-center flex-column">
+                <h6 class="text-dark">Scan the following Code</h6>
+                <div id="qrCode"></div>
+                <label class="text-dark" for="2fa-token">
+                  2fa code
+                </label>
+                <input id="token" type="text"></input>
+              </div>
+              <div id="alertContainer"></div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" data-bs-dismiss="modal" class="btn btn-secondary cancel-button" data-dismiss="modal">Close</button>
+              <button id="check-2fa-submit" type="button" class="btn btn-primary confirm-button">Activate</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
