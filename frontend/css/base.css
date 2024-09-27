@@ -375,3 +375,10 @@ td {
   width: 15rem;
   height: 15rem;
 }
+
+.alert-container {
+  position: absolute; 
+  top: 0; 
+  right: 0; 
+  z-index: 1061;
+}
