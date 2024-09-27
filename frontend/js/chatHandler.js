@@ -546,73 +546,78 @@ class ChatHandler {
     return chatItem;
   }
   
-  displayChatsList(friends) {
-    const friendsListElement = document.querySelector('.friends-scroll-container');
-    if (!friendsListElement) {
-      console.warn('Friend list container not found');
-      return;
-    }
-    const chatsListElement = document.querySelector('.chats-scroll-container');
-    if (!chatsListElement) {
-      console.warn('Chat list container not found');
-      return;
-    }
-    friendsListElement.innerHTML = '';
-    chatsListElement.innerHTML = '';
-  
-    if (friends.length === 0) {
-      const noFriendsMessage = document.createElement('div');
-      noFriendsMessage.className = 'no-friends-message';
-      noFriendsMessage.textContent = 'No friends available';
-      friendsListElement.appendChild(noFriendsMessage);
-    }
-    friends.forEach((friend) => {
+displayChatsList(friends) {
+  const friendsListElement = document.querySelector('.friends-scroll-container');
+  if (!friendsListElement) {
+    console.warn('Friend list container not found');
+    return;
+  }
+  const chatsListElement = document.querySelector('.chats-scroll-container');
+  if (!chatsListElement) {
+    console.warn('Chat list container not found');
+    return;
+  }
+  friendsListElement.innerHTML = '';
+  chatsListElement.innerHTML = '';
+
+  if (friends.length === 0) {
+    const noFriendsMessage = document.createElement('div');
+    noFriendsMessage.className = 'no-friends-message';
+    noFriendsMessage.textContent = 'No friends available';
+    friendsListElement.appendChild(noFriendsMessage);
+  }
+
+  friends.forEach((friend) => {
+    const friendItem = document.createElement('div');
+    let buttons = [];
+
+    if (friend.status === 'BF') {
+      friendItem.className = 'friends-item friends';
+      buttons = this.createFriendsFilterButtons(friend);
+
       if (friend.chat) {
         chatsListElement.appendChild(this.createChatItem(friend));
       }
-      const friendItem = document.createElement('div');
-      const buttons = [];
-      if (friend.status === 'BF') {
-        friendItem.className = 'friends-item friends';
-        buttons = this.createFriendsFilterButtons(friend);
-      } else if (friend.status === 'BL') {
-        friendItem.className = 'friends-item blocked';
-        buttons = this.createBlockedFilterButtons(friend);
-      }
-      friendItem.setAttribute('data-id', friend.id);
-      friendItem.setAttribute('data-name', friend.name);
-  
-      const friendImg = document.createElement('img');
-      friendImg.src = friend.profile_picture_url;
-      friendImg.alt = friend.name;
-      friendImg.className = 'friends-avatar';
-  
-      const friendInfo = document.createElement('div');
-      friendInfo.className = 'friends-info';
-  
-      const friendName = document.createElement('div');
-      friendName.className = 'friends-name';
-      friendName.textContent = friend.name;
-    
-      friendInfo.appendChild(friendName);
-      friendItem.appendChild(friendImg);
-      friendItem.appendChild(friendInfo);
-      buttons.forEach(button => friendItem.appendChild(button));
-      friendsListElement.appendChild(friendItem);
-    });
-    
-    if (document.querySelector('.chats-scroll-container').children.length === 0) {
-      const noChatsMessage = document.createElement('div');
-      noChatsMessage.className = 'no-chats-message';
-      noChatsMessage.textContent = 'No chats available';
-      document.querySelector('.chats-scroll-container').appendChild(noChatsMessage);
+    } else if (friend.status === 'BL') {
+      friendItem.className = 'friends-item blocked';
+      buttons = this.createBlockedFilterButtons(friend);
     }
-    this.ws.send(JSON.stringify({
-      'type': 'message_preview',
-      'context': 'home'
-    }));
-    this.applyFilter();
+
+    friendItem.setAttribute('data-id', friend.id);
+    friendItem.setAttribute('data-name', friend.name);
+
+    const friendImg = document.createElement('img');
+    friendImg.src = friend.profile_picture_url;
+    friendImg.alt = friend.name;
+    friendImg.className = 'friends-avatar';
+
+    const friendInfo = document.createElement('div');
+    friendInfo.className = 'friends-info';
+
+    const friendName = document.createElement('div');
+    friendName.className = 'friends-name';
+    friendName.textContent = friend.name;
+
+    friendInfo.appendChild(friendName);
+    friendItem.appendChild(friendImg);
+    friendItem.appendChild(friendInfo);
+    buttons.forEach(button => friendItem.appendChild(button));
+    friendsListElement.appendChild(friendItem);
+  });
+
+  if (chatsListElement.children.length === 0) {
+    const noChatsMessage = document.createElement('div');
+    noChatsMessage.className = 'no-chats-message';
+    noChatsMessage.textContent = 'No chats available';
+    chatsListElement.appendChild(noChatsMessage);
   }
+
+  this.ws.send(JSON.stringify({
+    'type': 'message_preview',
+    'context': 'home'
+  }));
+  this.applyFilter();
+}
 
   createFriendsFilterButtons(friend) {
     console.log('Friend:', friend);
@@ -655,9 +660,10 @@ class ChatHandler {
     if (unblockButton) {
       unblockButton.className = 'mainButton.blocked';
       unblockButton.onclick = () => {
-        this.unblockFriend(senderId, receiverId);
+        this.unblockFriend(this.senderId, friend.id);
       };
     }
+    return [unblockButton];
   }
 
   openChatWindow(friendId) {
