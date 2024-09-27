@@ -1,5 +1,5 @@
 import { router } from "./app.js";
-const API_BASE_URL = "http://localhost/api";
+const API_BASE_URL = "https://localhost/api";
 
 
 function getCookie(name) {
