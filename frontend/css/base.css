@@ -54,7 +54,6 @@ h2 {
   background-color: var(--color-confirm);
   box-shadow: 0 4px 0px 0px #189548;
   height: 3rem;
-  width: 3rem;
 }
 
 .confirm-button:hover {
@@ -65,7 +64,6 @@ h2 {
   background-color: var(--color-deny);
   box-shadow: 0 4px 0px 0px #941F1F;
   height: 3rem;
-  width: 3rem;
 }
 
 .cancel-button:hover {
