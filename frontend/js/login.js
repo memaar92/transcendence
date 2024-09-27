@@ -22,9 +22,7 @@ document.getElementById("login-form-submit").addEventListener("click", async (e)
     email: localStorage.getItem("email"),
     password: document.getElementById("password-field").value,
   });
-  ("register call finished");
   const user_info = await result.json();
-  ("uid " + user_info["id"]);
   if (result.ok) {
     if (user_info["2fa"])
       router.navigate("/verify_2fa")

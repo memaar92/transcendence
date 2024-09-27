@@ -28,9 +28,7 @@ document.getElementById("register").addEventListener("click", async (e) => {
     email: localStorage.getItem("email"),
     password: document.getElementById("password").value,
   });
-  ("register call finished");
   const user_info = await result.json();
-  ("uid " + user_info["id"]);
   if (result.ok) {
     localStorage.setItem("uid", user_info["id"]);
     router.navigate("/email_verification");
