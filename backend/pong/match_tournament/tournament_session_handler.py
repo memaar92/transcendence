@@ -2,6 +2,8 @@ import logging
 from pong.match_tournament.tournament_session import TournamentSession
 from pong.match_tournament.data_managment.tournaments import Tournaments
 from pong.match_tournament.data_managment.user import User
+from pong.match_tournament.data_managment.matches import Matches
+from pong.match_tournament.data_managment.matchmaking_queue import MatchmakingQueue
 from channels.layers import get_channel_layer
 
 logger = logging.getLogger("tournament")
@@ -20,10 +22,9 @@ class TournamentSessionHandler:
             raise ValueError("Tournament size is required")
         if size < 2:
             raise ValueError("Tournament size must be at least 2")
+        User.check_if_user_is_registered_somewhere(owner_user_id)
         if Tournaments.get_by_name(tournament_name):
-            raise ValueError(f"Tournament with name {tournament_name} already exists")
-        if User.is_user_registered(owner_user_id):
-            raise ValueError(f"User {owner_user_id} is already registered for a match or tournament")
+            raise ValueError(f"tournament with name exists")
         tournament_session = TournamentSession(owner_user_id, tournament_name, size, Tournaments.remove)
         Tournaments.add(tournament_session)
         return tournament_session
@@ -40,19 +41,18 @@ class TournamentSessionHandler:
             raise ValueError("Tournament id is required")
         if not user_id:
             raise ValueError("User id is required")
-        
+
         tournament = Tournaments.get(tournament_id)
 
         if not tournament:
-            raise ValueError(f"Tournament {tournament_id} not found")
-        if tournament.has_user(user_id):
-            raise ValueError(f"User {user_id} is already registered to this tournament")
-        if User.is_user_registered(user_id):
-            raise ValueError(f"User {user_id} is already registered for a match or tournament")
-        elif tournament.is_full():
-            raise ValueError(f"Tournament {tournament_id} is full")
+            raise ValueError(f"tournament does not exist")
+        
+        User.check_if_user_is_registered_somewhere(user_id)
+
+        if tournament.is_full():
+            raise ValueError(f"is full")
         elif tournament.is_running() or tournament.is_finished():
-            raise ValueError(f"Tournament {tournament_id} is running or finished")
+            raise ValueError(f"already started")
 
         tournament.add_user(user_id)
         logger.debug(f"User {user_id} added to tournament {tournament_id}")
@@ -68,13 +68,12 @@ class TournamentSessionHandler:
         tournament = Tournaments.get(tournament_id)
 
         if not tournament:
-            raise ValueError(f"Tournament {tournament_id} not found")
+            raise ValueError(f"tournament does not exist")
         if not tournament.has_user(user_id):
-            raise ValueError(f"User {user_id} is not registered to this tournament")
+            raise ValueError(f"not registered to tournament")
         if tournament.is_running() or tournament.is_finished():
-            raise ValueError(f"Cannot remove user {user_id} from tournament {tournament_id} as it is running or finished")
+            raise ValueError(f"already started")
 
-        logger.debug(f"Owner user id: {tournament.get_owner_user_id()}")
         if user_id == tournament.get_owner_user_id():
             await cls.cancel_tournament(tournament_id)
         else:
@@ -104,13 +103,33 @@ class TournamentSessionHandler:
         
         tournament = Tournaments.get(tournament_id)
 
-        if tournament:
-            if user_id == tournament.get_owner_user_id():
-                await tournament.start()
-            else:
-                raise ValueError(f"User {user_id} is not the owner of tournament {tournament_id}")
+        if not tournament:
+            raise ValueError(f"tournament does not exist")
+
+        if user_id == tournament.get_owner_user_id():
+            await tournament.start()
         else:
-            raise ValueError(f"Tournament {tournament_id} not found")
+            raise ValueError(f"not the tournament owner")
+
+    @classmethod
+    async def request_cancel_tournament(cls, user_id: str, tournament_id: str) -> None:
+        '''Request to cancel a tournament'''
+        if not user_id:
+            raise ValueError("User id is required")
+        elif not tournament_id:
+            raise ValueError("Tournament id is required")
+        
+        tournament = Tournaments.get(tournament_id)
+
+        if not tournament:
+            raise ValueError(f"tournament does not exist")
+        elif tournament.is_running() or tournament.is_finished():
+            raise ValueError(f"already started")
+
+        if user_id == tournament.get_owner_user_id():
+            await cls.cancel_tournament(tournament_id)
+        else:
+            raise ValueError(f"not the tournament owner")
 
     @classmethod
     async def cancel_tournament(cls, tournament_id: str) -> None:

@@ -33,3 +33,13 @@ class User:
         if match:
             return match.is_user_blocked(user_id)
         return False
+    
+    @classmethod
+    def check_if_user_is_registered_somewhere(cls, user_id: str) -> None:
+        '''Check if a user is registered for the matchmaking queue, a match or a tournament and raise an error if so'''
+        if Matches.is_user_registered(user_id):
+            raise ValueError(f"registered to match")
+        elif Tournaments.is_user_registered(user_id):
+            raise ValueError(f"registered to tournament")
+        elif MatchmakingQueue.is_user_registered(user_id):
+            raise ValueError(f"registered to queue")

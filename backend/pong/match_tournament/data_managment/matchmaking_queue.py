@@ -13,11 +13,12 @@ class MatchmakingQueue:
         logger.info(f"User {user_id} added to matchmaking queue")
 
     @classmethod
-    def remove_from_queue(cls, user_id: str) -> None:
+    def remove_from_queue(cls, user_id: str) -> bool:
         '''Remove a user from the matchmaking queue'''
         if user_id in cls.queue:
             cls.queue.remove(user_id)
-            logger.info(f"User {user_id} removed from matchmaking queue")
+            return True
+        return False
 
     @classmethod
     def get_queue(cls) -> set:

@@ -74,8 +74,7 @@ document.addEventListener("visibilitychange", function() {
 // Notify the server when the tab is active
 function notifyTabActive() {
     sendWebSocketMessage(matchmakingSocket, {
-        type: "tab_active",
-        active: isActiveTab,
+        type: "active_connection"
     });
 }
 
@@ -112,26 +111,23 @@ function hideCancelButton() {
 }
 
 class MatchmakingRequests {
-    static sendRequest = (requestType, data) => {
-        console.log(`${requestType} request with data:`, data);
-        sendWebSocketMessage(matchmakingSocket, {
-            "type": "matchmaking",
-            "request": requestType,
-            ...data,
-        });
-    }
-
     static joinOnlineMatchmakingQueue = () => {
-        this.sendRequest("register", { match_type: "online" });
+        sendWebSocketMessage(matchmakingSocket, {
+            type: "queue_register"
+        });
         showCancelButton();
     }
 
     static createLocalMatch = () => {
-        this.sendRequest("register", { match_type: "local" });
+        sendWebSocketMessage(matchmakingSocket, {
+            type: "local_match_create"
+        });
     }
 
     static cancelQueue = () => {
-        this.sendRequest("unregister", {});
+        sendWebSocketMessage(matchmakingSocket, {
+            type: "queue_unregister"
+        });
         hideCancelButton();
     }
 }

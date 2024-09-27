@@ -140,7 +140,6 @@ class MatchConsumer(AsyncWebsocketConsumer):
         await self.safe_send(text_data=json.dumps(event))
     
     async def timer_update(self, event):
-        logger.info(f"Timer update: {event}")
         await self.safe_send(text_data=json.dumps(event))
 
     async def safe_send(self, text_data: str):

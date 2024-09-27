@@ -85,46 +85,55 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Automatically update the list every 2 seconds if the socket is still connected
+    // Automatically update the list every 0.5 seconds if the socket is still connected
     setInterval(() => {
         if (matchmakingSocket.readyState === WebSocket.OPEN) {
             TournamentRequests.getTournaments();
         }
-    }, 2000);
+    }, 500);
 });
 
 class TournamentRequests {
-    static sendRequest(requestType, data) {
-        console.log(`${requestType} request with data:`, data);
-        sendWebSocketMessage(matchmakingSocket, {
-            "type": "tournament",
-            "request": requestType,
-            ...data,
-        });
-    }
-
     static create(name, max_players) {
-        this.sendRequest("create", { name, max_players });
-        console.log('Tournament created.');
+        sendWebSocketMessage(matchmakingSocket, {
+            type: "tournament_create",
+            name: name,
+            max_players: max_players,
+        });
+        console.log('Tournament create request sent');
     }
 
     static register(tournament_id) {
-        this.sendRequest("register", { tournament_id });
+        sendWebSocketMessage(matchmakingSocket, {
+            type: "tournament_register",
+            tournament_id: tournament_id,
+        });
     }
 
     static unregister(tournament_id) {
-        this.sendRequest("unregister", { tournament_id });
+        sendWebSocketMessage(matchmakingSocket, {
+            type: "tournament_unregister",
+            tournament_id: tournament_id,
+        });
     }
 
     static start(tournament_id) {
-        this.sendRequest("start", { tournament_id });
+        sendWebSocketMessage(matchmakingSocket, {
+            type: "tournament_start",
+            tournament_id: tournament_id,
+        });
     }
 
     static cancel(tournament_id) {
-        this.sendRequest("unregister", { tournament_id });
+        sendWebSocketMessage(matchmakingSocket, {
+            type: "tournament_cancel",
+            tournament_id: tournament_id,
+        });
     }
 
     static getTournaments() {
-        this.sendRequest("get_open_tournaments", {});
+        sendWebSocketMessage(matchmakingSocket, {
+            type: "tournament_get_open",
+        });
     }
 }
