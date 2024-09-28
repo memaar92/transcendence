@@ -50,7 +50,7 @@ backend_matchmaking_messages_schema:
 # Matchmaking socket: frontend -> backend.
 frontend_matchmaking_messages_schema:
   active_connection:
-    description: "Sent from the frontend to the backend to indicate which is the active tab(connection)."
+    description: "Sent to indicate which is the active tab (connection)."
     type: object
     properties:
       type:
@@ -61,7 +61,7 @@ frontend_matchmaking_messages_schema:
       - type
 
   queue_register:
-    description: "Sent from the frontend to join the matchmaking queue."
+    description: "Sent to join the matchmaking queue."
     type: object
     properties:
       type:
@@ -86,7 +86,7 @@ frontend_matchmaking_messages_schema:
         - queue_registered
 
   queue_unregister:
-    description: "Sent from the frontend to leave the matchmaking queue."
+    description: "Sent to leave the matchmaking queue."
     type: object
     properties:
       type:
@@ -111,7 +111,7 @@ frontend_matchmaking_messages_schema:
         - queue_unregistered
 
   queue_is_registered:
-    description: "Sent from the frontend to check if the user is in the matchmaking queue."
+    description: "Sent to check if the user is in the matchmaking queue."
     type: object
     properties:
       type:
@@ -132,7 +132,7 @@ frontend_matchmaking_messages_schema:
         - queue_registered
 
   local_match_create:
-    description: "Sent from the frontend to create a local match."
+    description: "Sent to create a local match."
     type: object
     properties:
       type:
@@ -156,7 +156,7 @@ frontend_matchmaking_messages_schema:
         - local_match_created
 
   tournament_create:
-    description: "Sent from the frontend to create a tournament."
+    description: "Sent to create a tournament."
     type: object
     properties:
       type:
@@ -192,7 +192,7 @@ frontend_matchmaking_messages_schema:
         - tournament_created
 
   tournament_register:
-      description: "Sent from the frontend to join a tournament."
+      description: "Sent to join a tournament."
       type: object
       properties:
         type:
@@ -221,7 +221,7 @@ frontend_matchmaking_messages_schema:
           - tournament_registered
 
   tournament_unregister:
-    description: "Sent from the frontend to leave a tournament."
+    description: "Sent to leave a tournament."
     type: object
     properties:
       type:
@@ -250,7 +250,7 @@ frontend_matchmaking_messages_schema:
         - tournament_unregistered
 
   tournament_start:
-    description: "Sent from the frontend to start a tournament."
+    description: "Sent to start a tournament."
     type: object
     properties:
       type:
@@ -279,7 +279,7 @@ frontend_matchmaking_messages_schema:
         - tournament_started
 
   tournament_cancel:
-    description: "Sent from the frontend to cancel a tournament."
+    description: "Sent to cancel a tournament."
     type: object
     properties:
       type:
@@ -308,7 +308,7 @@ frontend_matchmaking_messages_schema:
         - tournament_canceled
 
   tournament_get_open:
-    description: "Sent from the frontend to get all open tournaments."
+    description: "Sent to get all open tournaments."
     type: object
     properties:
       type:
