@@ -165,6 +165,8 @@ class MatchConsumer(AsyncWebsocketConsumer):
 
     async def user_connected(self, event):
         logger.info(f"User {event} connected")
+        if event.get("user_id") != self._user_id:
+            return
         await self.safe_send(text_data=json.dumps(event))
 
     async def user_disconnected(self, event):

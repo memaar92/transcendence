@@ -92,7 +92,8 @@ class MatchSession:
         elif reason == EndReason.LOCAL_MATCH_ABORTED:
             await self._match_finished(self._match_id, None, False)
             logger.info("Match ended due to local match abort")
-
+        else:
+            logger.error("Invalid end reason")
 
         # Call the MatchConsumer to disconnect the users
         for user_id, callback in self._on_match_finished_user_callbacks.items():
@@ -202,6 +203,9 @@ class MatchSession:
         except KeyError:
             logger.error(f"Cannot disconnect user {user_id} from match {self._match_id} as they are not connected to it")
             return False
+        if self._is_local_match:
+            await self._end_match(EndReason.LOCAL_MATCH_ABORTED)
+            return True
         await self._send_user_disconnected_message(user_id)
         self._disconnect_count[user_id] += 1
         if self._disconnect_count[user_id] >= DISCONNECT_THRESHOLD:
