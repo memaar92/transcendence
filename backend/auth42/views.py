@@ -99,6 +99,6 @@ class AuthWith42View(APIView, CookieCreationMixin):
             register42User(user_info['email'], user_info['image']['versions']['small'])
         token = get_tokens_for_user(CustomUser.objects.get(email=user_info['email']))
         response = Response(token, status=302)
-        response['Location'] = 'https://localhost/'
+        response['Location'] = 'https://localhost/main_menu'
         self.createCookies(response)
         return response

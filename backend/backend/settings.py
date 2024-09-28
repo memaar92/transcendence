@@ -23,8 +23,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-g=eom8w39!m$+1xegc@p!(6&uiqzdl$9i@$v5z!f$@m#2#_!7s'
 
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = True
+
 # #TODO:  SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 #TODO: change to specific hosts
 ALLOWED_HOSTS = ["*"]
@@ -76,8 +79,8 @@ CHANNEL_LAYERS = {
 }
 
 MIDDLEWARE = [
-    'backend.middleware.AuthorizationMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'backend.middleware.AuthorizationMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -213,6 +216,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 #TODO: change to specific cors
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOWS_CREDENTIALS = True
+
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
