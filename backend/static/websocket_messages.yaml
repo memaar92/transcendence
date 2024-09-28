@@ -3,7 +3,9 @@
 # Matchmaking socket: backend -> frontend.
 backend_matchmaking_messages_schema:
   tournament_starting:
-    description: "Sent when a tournament is started. (Active connection only)"
+    description: |
+      Sent when a tournament is started.
+      (Active connection only)"
     type: object
     properties:
       type:
@@ -13,8 +15,14 @@ backend_matchmaking_messages_schema:
     required:
       - type
 
+    frontend_processing:
+      description: |
+        Inform the user that the tournament is starting.
+
   tournament_canceled:
-    description: "Sent when a tournament is canceled. (Active connection only)"
+    description: |
+      Sent when a tournament is canceled.
+      (Active connection only)"
     type: object
     properties:
       type:
@@ -28,8 +36,13 @@ backend_matchmaking_messages_schema:
       - type
       - tournament_id
 
+    frontend_processing:
+      description: |
+        Inform the user that the tournament was canceled.
+
   remote_match_ready:
-    description: "Sent when a match is ready to start. Open a match socket connection to connect to the match (Active connection only)"
+    description: |
+      Sent when a match is ready to start.
     type: object
     properties:
       type:
@@ -47,10 +60,38 @@ backend_matchmaking_messages_schema:
       - match_id
       - opponent_id # Could be used to display the opponents name
 
+    frontend_processing:
+      description: |
+        Open a match socket connection to connect to the match
+
+  match_in_progress:
+    description: |
+      Inform the user that he has a match in progress.
+      Will be sent when he is not connected to the running match.
+      (Active connection only)"
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["match_in_progress"]
+        example: "match_in_progress"
+      match_id:
+        type: string
+        example: "match1"
+    required:
+      - type
+      - match_id
+
+    frontend_processing:
+      description: |
+        Inform the user that he has a match in progress and
+        offer the option to reconnect to the match.
+
 # Matchmaking socket: frontend -> backend.
 frontend_matchmaking_messages_schema:
   active_connection:
-    description: "Sent to indicate which is the active tab (connection)."
+    description: |
+      Sent to indicate which is the active tab (connection).
     type: object
     properties:
       type:
@@ -61,7 +102,8 @@ frontend_matchmaking_messages_schema:
       - type
 
   queue_register:
-    description: "Sent to join the matchmaking queue."
+    description: |
+      Sent to join the matchmaking queue.
     type: object
     properties:
       type:
@@ -72,7 +114,8 @@ frontend_matchmaking_messages_schema:
       - type
     
     response_schema:
-      description: "Expected response from the backend."
+      description: |
+        Expected response from the backend.
       type: object
       properties:
         queue_registered:
@@ -86,7 +129,8 @@ frontend_matchmaking_messages_schema:
         - queue_registered
 
   queue_unregister:
-    description: "Sent to leave the matchmaking queue."
+    description: |
+      Sent to leave the matchmaking queue.
     type: object
     properties:
       type:
@@ -97,7 +141,8 @@ frontend_matchmaking_messages_schema:
       - type
 
     response_schema:
-      description: "Expected response from the backend."
+      description: |
+        Expected response from the backend.
       type: object
       properties:
         queue_unregistered:
@@ -111,7 +156,8 @@ frontend_matchmaking_messages_schema:
         - queue_unregistered
 
   queue_is_registered:
-    description: "Sent to check if the user is in the matchmaking queue."
+    description: |
+      Sent to check if the user is in the matchmaking queue.
     type: object
     properties:
       type:
@@ -122,7 +168,8 @@ frontend_matchmaking_messages_schema:
       - type
     
     response_schema:
-      description: "Expected response from the backend."
+      description: |
+        Expected response from the backend.
       type: object
       properties:
         queue_registered:
@@ -132,7 +179,8 @@ frontend_matchmaking_messages_schema:
         - queue_registered
 
   local_match_create:
-    description: "Sent to create a local match."
+    description: |
+      Sent to create a local match.
     type: object
     properties:
       type:
@@ -143,7 +191,8 @@ frontend_matchmaking_messages_schema:
       - type
 
     response_schema:
-      description: "Expected response from the backend."
+      description: |
+        Expected response from the backend.
       type: object
       properties:
         local_match_created:
@@ -156,7 +205,8 @@ frontend_matchmaking_messages_schema:
         - local_match_created
 
   tournament_create:
-    description: "Sent to create a tournament."
+    description: |
+      Sent to create a tournament.
     type: object
     properties:
       type:
@@ -175,7 +225,8 @@ frontend_matchmaking_messages_schema:
       - max_players
 
     response_schema:
-      description: "Expected response from the backend."
+      description: |
+        Expected response from the backend.
       type: object
       properties:
         tournament_created:
@@ -192,7 +243,8 @@ frontend_matchmaking_messages_schema:
         - tournament_created
 
   tournament_register:
-      description: "Sent to join a tournament."
+      description: |
+        Sent to join a tournament.
       type: object
       properties:
         type:
@@ -207,7 +259,8 @@ frontend_matchmaking_messages_schema:
         - tournament_id
 
       response_schema:
-        description: "Expected response from the backend."
+        description: |
+          Expected response from the backend.
         type: object
         properties:
           tournament_registered:
@@ -221,7 +274,8 @@ frontend_matchmaking_messages_schema:
           - tournament_registered
 
   tournament_unregister:
-    description: "Sent to leave a tournament."
+    description: |
+      Sent to leave a tournament.
     type: object
     properties:
       type:
@@ -236,7 +290,8 @@ frontend_matchmaking_messages_schema:
       - tournament_id
 
     response_schema:
-      description: "Expected response from the backend."
+      description: |
+        Expected response from the backend.
       type: object
       properties:
         tournament_unregistered:
@@ -250,7 +305,8 @@ frontend_matchmaking_messages_schema:
         - tournament_unregistered
 
   tournament_start:
-    description: "Sent to start a tournament."
+    description: |
+      Sent to start a tournament.
     type: object
     properties:
       type:
@@ -265,7 +321,8 @@ frontend_matchmaking_messages_schema:
       - tournament_id
 
     response_schema:
-      description: "Expected response from the backend."
+      description: |
+        Expected response from the backend.
       type: object
       properties:
         tournament_started:
@@ -279,7 +336,8 @@ frontend_matchmaking_messages_schema:
         - tournament_started
 
   tournament_cancel:
-    description: "Sent to cancel a tournament."
+    description: |
+      Sent to cancel a tournament.
     type: object
     properties:
       type:
@@ -294,7 +352,8 @@ frontend_matchmaking_messages_schema:
       - tournament_id
 
     response_schema:
-      description: "Expected response from the backend."
+      description: |
+        Expected response from the backend.
       type: object
       properties:
         tournament_canceled:
@@ -308,7 +367,8 @@ frontend_matchmaking_messages_schema:
         - tournament_canceled
 
   tournament_get_open:
-    description: "Sent to get all open tournaments."
+    description: |
+      Sent to get all open tournaments.
     type: object
     properties:
       type:
@@ -319,7 +379,8 @@ frontend_matchmaking_messages_schema:
       - type
     
     response_schema:
-      description: "Expected response from the backend."
+      description: |
+        Expected response from the backend.
       type: object
       properties:
         type:
@@ -366,7 +427,9 @@ frontend_matchmaking_messages_schema:
 backend_match_messages_schema:
 
   user_mapping:
-    description: "Sent to show the user mapping in the match."
+    description: |
+      Sent when a user connects to a match.
+      Contains the user mapping.
     type: object
     properties:
       type:
@@ -387,8 +450,14 @@ backend_match_messages_schema:
       - is_local_match
       - player1
 
+    frontend_processing:
+      description: |
+        Save the user mapping in the frontend
+        to display the correct user names.
+
   user_connected:
-    description: "Sent when a user connects to the match."
+    description: |
+      Sent when a user connects to the match.
     type: object
     properties:
       type:
@@ -402,8 +471,14 @@ backend_match_messages_schema:
       - type
       - user_id
 
+    frontend_processing:
+      description: | 
+        Can be used to show a message that
+        the opponent has connected.
+
   user_disconnected:
-    description: "Sent when a user disconnects from the match."
+    description: |
+      Sent when a user disconnects from the match.
     type: object
     properties:
       type:
@@ -417,8 +492,14 @@ backend_match_messages_schema:
       - type
       - user_id
 
+    frontend_processing:
+      description: |
+        Should be handled because the game will freeze until the
+        opponent reconnects or the match is canceled.
+
   start_timer_update:
-    description: "Sent to show when the match will start. Can be used to show a countdown timer."
+    description: |
+      Sent to show when the match will start.
     type: object
     properties:
       type:
@@ -432,8 +513,13 @@ backend_match_messages_schema:
       - type
       - start_timer
 
+    frontend_processing:
+      description: |
+        Show the start timer in the frontend.
+
   position_update:
-    description: "Sent to update of the paddles and ball position."
+    description: |
+      Sent to update of the paddles and ball position.
     type: object
     properties:
       paddleLeftX:
@@ -456,8 +542,13 @@ backend_match_messages_schema:
         offset: 20
     byteLength: 24
 
+    frontend_processing:
+      description: |
+        Update the paddles and ball position in the frontend.
+
   player_scores:
-    description: "Sent when a player connects to the match."
+    description: |
+      Sent when a player connects to the match.
     type: object
     properties:
       type:
@@ -470,6 +561,10 @@ backend_match_messages_schema:
       player2:
         type: number
         example: 0
+
+    frontend_processing:
+      description: |
+        Update the player scores in the frontend.
     
 # Match socket: frontend -> backend.
 frontend_match_messages_schema:

@@ -61,7 +61,7 @@ class MatchSession:
                 self._is_game_stopped = False
             if self.is_every_user_connected() and not self._stop_requested:
                 await self._game_session.calculate_game_state()
-                await self._send_game_state()
+                await self._send_position_update()
             if not self._stop_requested:
                 await asyncio.sleep(self._tick_speed)
 
@@ -178,7 +178,7 @@ class MatchSession:
         self._on_match_finished_user_callbacks[user_id] = on_match_finished
         logger.debug(f"User {user_id} connected to match {self._match_id}")
 
-        await self._send_game_state()
+        await self._send_position_update()
         await self._channel_layer.group_send(self._match_id, {
             "type": "user_connected",
             "user_id": user_id
@@ -292,12 +292,12 @@ class MatchSession:
     
         await self._channel_layer.group_send(self._match_id, message)
 
-    async def _send_game_state(self) -> None:
-        '''Send the game state to the users'''
-        game_state_bytes = self._game_session.to_bytearray()
+    async def _send_position_update(self) -> None:
+        '''Send the position update to the users'''
+        current_positions = self._game_session.to_bytearray()
         await self._channel_layer.group_send(self._match_id, {
             "type": "position_update",
-            "data": game_state_bytes
+            "data": current_positions
         })
 
     async def _send_user_disconnected_message(self, user_id: str) -> None:
