@@ -43,3 +43,11 @@ class User:
             raise ValueError(f"registered to tournament")
         elif MatchmakingQueue.is_user_registered(user_id):
             raise ValueError(f"registered to queue")
+        
+    @classmethod
+    def get_opponent_user_id(self, user_id: str, match_id: str) -> Optional[str]:
+        '''Get the opponent user id for a match'''
+        match = Matches.get_match(match_id)
+        if match:
+            return match.get_opponent_user_id(user_id)
+        return None

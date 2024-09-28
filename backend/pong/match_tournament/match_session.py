@@ -355,3 +355,10 @@ class MatchSession:
     def _userID_to_playerID(self, user_id: str) -> str:
         '''Convert a user id to a player id'''
         return self._player_mapping[user_id]
+    
+    def get_opponent_user_id(self, user_id: str) -> str:
+        '''Get the opponent user id'''
+        for user in self._assigned_users:
+            if user != user_id:
+                return user
+        return None

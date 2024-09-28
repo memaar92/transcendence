@@ -71,9 +71,11 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
         # Check if the user is already connected to a match and offer to reconnect
         current_match_id = User.get_user_match_id(self.user_id)
         if current_match_id and not User.is_user_connected_to_match(self.user_id, current_match_id):
+            opponent = User.get_opponent_user_id(self.user_id, current_match_id)
             await self.send(text_data=json.dumps({
                 'type': 'match_in_progress',
-                'match_id': current_match_id
+                'match_id': current_match_id,
+                'opponent': opponent
             }))
     
     async def disconnect(self, close_code):

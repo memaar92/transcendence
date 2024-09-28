@@ -62,7 +62,8 @@ backend_matchmaking_messages_schema:
 
     frontend_processing:
       description: |
-        Open a match socket connection to connect to the match
+        Inform the user that the match is ready to start.
+        Then, the user can choose to start the match.
 
   match_in_progress:
     description: |
@@ -78,9 +79,13 @@ backend_matchmaking_messages_schema:
       match_id:
         type: string
         example: "match1"
+      opponent_id:
+        type: string
+        example: "user_id"
     required:
       - type
       - match_id
+      - opponent_id # Could be used to display the opponents name
 
     frontend_processing:
       description: |
