@@ -8,26 +8,15 @@ class Router {
     this.currentHistoryPosition = 0;
     this.maxHistoryPosition = 0;
 
-    // api.get("/token/check/").then(
-    //   (result) => {
-    //     console.log(result);
-    //     if (result.ok) {
-    //       this.navigate("/main_menu");
-    //     } else {
-    //       window.addEventListener("popstate", this.handlePopState.bind(this));
-    //       this.bindLinks();
-    //     }
-    //   }
-    // );
     api.get("/token/check/").then(
       async (result) => {
         var unregistered_urls = new Set(["/", "/home", "/login", "/register", "/verify_2fa", "/email_verification"]);
-        console.log(result);
+
         const json = await result.json()
         const status = json["logged-in"]
         if (status && unregistered_urls.has(window.location.pathname)) {
           this.navigate("/main_menu");
-          console.log("LOGGED IN")
+
         } else {
           window.addEventListener("popstate", this.handlePopState.bind(this));
           this.bindLinks();
@@ -77,16 +66,16 @@ class Router {
   }
   
   handlePopState(event) {
-    console.log("popstate");
-    console.log(event);
+
+
   
     if (event.state && event.state.path) {
-      console.log("Navigating to:", event.state.path);
+
       // Use navigate but don't push a new state
       this.navigate(event.state.path, false);
     } else {
       // Handle the case when there's no state (e.g., initial page load)
-      console.log("No state, probably initial load");
+
       this.navigate(window.location.pathname, false);
     }
   }

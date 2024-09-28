@@ -7,8 +7,8 @@ document.getElementById("back").addEventListener("click", async (e) => {
 const fa2 = await api.get("/profile/");
 const infos = await fa2.json();
 
-console.log(infos["is_2fa_enabled"]);
-console.log(infos);
+
+
 
 async function handle_activation(e) {
   e.preventDefault();
