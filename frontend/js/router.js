@@ -1,3 +1,5 @@
+import { api } from "./api.js";
+
 class Router {
   constructor(routes) {
     this.routes = routes;
@@ -6,55 +8,78 @@ class Router {
     this.currentHistoryPosition = 0;
     this.maxHistoryPosition = 0;
 
-    // TODO login check
+    api.get("/token/check/").then(
+      async (result) => {
+        var unregistered_urls = new Set(["/", "/home", "/login", "/register", "/verify_2fa", "/email_verification"]);
 
-    window.addEventListener("popstate", this.handlePopState.bind(this));
-    this.bindLinks();
+        const json = await result.json()
+        const status = json["logged-in"]
+        if (status && unregistered_urls.has(window.location.pathname)) {
+          this.navigate("/main_menu");
+
+        } else {
+          window.addEventListener("popstate", this.handlePopState.bind(this));
+          this.bindLinks();
+          this.navigate(window.location.pathname);
+        }
+      }
+    );
   }
 
   init(app) {
     this.app = app;
-    this.navigate(window.location.pathname);
   }
 
   addRoute(path, templateUrl) {
     this.routes.push({ path, templateUrl });
   }
 
-  async navigate(path) {
-    const route = this.routes.find((route) => route.path === path);
-    this.currentRoute = route;
-
+  async navigate(path, pushState = true) {
+    const oldPath = this.currentRoute ? this.currentRoute.path : null;
+  
+    // Find the new route
+    let route = this.routes.find((r) => r.path === path);
+  
+    // Handle special cases
     if (path.startsWith("/users/")) {
-      this.currentRoute = {};
+      route = {
+        templateUrl: "/routes/users.html",
+        path: "User"
+      };
       localStorage.setItem("UID", path.substr(7));
-      this.currentRoute.templateUrl = "/routes/users.html";
-      this.currentRoute.path = "User";
     } else if (!route) {
-      this.currentRoute = {};
-      this.currentRoute.path = "/404";
-      this.currentRoute.templateUrl = "/routes/404.html";
+      route = {
+        path: "/404",
+        templateUrl: "/routes/404.html"
+      };
     }
-
-    this.currentHistoryPosition++;
-    this.maxHistoryPosition = this.currentHistoryPosition;
-    const title_temp = document.title;
-    document.title = this.currentRoute.path;
-    history.pushState({ position: this.currentHistoryPosition }, "", path);
-    document.title = title_temp;
+  
+    // Update current route
+    this.currentRoute = route;
+  
+    // Push state if needed
+    if (pushState && oldPath !== path) {
+      history.pushState({ path: path }, "", path);
+    }
+  
     await this.updateView();
   }
-
+  
   handlePopState(event) {
-    if (event.state && event.state.position) {
-      if (event.state.position < this.currentHistoryPosition) {
-        this.currentHistoryPosition--;
-      } else {
-        this.currentHistoryPosition++;
-      }
+
+
+  
+    if (event.state && event.state.path) {
+
+      // Use navigate but don't push a new state
+      this.navigate(event.state.path, false);
+    } else {
+      // Handle the case when there's no state (e.g., initial page load)
+
+      this.navigate(window.location.pathname, false);
     }
-    this.navigate(window.location.pathname, false);
   }
+  
 
   bindLinks() {
     document.addEventListener("click", (e) => {

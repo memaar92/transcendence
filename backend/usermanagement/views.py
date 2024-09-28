@@ -13,6 +13,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError, AuthenticationFailed, NotAuthenticated, Throttled
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.middleware import csrf
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, inline_serializer, OpenApiResponse
 from drf_spectacular.types import OpenApiTypes
@@ -26,6 +27,7 @@ import time
 from io import BytesIO
 import base64
 import jwt
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
 MAX_OTP_ATTEMPTS = 5
@@ -622,25 +624,33 @@ class LogoutView(APIView):
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
 class CheckLoginView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     @extend_schema(
         responses={
             (200, 'application/json'): {
                 'type': 'object',
                 'properties': {
-                    'detail': {'type': 'bool', 'enum': ['True']}
-                },
-            },
-            (401, 'application/json'): {
-                'type': 'object',
-                'properties': {
-                    'detail': {'type': 'string', 'enum': ['Authentication credentials were not provided.']}
+                    'detail': {'type': 'bool', 'enum': ['True', 'False']}
                 },
             },
         },
     )
 
     def get(self, request):
-        # If the token is valid, the user is authenticated, and we return a success response
-        return Response ({"logged-in": True}, status=status.HTTP_200_OK)
+        JWT_authenticator = JWTAuthentication()
+        try:
+            response = JWT_authenticator.authenticate(request)
+        except Exception as e:
+            return Response ({"logged-in": False}, status=status.HTTP_200_OK)
+        if response is not None:
+            user , token = response
+            try:
+                token.verify()
+            except Exception as e:
+                return Response ({"logged-in": False}, status=status.HTTP_200_OK)
+            else:
+                return Response ({"logged-in": True}, status=status.HTTP_200_OK)
+        else:
+            return Response ({"logged-in": False}, status=status.HTTP_200_OK)
+        

@@ -14,7 +14,6 @@ const games = await games_html.json();
 (games);
 
 document.getElementById("back").addEventListener("click", async (e) => {
-  ("going back");
   history.back();
 });
 

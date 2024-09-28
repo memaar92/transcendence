@@ -12,7 +12,6 @@ function isValidEmail(email) {
 
 document.getElementById("login").addEventListener("click", async (e) => {
   e.preventDefault();
-  ("click event happened");
   if (!isValidEmail(document.getElementById("email").value)) {
     document.getElementById("email").classList.add("is-invalid");
     return;
