@@ -1,4 +1,5 @@
 import { updateChat } from './live-chat.js';
+import { api } from "./api.js";
 
 class Router {
   constructor(routes) {
@@ -8,16 +9,26 @@ class Router {
     this.currentHistoryPosition = 0;
     this.maxHistoryPosition = 0;
 
-    // TODO login check
+    api.get("/token/check/").then(
+      async (result) => {
+        var unregistered_urls = new Set(["/", "/home", "/login", "/register", "/verify_2fa", "/email_verification"]);
 
-    window.addEventListener("popstate", this.handlePopState.bind(this));
-    this.bindLinks();
+        const json = await result.json()
+        const status = json["logged-in"]
+        if (status && unregistered_urls.has(window.location.pathname)) {
+          this.navigate("/main_menu");
+
+        } else {
+          window.addEventListener("popstate", this.handlePopState.bind(this));
+          this.bindLinks();
+          this.navigate(window.location.pathname);
+        }
+      }
+    );
   }
 
   init(app) {
     this.app = app;
-    const fullPath = window.location.pathname + window.location.search;
-    this.navigate(fullPath);
   }
 
   addRoute(path, templateUrl) {
@@ -56,50 +67,49 @@ class Router {
   }
   
   async navigate(path, pushState = true) {
-    const route = this.matchRoute(path);
-    if (route) {
-      this.currentRoute = route;
-      if (pushState) {
-        this.currentHistoryPosition++;
-        this.maxHistoryPosition = this.currentHistoryPosition;
-        const title_temp = document.title;
-        document.title = route.path.slice(1).replace("_", "-");
-        history.pushState({ position: this.currentHistoryPosition, path: path, params: route.params}, 
-          "", 
-          path
-        );
-        document.title = title_temp;
-      }
-      await this.updateView();
-    } else {
-      this.currentRoute = this.routes.find((route) => route.path === "/404");
-      if (pushState) {
-        this.currentHistoryPosition++;
-        this.maxHistoryPosition = this.currentHistoryPosition;
-        history.pushState(
-          { position: this.currentHistoryPosition },
-          "",
-          "/404"
-        );
-      }
-      await this.updateView();
+    let route = this.routes.find((r) => r.path === path);
+    if (!route) {
+      route = this.matchRoute(path);
     }
-    if (this.onNavigate) {
-      this.onNavigate(route ? route.params : {});
+
+    const oldPath = this.currentRoute ? this.currentRoute.path : null;
+  
+    // Find the new route
+  
+    // Handle special cases
+    if (path.startsWith("/users/")) {
+      route = {
+        templateUrl: "/routes/users.html",
+        path: "User"
+      };
+      localStorage.setItem("UID", path.substr(7));
+    } else if (!route) {
+      route = {
+        path: "/404",
+        templateUrl: "/routes/404.html"
+      };
+    }
+  
+    // Update current route
+    this.currentRoute = route;
+  
+    // Push state if needed
+    if (pushState && oldPath !== path) {
+      history.pushState({ path: path }, "", path);
+    }
+    await this.updateView();
+  }
+  
+  handlePopState(event) {
+    if (event.state && event.state.path) {
+      // Use navigate but don't push a new state
+      this.navigate(event.state.path, false);
+    } else {
+      // Handle the case when there's no state (e.g., initial page load)
+      this.navigate(window.location.pathname, false);
     }
   }
-
-  handlePopState(event) {
-    if (event.state && event.state.position) {
-      if (event.state.position < this.currentHistoryPosition) {
-        this.currentHistoryPosition--;
-      } else {
-        this.currentHistoryPosition++;
-      }
-    }
-    const fullPath = window.location.pathname + window.location.search;
-    this.navigate(fullPath, false);
-  }  
+  
 
   bindLinks() {
     document.addEventListener("click", (e) => {
@@ -118,31 +128,46 @@ class Router {
   }
 
   async updateView() {
-    console.log("before updated view");
-    if (this.app && this.currentRoute) {
-      try {
-        const response = await fetch(this.currentRoute.templateUrl);
-        const html = await response.text();
-        const parser = new DOMParser();
-        const content = parser.parseFromString(html, "text/html");
+    if (!this.app || !this.currentRoute) return;
 
-        this.app.innerHTML = "";
+    try {
+      const response = await fetch(this.currentRoute.templateUrl);
+      const html = await response.text();
+      const doc = new DOMParser().parseFromString(html, "text/html");
 
-        Array.from(content.body.childNodes).forEach((node) => {
-          this.app.appendChild(node.cloneNode(true));
-        });
+      this.app.innerHTML = "";
+      document
+        .querySelectorAll("script[data-dynamic-script]")
+        .forEach((script) => script.remove());
 
-        const scripts = content.querySelectorAll("script");
-        scripts.forEach((oldScript) => {
+      this.app.append(...doc.body.childNodes);
+
+      const loadScript = (scriptElement) => {
+        return new Promise((resolve, reject) => {
           const newScript = document.createElement("script");
-          newScript.src = oldScript.src;
-          newScript.type = "module";
+
+          Array.from(scriptElement.attributes).forEach((attr) => {
+            newScript.setAttribute(attr.name, attr.value);
+          });
+
+          if (newScript.src) {
+            newScript.src = `${newScript.src}?v=${Date.now()}`;
+          }
+
+          newScript.setAttribute("data-dynamic-script", "true");
+          newScript.onload = resolve;
+          newScript.onerror = reject;
+
           document.body.appendChild(newScript);
         });
-      } catch (error) {
-        console.error("Error loading template:", error);
-        this.app.innerHTML = "<p>Error loading content</p>";
+      };
+
+      const scripts = Array.from(doc.querySelectorAll("script"));
+      for (const script of scripts) {
+        await loadScript(script);
       }
+    } catch (error) {
+      this.app.innerHTML = "<p>Error loading content</p>";
     }
     console.log("after updated view");
     this.handlePostUpdate();

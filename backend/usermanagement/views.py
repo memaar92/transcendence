@@ -13,6 +13,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError, AuthenticationFailed, NotAuthenticated, Throttled
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.middleware import csrf
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, inline_serializer, OpenApiResponse
 from drf_spectacular.types import OpenApiTypes
@@ -26,6 +27,7 @@ import time
 from io import BytesIO
 import base64
 import jwt
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
 MAX_OTP_ATTEMPTS = 5
@@ -67,7 +69,7 @@ class CreateUserView(generics.CreateAPIView):
 class EditUserView(generics.RetrieveUpdateDestroyAPIView):
     # not discussed with Wayne yet
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated, IsSelf]
+    permission_classes = [IsAuthenticated, IsSelf, Check2FA]
     http_method_names = ['patch', 'delete', 'get']
     queryset = CustomUser.objects.all()
 
@@ -95,12 +97,39 @@ class EditUserView(generics.RetrieveUpdateDestroyAPIView):
         return Response(serializer.data)
 
     @extend_schema(
+        request=UserSerializer,
         responses={
             status.HTTP_200_OK: UserSerializer,
-            status.HTTP_400_BAD_REQUEST: OpenApiResponse(description="Please check arguments"),
+            status.HTTP_400_BAD_REQUEST: OpenApiTypes.OBJECT,
             status.HTTP_401_UNAUTHORIZED: OpenApiResponse(description="Please login"),
             status.HTTP_404_NOT_FOUND: OpenApiResponse(description="User not found")
         },
+        examples=[
+            OpenApiExample(
+                'Invalid Email',
+                summary="Invalid Email",
+                description="Custom user with this email already exists",
+                value={
+                    "message": "Please check arguments",
+                    "errors": {"email": ["custom user with this email already exists"]}
+                },
+                request_only=False,
+                response_only=True,
+                status_codes=['400']
+            ),
+            OpenApiExample(
+                'Invalid displayname',
+                summary="Invalid displayname",
+                description="Ensure this field has no more than 20 characters.",
+                value={
+                    "message": "Please check arguments",
+                    "errors": {"displayname": ["Ensure this field has no more than 20 characters."]}
+                },
+                request_only=False,
+                response_only=True,
+                status_codes=['400']
+            ),
+        ],
         description="Update user information."
     )
 
@@ -145,6 +174,30 @@ class GameHistoryList(APIView):
         description="Retrieve the game history for a specific user. Can be more than one game."
     )
 
+    def get(self, request):
+        auth_header = self.request.headers.get('Authorization')
+        token = auth_header.split(' ')[1]
+        decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+        user_id = decoded_token.get('user_id')
+        user = get_object_or_404(CustomUser, pk=user_id)
+        home_games = Games.objects.filter(home_id=user)
+        visitor_games = Games.objects.filter(visitor_id=user)
+        all_games = home_games | visitor_games
+        games_serializer = GameSerializer(all_games, many=True)
+        return Response(games_serializer.data)
+
+class GameHistoryListUser(APIView):
+    permission_classes = [IsAuthenticated, Check2FA]
+
+    @extend_schema(
+        responses={
+            status.HTTP_200_OK: GameSerializer(many=True),
+            status.HTTP_401_UNAUTHORIZED: OpenApiResponse(description="Please login"),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(description="No CustomUser matches the given query.")
+        },
+        description="Retrieve the game history for a specific user. Can be more than one game."
+    )
+
     def get(self, request, id):
         user = get_object_or_404(CustomUser, pk=id)
         home_games = Games.objects.filter(home_id=user)
@@ -153,10 +206,9 @@ class GameHistoryList(APIView):
         games_serializer = GameSerializer(all_games, many=True)
         return Response(games_serializer.data)
 
-
 class ProfilePictureDeleteView(APIView):
     # not discussed with Wayne yet
-    permission_classes = [IsAuthenticated, IsSelf]
+    permission_classes = [IsAuthenticated, IsSelf, Check2FA]
 
     def get_object(self):
         auth_header = self.request.headers.get('Authorization')
@@ -252,15 +304,17 @@ class TOTPVerifyView(APIView, CookieCreationMixin):
         token = auth_header.split(' ')[1]
         # Decode the token to get the user ID
         decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-        user_id = decoded_token.get('user_id')
-        # Get the refresh token from the request data
-        refresh_token = request.data['refresh']
-        if not refresh_token:
-            return Response({'detail': 'Refresh token not provided'}, status=status.HTTP_400_BAD_REQUEST)
+       
+        #refresh_token = request.data['refresh']
+        #if not refresh_token:
+        #    return Response({'detail': 'Refresh token not provided'}, status=400)
         try:
-            token = RefreshToken(refresh_token)
+            refresh_token = request.COOKIES.get("refresh_token")
+            old_refresh_token = RefreshToken(refresh_token)
         except Exception as e:
-            return Response({'detail': 'Invalid refresh token'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'detail': 'Invalid refresh token'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user_id = decoded_token.get('user_id')
 
         # Get the user using the user ID
         user = get_object_or_404(CustomUser, id=user_id)
@@ -268,7 +322,7 @@ class TOTPVerifyView(APIView, CookieCreationMixin):
         serializer.is_valid(raise_exception=True)
         totp = pyotp.TOTP(user.totp_secret)
 
-        if totp.verify(serializer.validated_data['token']):
+        if totp.verify(serializer.validated_data['code_2fa']):
             if not user.is_2fa_enabled:
                 user.is_2fa_enabled = True
                 user.save()
@@ -276,7 +330,7 @@ class TOTPVerifyView(APIView, CookieCreationMixin):
             refresh = RefreshToken.for_user(user)
             refresh['2fa'] = 2
             access = refresh.access_token
-            token.blacklist()
+            old_refresh_token.blacklist()
             response = Response({
                 'detail': '2FA verification successful',
                 'access': str(access),
@@ -366,7 +420,6 @@ class CustomTokenRefreshView(TokenRefreshView, CookieCreationMixin):
             response.delete_cookie(settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH'], path=settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH_PATH'])
             return response
         response = super().post(request, *args, **kwargs)
-        token.blacklist()
         self.createCookies(response)
         response.data = {'detail': 'Access and refresh tokens successfully created'}
         return response
@@ -374,6 +427,7 @@ class CustomTokenRefreshView(TokenRefreshView, CookieCreationMixin):
 
 class CheckEmail(APIView):
     permission_classes = [AllowAny]
+    authentication_classes = []
     serializer_class = CheckEmailSerializer
 
     @extend_schema(
@@ -567,3 +621,35 @@ class LogoutView(APIView):
             return response
         except Exception as e:
             return Response(status=status.HTTP_400_BAD_REQUEST)
+
+class CheckLoginView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        responses={
+            (200, 'application/json'): {
+                'type': 'object',
+                'properties': {
+                    'detail': {'type': 'bool', 'enum': ['True', 'False']}
+                },
+            },
+        },
+    )
+
+    def get(self, request):
+        JWT_authenticator = JWTAuthentication()
+        try:
+            response = JWT_authenticator.authenticate(request)
+        except Exception as e:
+            return Response ({"logged-in": False}, status=status.HTTP_200_OK)
+        if response is not None:
+            user , token = response
+            try:
+                token.verify()
+            except Exception as e:
+                return Response ({"logged-in": False}, status=status.HTTP_200_OK)
+            else:
+                return Response ({"logged-in": True}, status=status.HTTP_200_OK)
+        else:
+            return Response ({"logged-in": False}, status=status.HTTP_200_OK)
+        

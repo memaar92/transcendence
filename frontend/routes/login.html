@@ -1,13 +1,21 @@
-<script src="/js/home.js" type="module"></script>
-<h1>Enter your password</h1>
-<form id="login-form">
-  <input
-    type="password"
-    name="password"
-    id="password-field"
-    class="login-form-field"
-    placeholder="Password"
-  />
-  <input type="submit" value="Login" id="login-form-submit" />
-</form>
-<a href="/password_reset" data-router-link>Forgot password?</a>
+<script src="/js/login.js" type="module"></script>
+<div class="position-absolute top-50 start-50 translate-middle">
+  <h1>Enter your password</h1>
+  <form id="login-form">
+    <input
+      id="email"
+      type="email"
+      autocomplete="email"
+      style="display: none;"
+    />
+    <input
+      type="password"
+      name="password"
+      autocomplete="current-password"
+      id="password-field"
+      class="login-form-field"
+      placeholder="Password"
+    />
+    <input class="button" type="submit" value="Login" id="login-form-submit" />
+  </form>
+</div>

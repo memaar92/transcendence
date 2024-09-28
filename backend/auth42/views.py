@@ -81,18 +81,24 @@ class AuthWith42View(APIView, CookieCreationMixin):
             'redirect_uri': 'https://localhost/api/42auth'
         }).json()
         if (oauth_response.get('error')):
-            return Response({'detail': '42auth failed: ' + oauth_response['error']}, status=400)
+            #case: issue with 42 auth
+            response = Response(status=302)
+            response['Location'] = 'https://localhost/auth_failed'
+            return response
         user_info = requests.get('https://api.intra.42.fr/v2/me', headers={
             'Authorization': 'Bearer ' + oauth_response['access_token']
         }).json()
 
         user = CustomUser.objects.filter(email=user_info['email']).values('email', 'is_42_auth')
         if user.exists() and user.first()['is_42_auth'] == False:
-            return Response({'detail': 'Wrong authentication method'}, status=400)
+            # case: wrong auth method
+            response = Response(status=302)
+            response['Location'] = 'https://localhost/auth_failed'
+            return response
         elif not user.exists():
             register42User(user_info['email'], user_info['image']['versions']['small'])
         token = get_tokens_for_user(CustomUser.objects.get(email=user_info['email']))
-        response = Response(token, status=200)
+        response = Response(token, status=302)
+        response['Location'] = 'https://localhost/main_menu'
         self.createCookies(response)
-        response.data = {'detail': 'Successfully authenticated with 42. Tokens are set as cookies'}
         return response
