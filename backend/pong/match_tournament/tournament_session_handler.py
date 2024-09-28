@@ -83,10 +83,8 @@ class TournamentSessionHandler:
     @classmethod
     async def remove_user_from_all_inactive_tournaments(cls, user_id: str) -> None:
         '''Remove a user from all tournaments if they are not running or finished'''
-        logger.debug(f"All tournaments: {Tournaments.get_all()}")
         tournaments = list(Tournaments.get_all().values())
         for tournament in tournaments:
-            logger.debug(f"Checking tournament {tournament.get_id()}")
             if not tournament.is_running() and not tournament.is_finished():
                 logger.debug(f"Removing user {user_id} from tournament {tournament.get_id()}")
                 try:

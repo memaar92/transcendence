@@ -68,6 +68,10 @@ class MatchSession:
     async def _end_match(self, reason: EndReason) -> None:
         '''End the match'''
         self._stop_requested = True
+        
+        # Add a small delay to ensure all messages before the end message are sent
+        await asyncio.sleep(0.1)
+
         logger.info(f"Ending match {self._match_id}")
         if reason == EndReason.DISCONNECT_TIMEOUT:
             await self._match_finished(self._match_id, self._connected_users.pop())
@@ -175,6 +179,11 @@ class MatchSession:
         logger.debug(f"User {user_id} connected to match {self._match_id}")
 
         await self._send_game_state()
+        await self._channel_layer.group_send(self._match_id, {
+            "type": "user_connected",
+            "user_id": user_id
+        })
+
 
         # Check if a blocked user exists and end the match if only one user is left
         if len(self._blocked_users) == 1:
@@ -193,7 +202,7 @@ class MatchSession:
         except KeyError:
             logger.error(f"Cannot disconnect user {user_id} from match {self._match_id} as they are not connected to it")
             return False
-        await self._send_player_disconnected_message(user_id)
+        await self._send_user_disconnected_message(user_id)
         self._disconnect_count[user_id] += 1
         if self._disconnect_count[user_id] >= DISCONNECT_THRESHOLD:
             await self._end_match(EndReason.DISCONNECTED_TOO_MANY_TIMES)
@@ -227,7 +236,7 @@ class MatchSession:
             return
         '''Start the timer before the game starts'''
         for seconds in range(GAME_START_TIMER, -1, -1):
-            await self._send_timer_message(seconds)
+            await self._send_start_timer_update_message(seconds)
             await asyncio.sleep(1)
         logger.debug("Game timer ended, starting game")
 
@@ -247,6 +256,12 @@ class MatchSession:
         '''Callback when a player scores'''
         logger.debug(f"Player {player_id} scored")
         self._score[player_id] += 1
+        await self._channel_layer.group_send(self._match_id, {
+            "type": "player_scores",
+            "player1": self._score[0],
+            "player2": self._score[1]
+        })
+        
         if self._score[player_id] >= WINNING_SCORE:
             await self._end_match(EndReason.SCORE)
 
@@ -266,33 +281,37 @@ class MatchSession:
             logger.error(f"Error in _send_user_mapping: {e}")
             return
     
-        await self._channel_layer.group_send(self._match_id, {
+        message = {
             "type": "user_mapping",
             "is_local_match": self._is_local_match,
-            "player_1": user_id_1,
-            "player_2": user_id_2
-        })
+            "player1": user_id_1,
+        }
+    
+        if not self._is_local_match:
+            message["player2"] = user_id_2
+    
+        await self._channel_layer.group_send(self._match_id, message)
 
     async def _send_game_state(self) -> None:
         '''Send the game state to the users'''
-        game_state = self._game_session.to_dict()
+        game_state_bytes = self._game_session.to_bytearray()
         await self._channel_layer.group_send(self._match_id, {
-            "type": "game_update",
-            "data": game_state
+            "type": "position_update",
+            "data": game_state_bytes
         })
 
-    async def _send_player_disconnected_message(self, user_id: str) -> None:
+    async def _send_user_disconnected_message(self, user_id: str) -> None:
         '''Send a disconnect message to the users'''
         await self._channel_layer.group_send(self._match_id, {
-            "type": "player_disconnected",
-            "data": user_id
+            "type": "user_disconnected",
+            "user_id": user_id
         })
 
-    async def _send_timer_message(self, time: int) -> None:
-        '''Send a timer message to the users'''
+    async def _send_start_timer_update_message(self, time: int) -> None:
+        '''Send a start timer update message to the users'''
         await self._channel_layer.group_send(self._match_id, {
-            "type": "timer_update",
-            "data": time
+            "type": "start_timer_update",
+            "start_timer": time
         })
 
     async def _send_game_over_message(self, winner: str) -> None:

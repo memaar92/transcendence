@@ -1,4 +1,5 @@
 import logging
+import struct
 from .ball import Ball
 from .paddle import Paddle
 from .utils.vector2 import Vector2
@@ -36,13 +37,11 @@ class GameSession:
         self.ball.move()
 
         if self.ball.position.x < 0:
-            await self._on_player_scored(0) # Call the callback function
-            self.ball.reset()
-            self.ball.direction.x *= -1
-        elif self.ball.position.x + self.ball.size > WORLD_SIZE.x:
             await self._on_player_scored(1) # Call the callback function
             self.ball.reset()
-            self.ball.direction.x *= -1
+        elif self.ball.position.x + self.ball.size > WORLD_SIZE.x:
+            await self._on_player_scored(0) # Call the callback function
+            self.ball.reset()
 
     def to_dict(self):
         return {
@@ -50,3 +49,15 @@ class GameSession:
             "paddle_right": self.paddle_right.to_dict(),
             "ball": self.ball.to_dict()
         }
+    
+    def to_bytearray(self):
+        # Create a byte array and pack the positions as 32-bit floats
+        byte_array = bytearray(24)
+        struct.pack_into('<f', byte_array, 0, self.paddle_left.position.x)
+        struct.pack_into('<f', byte_array, 4, self.paddle_left.position.y)
+        struct.pack_into('<f', byte_array, 8, self.paddle_right.position.x)
+        struct.pack_into('<f', byte_array, 12, self.paddle_right.position.y)
+        struct.pack_into('<f', byte_array, 16, self.ball.position.x)
+        struct.pack_into('<f', byte_array, 20, self.ball.position.y)
+
+        return byte_array

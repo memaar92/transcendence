@@ -60,9 +60,9 @@ class TournamentSession:
             if result is not None:
                 score[result] += 1
 
-        # Print the number of wins for each user
+        # Log the number of wins for each user
         for user, points in score.items():
-            print(f"User {user} has {points} wins.")
+            logger.debug(f"User {user} has {points} wins.")
 
         # Determine the maximum score
         max_score = max(score.values())

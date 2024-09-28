@@ -4,6 +4,9 @@ window.connectToMatch = function(match_id) {
     let user_id_p1 = null;
     let user_id_p2 = null;
 
+    let leftPlayerScore = 0;
+    let rightPlayerScore = 0;
+
     const matchSocket = new WebSocket('ws://' + window.location.host + '/ws/pong/match/' + match_id + '/');
     matchSocket.onopen = function(e) {
         console.log('Match WebSocket connection established.');
@@ -29,36 +32,27 @@ window.connectToMatch = function(match_id) {
                 const jsonData = JSON.parse(data);
                 // Process JSON data
                 console.log('Received JSON data:', jsonData);
-                if (jsonData.type === 'game_update') {
-                    console.log('Received game update:', jsonData.payload);
-                    const player1PosX = jsonData.data.paddle_left.x * 100;
-                    const player1PosY = jsonData.data.paddle_left.y * 100;
-                    const player2PosX = jsonData.data.paddle_right.x * 100;
-                    const player2PosY = jsonData.data.paddle_right.y * 100;
-                    const ballPosX = jsonData.data.ball.x * 100;
-                    const ballPosY = jsonData.data.ball.y * 100;
-
-                    leftPaddle.x = player1PosX;
-                    leftPaddle.y = player1PosY;
-                    rightPaddle.x = player2PosX;
-                    rightPaddle.y = player2PosY;
-                    ball.x = ballPosX;
-                    ball.y = ballPosY;
-                } else if (jsonData.type === 'timer_update') {
-                    console.log('Received timer update:', jsonData.data);
-                    timerValue = jsonData.data;
+                
+                if (jsonData.type === 'start_timer_update') {
+                    timerValue = jsonData.start_timer;
+                    console.log('Received timer update:', timerValue);
+                } else if (jsonData.type === 'player_scores') {
+                    leftPlayerScore = jsonData.player1;
+                    rightPlayerScore = jsonData.player2;
+                    console.log('Received player scores:', leftPlayerScore, rightPlayerScore);
                 } else if (jsonData.type === 'game_over') {
-                    console.log('Game over:', jsonData.data);
                     winner = jsonData.data;
                     timerValue = null;
+                    console.log('Game over:', winner);
                 } else if (jsonData.type === 'user_mapping') {
-                    console.log('Received user mapping:', jsonData.data);
-                    is_local_match = jsonData.data.is_local_match;
-                    user_id_p1 = jsonData.data.user_id_1;
-                    user_id_p2 = jsonData.data.user_id_2;
+                    is_local_match = jsonData.is_local_match;
+                    user_id_p1 = jsonData.player1;
                     console.log('is_local_match:', is_local_match);
                     console.log('user_id_p1:', user_id_p1);
-                    console.log('user_id_p2:', user_id_p2);
+                    if (!is_local_match) {
+                        user_id_p2 = jsonData.player2;
+                        console.log('user_id_p2:', user_id_p2);
+                    }
                 }
             } catch (error) {
                 console.error('Failed to parse JSON data:', error);
@@ -69,12 +63,12 @@ window.connectToMatch = function(match_id) {
 
             // Read the six floats from the DataView
             // Assuming the data is little-endian; if not, set the second argument to false
-            const player1PosX = view.getFloat32(0, true);
-            const player1PosY = view.getFloat32(4, true);
-            const player2PosX = view.getFloat32(8, true);
-            const player2PosY = view.getFloat32(12, true);
-            const ballPosX = view.getFloat32(16, true);
-            const ballPosY = view.getFloat32(20, true);
+            const player1PosX = view.getFloat32(0, true) * 100;
+            const player1PosY = view.getFloat32(4, true) * 100;
+            const player2PosX = view.getFloat32(8, true) * 100;
+            const player2PosY = view.getFloat32(12, true) * 100;
+            const ballPosX = view.getFloat32(16, true) * 100;
+            const ballPosY = view.getFloat32(20, true) * 100;
 
             // Update the paddles and ball
             leftPaddle.x = player1PosX;
@@ -254,6 +248,18 @@ window.connectToMatch = function(match_id) {
         ctx.closePath();
     }
 
+    function drawScores() {
+        ctx.font = 'bold 48px Arial';
+        ctx.fillStyle = 'white';
+        ctx.textAlign = 'center';
+    
+        // Draw left player score
+        ctx.fillText(leftPlayerScore, canvasWidth / 4, 50);
+    
+        // Draw right player score
+        ctx.fillText(rightPlayerScore, (canvasWidth / 4) * 3, 50);
+    }
+
     function drawPaddle(paddle) {
         ctx.beginPath();
         ctx.fillStyle = '#0095DD';
@@ -287,11 +293,13 @@ window.connectToMatch = function(match_id) {
     function draw() {
         // Clear canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-
+    
         // Draw ball and paddles
         drawPaddle(leftPaddle);
         drawPaddle(rightPaddle);
         drawBall();
+        drawScores(); // Draw the scores
+    
         if (timerValue !== null && timerValue > 0) {
             drawTimer();
         }

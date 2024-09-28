@@ -114,6 +114,7 @@ class MatchConsumer(AsyncWebsocketConsumer):
 
     async def _send_game_over_message(self, winner: str) -> None:
         '''Send a game over message to the users'''
+        logger.debug(f"Sending game over message to users")
         await self.send(text_data=json.dumps({
             "type": "game_over",
             "data": winner
@@ -127,25 +128,34 @@ class MatchConsumer(AsyncWebsocketConsumer):
         logger.info(f"User mapping: {event}")
         await self.safe_send(text_data=json.dumps(event))
 
-    async def game_update(self, event):
-        # logger.info(f"Sending game state to user {self._user_id}")
+    async def position_update(self, event):
+        # Extract the byte array from the event
+        game_state_bytes = event.get("data")
+        if game_state_bytes:
+            await self.safe_send(bytes_data=game_state_bytes)
+
+    async def user_connected(self, event):
+        logger.info(f"User {event} connected")
         await self.safe_send(text_data=json.dumps(event))
 
-    async def player_disconnected(self, event):
-        logger.info(f"Player {event} disconnected")
+    async def user_disconnected(self, event):
+        logger.info(f"User {event} disconnected")
         await self.safe_send(text_data=json.dumps(event))
 
-    async def player_reconnected(self, event):
-        logger.info(f"Player {event} reconnected")
-        await self.safe_send(text_data=json.dumps(event))
-    
-    async def timer_update(self, event):
+    async def start_timer_update(self, event):
         await self.safe_send(text_data=json.dumps(event))
 
-    async def safe_send(self, text_data: str):
+    async def player_scores(self, event):
+        logger.debug(f"Send player scores event: {event}")
+        await self.safe_send(text_data=json.dumps(event))
+
+    async def safe_send(self, text_data: str = None, bytes_data: bytes = None):
         if self._connection_established:
             try:
-                await self.send(text_data=text_data)
+                if text_data is not None:
+                    await self.send(text_data=text_data)
+                elif bytes_data is not None:
+                    await self.send(bytes_data=bytes_data)
             except Exception as e:
                 logger.error(f"Failed to send message: {e}")
         else:

@@ -365,6 +365,111 @@ frontend_matchmaking_messages_schema:
 # Match socket: backend -> frontend.
 backend_match_messages_schema:
 
+  user_mapping:
+    description: "Sent to show the user mapping in the match."
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["user_mapping"]
+        example: "user_mapping"
+      is_local_match:
+        type: boolean
+        example: true
+      player1:
+        type: string
+        example: "someUserID"
+      player2: # Will be null if it is a local match
+        type: string
+        example: "anotherUserID"      
+    required:
+      - type
+      - is_local_match
+      - player1
 
+  user_connected:
+    description: "Sent when a user connects to the match."
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["user_connected"]
+        example: "user_connected"
+      user_id:
+        type: string
+        example: "user_id"
+    required:
+      - type
+      - user_id
+
+  user_disconnected:
+    description: "Sent when a user disconnects from the match."
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["user_disconnected"]
+        example: "user_disconnected"
+      user_id:
+        type: string
+        example: "user_id"
+    required:
+      - type
+      - user_id
+
+  start_timer_update:
+    description: "Sent to show when the match will start. Can be used to show a countdown timer."
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["start_timer_update"]
+        example: "start_timer_update"
+      start_timer:
+        type: number
+        example: 3
+    required:
+      - type
+      - start_timer
+
+  position_update:
+    description: "Sent to update of the paddles and ball position."
+    type: object
+    properties:
+      paddleLeftX:
+        type: float32
+        offset: 0
+      paddleLeftY:
+        type: float32
+        offset: 4
+      paddleRightX:
+        type: float32
+        offset: 8
+      paddleRightY:
+        type: float32
+        offset: 12
+      ballPosX:
+        type: float32
+        offset: 16
+      ballPosY:
+        type: float32
+        offset: 20
+    byteLength: 24
+
+  player_scores:
+    description: "Sent when a player connects to the match."
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["player_scores"]
+        example: "player_scores"
+      player1:
+        type: number
+        example: 0
+      player2:
+        type: number
+        example: 0
+    
 # Match socket: frontend -> backend.
 frontend_match_messages_schema:
