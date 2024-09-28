@@ -110,13 +110,13 @@ window.connectToMatch = function(match_id) {
     let move_up_player_2 = false;
     let move_down_player_2 = false;
 
-    function sendPlayerInput(player_id) {
+    function sendPlayerInput(up, down, player_id) {
         let message = {};
-        if (move_up_player_1 && move_down_player_1) {
+        if (up && down) {
             message = create_player_input_message(0, player_id);
-        } else if (move_up_player_1 && !move_down_player_1) {
+        } else if (up && !down) {
             message = create_player_input_message(-1, player_id);
-        } else if (!move_up_player_1 && move_down_player_1) {
+        } else if (!up && down) {
             message = create_player_input_message(1, player_id);
         } else {
             message = create_player_input_message(0, player_id);
@@ -164,13 +164,15 @@ window.connectToMatch = function(match_id) {
                     stateChangedPlayer1 = true;
                 }
                 break;
-            case 'ArrowUp':
+            case 'KeyO': // 'O' key
+                event.preventDefault(); // Prevent default behavior
                 if (!move_up_player_2) {
                     move_up_player_2 = true;
                     stateChangedPlayer2 = true;
                 }
                 break;
-            case 'ArrowDown':
+            case 'KeyL': // 'L' key
+                event.preventDefault(); // Prevent default behavior
                 if (!move_down_player_2) {
                     move_down_player_2 = true;
                     stateChangedPlayer2 = true;
@@ -178,10 +180,10 @@ window.connectToMatch = function(match_id) {
                 break;
         }
         if (stateChangedPlayer1) {
-            sendPlayerInput(0);
+            sendPlayerInput(move_up_player_1, move_down_player_1, 0);
         }
         if (stateChangedPlayer2) {
-            sendPlayerInput(1);
+            sendPlayerInput(move_up_player_2, move_down_player_2, 1);
         }
     });
 
@@ -202,13 +204,15 @@ window.connectToMatch = function(match_id) {
                     stateChangedPlayer1 = true;
                 }
                 break;
-            case 'ArrowUp':
+            case 'KeyO':
+                event.preventDefault(); // Prevent default behavior
                 if (move_up_player_2) {
                     move_up_player_2 = false;
                     stateChangedPlayer2 = true;
                 }
                 break;
-            case 'ArrowDown':
+            case 'KeyL':
+                event.preventDefault(); // Prevent default behavior
                 if (move_down_player_2) {
                     move_down_player_2 = false;
                     stateChangedPlayer2 = true;
@@ -216,10 +220,10 @@ window.connectToMatch = function(match_id) {
                 break;
         }
         if (stateChangedPlayer1) {
-            sendPlayerInput(0);
+            sendPlayerInput(move_up_player_1, move_down_player_1, 0);
         }
         if (stateChangedPlayer2) {
-            sendPlayerInput(1);
+            sendPlayerInput(move_up_player_2, move_down_player_2, 1);
         }
     });
 

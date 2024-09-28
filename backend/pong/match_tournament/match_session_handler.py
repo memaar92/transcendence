@@ -19,11 +19,7 @@ class MatchSessionHandler:
         on_match_finished: Optional[Callable[[str, str], None]] = None # on_match_finished(match_id: str, winner(user_id): str) -> None
     ) -> 'MatchSession':
         
-        match = None
-        if user2 is None:
-            match = MatchSession(user1, None, on_match_finished)
-        else:
-            match = MatchSession(user1, user2, on_match_finished)
+        match = MatchSession(user1, user2, on_match_finished)
 
         Matches.add_match(match)
 

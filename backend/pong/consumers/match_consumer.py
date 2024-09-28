@@ -88,13 +88,17 @@ class MatchConsumer(AsyncWebsocketConsumer):
 
         try:
             if message_type == await PlayerInput.get_type():
-                PlayerInput(**data)
-                await self._match_session.update_player_direction(self._user_id, data["direction"], data["player_id"])
+                try:
+                    msg = PlayerInput(**data)
+                    await self._match_session.update_player_direction(self._user_id, msg.direction, msg.player_id)
+                except ValidationError as e:
+                    logger.error(f"Invalid message data: {e}")
+                except Exception as e:
+                    logger.error(f"Failed to update player direction: {e}")
             else:
                 logger.error(f"Invalid message type: {message_type}")
-        except ValidationError as e:
-            logger.error(f"Invalid message: {e}")
-            return
+        except Exception as e:
+            logger.error(f"Failed to process message: {e}")
 
 
     async def is_valid_connection(self, match_id, user_id):

@@ -152,7 +152,7 @@ class MatchSession:
             return
         try:
             await asyncio.wait_for(self._wait_for_users_to_connect(), timeout=MATCH_START_TIMEOUT)
-            logger.debug("Both users connected, match starting.")
+            logger.debug("All users connected, match starting.")
         except asyncio.TimeoutError:
             logger.debug("Match start timeout, not all users connected.")
             await self._end_match(EndReason.MATCH_START_TIMEOUT)
@@ -215,7 +215,7 @@ class MatchSession:
     #    Game control functions #
     #############################
 
-    async def update_player_direction(self, user_id: str, direction: str, player_key_id: str) -> None:
+    async def update_player_direction(self, user_id: str, direction: str, player_id: str) -> None:
         '''Update the direction of a player'''
         if user_id not in self._assigned_users:
             logger.error(f"User {user_id} not assigned to the match")
@@ -226,7 +226,7 @@ class MatchSession:
         
         # Update the direction of the player, depending on the match type
         if self._is_local_match:
-            self._game_session.update_player_direction(player_key_id, direction)
+            self._game_session.update_player_direction(player_id, direction)
         else:
             self._game_session.update_player_direction(self._player_mapping[user_id], direction)
 

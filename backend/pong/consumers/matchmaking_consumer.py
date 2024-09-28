@@ -151,8 +151,9 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             else:
                 logger.error(f"Invalid message type: {message_type}")
         except ValidationError as e:
-            logger.error(f"Invalid message: {e}")
-            return
+            logger.error(f"Invalid message data: {e}")
+        except Exception as e:
+            logger.error(f"Error processing message of type {message_type}: {e}")
 
     ###################################################################
     #   Functions to handle and track active connections for a user   #

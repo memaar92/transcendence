@@ -145,6 +145,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (joinQueueButton) {
         joinQueueButton.onclick = MatchmakingRequests.joinOnlineMatchmakingQueue;
     }
+
+    const createLocalMatchButton = document.getElementById('create-local-match-button');
+    if (createLocalMatchButton) {
+        createLocalMatchButton.onclick = MatchmakingRequests.createLocalMatch;
+    }
+
     createWebSocket(); // Initialize WebSocket connection when the document is loaded
 });
 
