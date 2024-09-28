@@ -18,8 +18,8 @@ async function handle_activation(e) {
   if (result.ok)
   {
     document.getElementById("toggle-2fa").innerHTML = "Remove 2FA"
-    document.getElementById("toggle-2fa").classList.remove("confirm-button");
-    document.getElementById("toggle-2fa").classList.add("cancel-button");
+    document.getElementById("toggle-2fa").classList.remove("button");
+    document.getElementById("toggle-2fa").classList.add("dangerous-button");
     document.getElementById("toggle-2fa").setAttribute("data-bs-toggle", "")
     document.getElementById("toggle-2fa").onclick = handle_deactivation;
     showAlert("2FA verification successfull", "alert-success");
@@ -39,8 +39,8 @@ async function handle_deactivation(e) {
   if (result.ok)
   {
     document.getElementById("toggle-2fa").innerHTML = "Add 2FA"
-    document.getElementById("toggle-2fa").classList.add("confirm-button");
-    document.getElementById("toggle-2fa").classList.remove("cancel-button");
+    document.getElementById("toggle-2fa").classList.add("button");
+    document.getElementById("toggle-2fa").classList.remove("dangerous-button");
     document.getElementById("toggle-2fa").setAttribute("data-bs-toggle", "modal")
     showAlert("Deactivated 2FA", "alert-danger");
   }
@@ -54,14 +54,14 @@ document.getElementById("check-2fa-submit").onclick = handle_activation;
 
 if (infos["is_2fa_enabled"] == true) {
   document.getElementById("toggle-2fa").innerHTML = "Remove 2FA"
-  document.getElementById("toggle-2fa").classList.remove("confirm-button");
-  document.getElementById("toggle-2fa").classList.add("cancel-button");
+  document.getElementById("toggle-2fa").classList.remove("button");
+  document.getElementById("toggle-2fa").classList.add("dangerous-button");
   document.getElementById("toggle-2fa").setAttribute("data-bs-toggle", "")
   document.getElementById("toggle-2fa").onclick = handle_deactivation;
 } else {
   document.getElementById("toggle-2fa").innerHTML = "Add 2FA"
-  document.getElementById("toggle-2fa").classList.add("confirm-button");
-  document.getElementById("toggle-2fa").classList.remove("cancel-button");
+  document.getElementById("toggle-2fa").classList.add("button");
+  document.getElementById("toggle-2fa").classList.remove("dangerous-button");
   document.getElementById("toggle-2fa").setAttribute("data-bs-toggle", "modal")
 }
 

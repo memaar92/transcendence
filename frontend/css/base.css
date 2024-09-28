@@ -69,6 +69,7 @@ h2 {
   background-color: var(--color-confirm);
   box-shadow: 0 4px 0px 0px var(--color-confirm-shadow);
   height: 3rem;
+  width: 3rem;
 }
 
 .confirm-button:hover {
@@ -79,6 +80,7 @@ h2 {
   background-color: var(--color-deny);
   box-shadow: 0 4px 0px 0px var(--color-deny-shadow);
   height: 3rem;
+  width: 3rem;
 }
 
 .cancel-button:hover {
