@@ -526,6 +526,7 @@ backend_match_messages_schema:
   position_update:
     description: |
       Sent to update of the paddles and ball position.
+      Will also be sent when the match starts to initialize the positions.
     type: object
     properties:
       paddleLeftX:
@@ -574,3 +575,26 @@ backend_match_messages_schema:
     
 # Match socket: frontend -> backend.
 frontend_match_messages_schema:
+
+  player_input:
+    description: |
+      Sent to update the player input.
+      Should only be sent when the direction changes.
+      player_key is only used in local matches but should be sent in all cases.
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["player_input"]
+        example: "player_input"
+      direction:
+        type: number
+        enum: [-1, 0, 1] # -1: up, 0: stop, 1: down
+        example: 1 # down
+      player_id:
+        type: number
+        enum: [0, 1] # 0: left, 1: right
+    required:
+      - type
+      - direction
+      - player_id

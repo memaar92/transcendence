@@ -110,32 +110,22 @@ window.connectToMatch = function(match_id) {
     let move_up_player_2 = false;
     let move_down_player_2 = false;
 
-    function sendPlayerStateP1() {
+    function sendPlayerInput(player_id) {
         let message = {};
         if (move_up_player_1 && move_down_player_1) {
-            message = { "type": "player_update", "payload": { direction: 0, player_key_id: 0 } };
+            message = create_player_input_message(0, player_id);
         } else if (move_up_player_1 && !move_down_player_1) {
-            message = { "type": "player_update", "payload": { direction: -1, player_key_id: 0 } };
+            message = create_player_input_message(-1, player_id);
         } else if (!move_up_player_1 && move_down_player_1) {
-            message = { "type": "player_update", "payload": { direction: 1, player_key_id: 0 } };
+            message = create_player_input_message(1, player_id);
         } else {
-            message = { "type": "player_update", "payload": { direction: 0, player_key_id: 0 } };
+            message = create_player_input_message(0, player_id);
         }
         matchSocket.send(JSON.stringify(message));
     }
 
-    function sendPlayerStateP2() {
-        let message = {};
-        if (move_up_player_2 && move_down_player_2) {
-            message = { "type": "player_update", "payload": { direction: 0, player_key_id: 1 } };
-        } else if (move_up_player_2 && !move_down_player_2) {
-            message = { "type": "player_update", "payload": { direction: -1, player_key_id: 1 } };
-        } else if (!move_up_player_2 && move_down_player_2) {
-            message = { "type": "player_update", "payload": { direction: 1, player_key_id: 1 } };
-        } else {
-            message = { "type": "player_update", "payload": { direction: 0, player_key_id: 1 } };
-        }
-        matchSocket.send(JSON.stringify(message));
+    function create_player_input_message(direction, player_id) {
+        return { "type": "player_input", "direction": direction, "player_id": player_id };
     }
 
     // Paddle properties
@@ -188,10 +178,10 @@ window.connectToMatch = function(match_id) {
                 break;
         }
         if (stateChangedPlayer1) {
-            sendPlayerStateP1();
+            sendPlayerInput(0);
         }
         if (stateChangedPlayer2) {
-            sendPlayerStateP2();
+            sendPlayerInput(1);
         }
     });
 
@@ -226,10 +216,10 @@ window.connectToMatch = function(match_id) {
                 break;
         }
         if (stateChangedPlayer1) {
-            sendPlayerStateP1();
+            sendPlayerInput(0);
         }
         if (stateChangedPlayer2) {
-            sendPlayerStateP2();
+            sendPlayerInput(1);
         }
     });
 

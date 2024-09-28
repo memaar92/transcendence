@@ -10,7 +10,7 @@ import logging
 import time
 import os
 import yaml
-from jsonschema import validate, ValidationError
+from jsonschema import ValidationError
 from django.conf import settings
 from pong.schemas.matchmaking_schema import (
     ActiveConnection,

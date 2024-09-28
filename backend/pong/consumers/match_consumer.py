@@ -4,9 +4,24 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from pong.match_tournament.match_session import MatchSession
 from pong.match_tournament.data_managment.matches import Matches
 from pong.match_tournament.data_managment.user import User
+import os
+import yaml
+from jsonschema import ValidationError
+from django.conf import settings
+from pong.schemas.match_schema import (
+    PlayerInput
+)
 
 import logging
 logger = logging.getLogger("match_consumer")
+
+# Load YAML file from the static directory in your app
+yaml_file_path = os.path.join(settings.BASE_DIR, 'static', 'websocket_messages.yaml')
+
+with open(yaml_file_path, 'r') as yaml_file:
+    message_definitions = yaml.safe_load(yaml_file)
+
+frontend_match_messages_schema = message_definitions['frontend_match_messages_schema']
 
 class MatchConsumer(AsyncWebsocketConsumer):
 
@@ -44,6 +59,7 @@ class MatchConsumer(AsyncWebsocketConsumer):
         self._match_session = Matches.get_match(self._match_id)
         await self._match_session.connect_user(self._user_id, self._match_session_is_finished_callback)
 
+
     async def disconnect(self, close_code):
         logger.debug(f"Disconnect called for user {self._user_id} with close code {close_code}")
 
@@ -57,20 +73,29 @@ class MatchConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_discard(self._match_id, self.channel_name)
         if self._match_session:
             await self._match_session.disconnect_user(self._user_id)
-
+            self._match_session = None
 
 
     async def receive(self, text_data: str): # TODO: Implement this
+
         try:
             data = json.loads(text_data)
-            logger.info(f"Received data: {data}")
-            if data.get("type") == "player_update":
-                payload = data.get("payload")
-                if payload and "direction" in payload and "player_key_id" in payload:
-                    await self._match_session.update_player_direction(self._user_id, payload["direction"], payload["player_key_id"])
         except json.JSONDecodeError:
-            logger.error(f"Failed to decode JSON data: {text_data}")
+            logger.error("Failed to decode JSON")
             return
+        
+        message_type = data.get("type")
+
+        try:
+            if message_type == await PlayerInput.get_type():
+                PlayerInput(**data)
+                await self._match_session.update_player_direction(self._user_id, data["direction"], data["player_id"])
+            else:
+                logger.error(f"Invalid message type: {message_type}")
+        except ValidationError as e:
+            logger.error(f"Invalid message: {e}")
+            return
+
 
     async def is_valid_connection(self, match_id, user_id):
 
