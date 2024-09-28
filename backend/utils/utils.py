@@ -46,10 +46,10 @@ def get_secret(secret_name):
 
 def send_otp_email(recipient, otp):
     subject = 'Email Verification'
-    html_message = render_to_string('email_template.html', {'code': otp })  # Ensure 'email_template.html' is in one of your template directories
+    html_message = render_to_string('email_template.html', {'code': otp })
     plain_message = strip_tags(html_message)
-    from_email = 'transcendene.pongo@gmail.com'
+    from_email = "Wayne from Transcendence <transcendene.pongo@gmail.com>"
     to = recipient
 
-    send_mail(subject, plain_message, from_email, [to], html_message=html_message)
+    send_mail(subject, plain_message, from_email, [to], html_message=html_message, fail_silently=False)
     

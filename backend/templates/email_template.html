@@ -1,16 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <title>Static Template</title>
-
-    <link
-      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap"
-      rel="stylesheet"
-    />
-  </head>
   <body
     style="
       margin: 0;
@@ -25,33 +14,28 @@
         margin: 0 auto;
         padding: 45px 30px 60px;
         background: #000000;
-        background-image: url(https://raw.githubusercontent.com/memaar92/transcendence/refs/heads/main/test_image2.jpeg);
-        background-repeat: no-repeat;
-        background-size: 800px 622px;
-        background-position: top center;
         font-size: 14px;
-        color: #fffefe;
+        color: #f7f7f7;
       "
     >
-      <header>
-        <table style="width: 100%;">
-          <tbody>
-            <tr style="height: 0;">
-              <td>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </header>
+      <img
+        src="https://raw.githubusercontent.com/memaar92/transcendence/refs/heads/main/test_image2.jpeg"
+        alt="Top Image"
+        style="
+          width: 100%;
+          max-width: 240px;
+          height: auto;
+          display: block;
+          margin: 0 auto;
+        "
+      />
 
       <main>
         <div
           style="
             margin: 0;
-            margin-top: 60px;
-            padding: 92px 30px 115px;
+            padding: 35px 30px 35px;
             background: #000000;
-            #border-bottom: 10px solid #651bdd;
             text-align: center;
           "
         >
@@ -69,9 +53,22 @@
             <p
               style="
                 margin: 0;
-                margin-top: 17px;
+                margin-top: 40px;
+                font-size: clamp(14px, 5vw, 40px);
+                font-weight: 600;
+                letter-spacing: clamp(10px, 2vw, 20px);
+                color: #7a35ec;
+              "
+            >
+              {{ code }}
+            </p>
+            <p
+              style="
+                margin: 0;
+                margin-top: 40px;
                 font-size: 16px;
                 font-weight: 500;
+                color: #f7f7f7;
               "
             >
               Welcome to Transcendence,
@@ -82,23 +79,12 @@
                 margin-top: 17px;
                 font-weight: 500;
                 letter-spacing: 0.56px;
+                color: #f7f7f7;
               "
             >
-              Use the following OTP to verify your email address and complete your account setup. OTP is
+              Use the OTP above to verify your email address and complete your account setup. OTP is
               valid for <span style="font-weight: 600; color: #f7f7f7;">5 minutes</span>.
               Do not share this code with others, including fellow students and other magical mischief-makers.
-            </p>
-            <p
-              style="
-                margin: 0;
-                margin-top: 60px;
-                font-size: 40px;
-                font-weight: 600;
-                letter-spacing: 25px;
-                color: #7a35ec;
-              "
-            >
-              {{ code }}
             </p>
           </div>
         </div>
@@ -107,7 +93,7 @@
           style="
             max-width: 400px;
             margin: 0 auto;
-            margin-top: 90px;
+            margin-top: 50px;
             text-align: center;
             font-weight: 500;
             color: #f7f7f7;
@@ -128,7 +114,7 @@
           max-width: 490px;
           margin: 20px auto 0;
           text-align: center;
-          border-top: 1px solid #e6ebf1;
+          border-top: 1px solid #f7f7f7;
         "
       >
         <p
@@ -137,15 +123,15 @@
             margin-top: 40px;
             font-size: 16px;
             font-weight: 600;
-            color: #e6ebf1;
+            color: #f7f7f7;
           "
         >
-        Magical Mischief-Makers
+          Magical Mischief-Makers
         </p>
-        <p style="margin: 0; margin-top: 8px; color: #e6ebf1;">
+        <p style="margin: 0; margin-top: 8px; color: #f7f7f7;">
           Cluster 2, Wolfsburg, Germany.
         </p>
-        <p style="margin: 0; margin-top: 16px; color: #e6ebf1;">
+        <p style="margin: 0; margin-top: 16px; color: #f7f7f7;">
           Copyright © 2024 Magical Mischief-Makers. All rights reserved.
         </p>
       </footer>
