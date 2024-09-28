@@ -104,6 +104,12 @@ document.getElementById("content").addEventListener('click', async function (eve
   await update_userinfo()
 });
 
+document.getElementById("logout").addEventListener('click', async function (event) {
+  event.preventDefault();
+  await api.post("/token/logout/")
+  await router.navigate("/");
+});
+
 
 document.getElementById("deleteModal").addEventListener('click', async function (event) {
     const modalContainer = document.createElement('div');
