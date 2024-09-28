@@ -21,11 +21,13 @@ class Router {
     // );
     api.get("/token/check/").then(
       async (result) => {
-        var unregistered_urls = new Set(["/home", "/login", "/register", "/verify_2fa", "/email_verification"]);
+        var unregistered_urls = new Set(["/", "/home", "/login", "/register", "/verify_2fa", "/email_verification"]);
         console.log(result);
-        const status = await result.json()["logged-in"]
+        const json = await result.json()
+        const status = json["logged-in"]
         if (status && unregistered_urls.has(window.location.pathname)) {
           this.navigate("/main_menu");
+          console.log("LOGGED IN")
         } else {
           window.addEventListener("popstate", this.handlePopState.bind(this));
           this.bindLinks();
