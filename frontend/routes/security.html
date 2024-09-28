@@ -1,4 +1,5 @@
 <script src="/js/security.js" type="module"></script>
+<div id="alertContainer" class="alert-container"></div>
 <div class="container">
   <div class="back-button" id="back">
     <svg
@@ -26,21 +27,34 @@
     </div>
     <div id="content" class="content">
         <h3>2 Factor Authentification</h3>
-        <div id="qrCode"></div>
-        <form action="POST"></form>
-        <form id="check-2fa">
-          <input
-            type="text"
-            name="token"
-            id="token"
-            class="login-form-field"
-            placeholder="2fa code"
-            inputmode="numeric"
-            pattern="[0-9]*"
-          />
-          <input class="button " type="submit" value="Enable 2FA" id="check-2fa-submit" />
-        </form>
-        <div id="alertContainer"></div>
+      <button id="toggle-2fa" type="button" class="button" data-bs-toggle="modal" data-bs-target="#exampleModalCenter">
+        Add 2FA
+      </button>
+      <div class="modal fade" data-show="" id="exampleModalCenter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title text-bright" id="exampleModalLongTitle">Activate 2FA</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+              </button>
+            </div>
+            <div class="modal-body flex">
+              <div class="d-inline-flex justify-content-center flex-column">
+                <h6>Scan the following Code :</h6>
+                <div id="qrCode"></div>
+                <label for="2fa-token">
+                  2fa code
+                </label>
+                <input id="token" type="text"></input>
+              </div>
+            </div>
+            <div class="modal-footer" style="padding-right: 3rem;">
+              <button id="close-modal" type="button" data-bs-dismiss="modal" class="button secondaryButton" data-dismiss="modal">Close</button>
+              <button id="check-2fa-submit" type="button" class="button">Activate</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
