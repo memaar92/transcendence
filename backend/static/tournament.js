@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     matchmakingSocket.addEventListener('message', (event) => {
         const data = JSON.parse(event.data);
-        if (data.type === 'tournaments') {
+        if (data.type === 'open_tournaments_list') {
             updateTournamentList(data.tournaments);
         }
     });

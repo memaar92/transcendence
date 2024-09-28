@@ -363,7 +363,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             })
         
         await self.send(text_data=json.dumps({
-            'type': 'tournaments',
+            'type': 'open_tournaments_list',
             'tournaments': tournament_data
         }))
 

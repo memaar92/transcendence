@@ -385,7 +385,8 @@ frontend_matchmaking_messages_schema:
       properties:
         type:
           type: string
-          example: "tournaments"
+          enum: ["open_tournaments_list"]
+          example: "open_tournaments_list"
         tournaments:
           type: array
           items:
