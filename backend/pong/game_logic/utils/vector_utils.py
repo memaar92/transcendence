@@ -1,19 +1,12 @@
 import math
 from .vector2 import Vector2
 
-def degree_to_vector(value: float):
-    new_vector = Vector2(0, 0)
-    # Convert angle from degrees to radians
+def degree_to_vector(value: float) -> Vector2:
+    """Convert an angle in degrees to a unit vector."""
     angle_radians = math.radians(value)
-    # Calculate x and y components
-    new_vector.x = math.cos(angle_radians)
-    new_vector.y = math.sin(angle_radians)
-    return (new_vector)
+    return Vector2(math.cos(angle_radians), math.sin(angle_radians))
 
-
-def vector_to_degree(value: Vector2):
-    # Calculate angle in radians
+def vector_to_degree(value: Vector2) -> float:
+    """Convert a vector to an angle in degrees."""
     angle_radians = math.atan2(value.y, value.x)
-    # Convert angle from radians to degrees
-    angle_degrees = math.degrees(angle_radians)
-    return (angle_degrees)
+    return math.degrees(angle_radians)

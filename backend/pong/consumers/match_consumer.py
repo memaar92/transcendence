@@ -177,7 +177,6 @@ class MatchConsumer(AsyncWebsocketConsumer):
         await self.safe_send(text_data=json.dumps(event))
 
     async def player_scores(self, event):
-        logger.debug(f"Send player scores event: {event}")
         await self.safe_send(text_data=json.dumps(event))
 
     async def safe_send(self, text_data: str = None, bytes_data: bytes = None):

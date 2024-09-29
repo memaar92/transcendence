@@ -1,6 +1,5 @@
 from .utils.vector2 import Vector2
 from .utils.vector_utils import degree_to_vector
-import copy
 import logging
 
 logger = logging.getLogger("Ball")
@@ -9,17 +8,17 @@ class Ball:
     def __init__(self,
                 position: Vector2 = Vector2(0, 0),
                 direction: Vector2 = degree_to_vector(45),
-                speed: float = 20,
-                size: int = 20,
+                speed: float = 8,
+                size: int = 0.2,
                 canvas_size: Vector2 = Vector2(10000, 10000),
                 collider_list: list = None):
         self._position: Vector2 = position
         self._direction: Vector2 = direction
         self._base_speed: float = speed
-        self._speed_multiplier: float = 0.25
+        self._speed_multiplier: float = 0.15
         self._current_speed: float = speed
         self._size: int = size
-        self._start_pos: Vector2 = copy.deepcopy(position)
+        self._start_pos: Vector2 = position.copy()
         self._time_alive: float = 0
 
         # Game configuration
@@ -36,26 +35,38 @@ class Ball:
         self._current_speed = self._base_speed + self._time_alive * self._speed_multiplier
         movement_vector = self._direction * self._current_speed * delta_time
         new_position = self._position + movement_vector
+
         if self._is_colliding_with_wall(new_position):
             movement_vector.y *= -1
             self._direction.y *= -1
         elif self._is_colliding(new_position):
-            movement_vector.x *= -1
-            self._direction.x *= -1
+            for collider in self._collided_with_list:
+                self._redirect_based_on_collider(collider)
+            movement_vector = self._direction * self._current_speed * delta_time
+            new_position = self._position + movement_vector
+            if self._is_colliding_with_wall(new_position):
+                movement_vector.y *= -1
+                self._direction.y *= -1
+
         self._position += movement_vector
         self._time_alive += delta_time
 
     def reset(self):
         """Reset the ball to its starting position."""
-        self._position = copy.deepcopy(self._start_pos)
+        self._position = self._start_pos.copy()
+        self._direction = degree_to_vector(45) * (-1 if self._direction.x < 0 else 1)
+        self._current_speed = self._base_speed
+        self._time_alive = 0
 
-    def _is_colliding(self, position: Vector2):
+    def _is_colliding(self, position: Vector2) -> bool:
         """Check if the ball is colliding with a collider object."""
         for collider in self._collider_list:
-            if (collider.position.x < position.x + self._size and
-                collider.position.x + collider.size.x > position.x and
-                collider.position.y < position.y + self._size and
-                collider.position.y + collider.size.y > position.y):
+            collider_position = collider.get_position()
+            collider_size = collider.get_size()
+            if (collider_position.x < position.x + self._size and
+                collider_position.x + collider_size.x > position.x and
+                collider_position.y < position.y + self._size and
+                collider_position.y + collider_size.y > position.y):
                 if collider not in self._collided_with_list:
                     self._collided_with_list.append(collider)
                 return True
@@ -76,16 +87,23 @@ class Ball:
             position = self._position
         return (position.x < 0 or
                 position.x + self._size > self._canvas_size.x)
-    
+
+    def _redirect_based_on_collider(self, collider):
+        """Redirect the ball based on the center of mass of the collider."""
+        collider_center = collider.get_position() + collider.get_center_of_mass()
+        ball_center = self._position + Vector2(self._size / 2, self._size / 2)
+        direction_vector = ball_center - collider_center
+        self._direction = direction_vector.normalized()
+
     def get_position(self):
         return self._position
-    
+
     def get_size(self):
         return self._size
-    
+
     def get_speed(self):
         return self._current_speed
-    
+
     def get_direction(self):
         return self._direction
 
