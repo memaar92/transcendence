@@ -13,6 +13,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError, AuthenticationFailed, NotAuthenticated, Throttled
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.middleware import csrf
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, inline_serializer, OpenApiResponse
 from drf_spectacular.types import OpenApiTypes
@@ -26,6 +27,7 @@ import time
 from io import BytesIO
 import base64
 import jwt
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
 MAX_OTP_ATTEMPTS = 5
@@ -302,10 +304,12 @@ class TOTPVerifyView(APIView, CookieCreationMixin):
         token = auth_header.split(' ')[1]
         # Decode the token to get the user ID
         decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-        refresh_token = request.data['refresh']
-        if not refresh_token:
-            return Response({'detail': 'Refresh token not provided'}, status=400)
+       
+        #refresh_token = request.data['refresh']
+        #if not refresh_token:
+        #    return Response({'detail': 'Refresh token not provided'}, status=400)
         try:
+            refresh_token = request.COOKIES.get("refresh_token")
             old_refresh_token = RefreshToken(refresh_token)
         except Exception as e:
             return Response({'detail': 'Invalid refresh token'}, status=status.HTTP_400_BAD_REQUEST)
@@ -423,6 +427,7 @@ class CustomTokenRefreshView(TokenRefreshView, CookieCreationMixin):
 
 class CheckEmail(APIView):
     permission_classes = [AllowAny]
+    authentication_classes = []
     serializer_class = CheckEmailSerializer
 
     @extend_schema(
@@ -618,25 +623,33 @@ class LogoutView(APIView):
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
 class CheckLoginView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     @extend_schema(
         responses={
             (200, 'application/json'): {
                 'type': 'object',
                 'properties': {
-                    'detail': {'type': 'bool', 'enum': ['True']}
-                },
-            },
-            (401, 'application/json'): {
-                'type': 'object',
-                'properties': {
-                    'detail': {'type': 'string', 'enum': ['Authentication credentials were not provided.']}
+                    'detail': {'type': 'bool', 'enum': ['True', 'False']}
                 },
             },
         },
     )
 
     def get(self, request):
-        # If the token is valid, the user is authenticated, and we return a success response
-        return Response ({"logged-in": True}, status=status.HTTP_200_OK)
+        JWT_authenticator = JWTAuthentication()
+        try:
+            response = JWT_authenticator.authenticate(request)
+        except Exception as e:
+            return Response ({"logged-in": False}, status=status.HTTP_200_OK)
+        if response is not None:
+            user , token = response
+            try:
+                token.verify()
+            except Exception as e:
+                return Response ({"logged-in": False}, status=status.HTTP_200_OK)
+            else:
+                return Response ({"logged-in": True}, status=status.HTTP_200_OK)
+        else:
+            return Response ({"logged-in": False}, status=status.HTTP_200_OK)
+        
