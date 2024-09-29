@@ -1,6 +1,8 @@
 from typing import Optional, Callable
 from ..game_logic.game_session import GameSession
 from channels.layers import get_channel_layer
+from usermanagement.models import CustomUser, Games
+from asgiref.sync import sync_to_async
 import asyncio
 import logging
 import time
@@ -15,7 +17,7 @@ GAME_START_TIMER = 3 # Time in seconds before the game starts
 
 TICK_RATE = 60
 
-WINNING_SCORE = 11
+WINNING_SCORE = 3
 
 class EndReason(Enum):
     DISCONNECT_TIMEOUT = auto()
@@ -82,17 +84,24 @@ class MatchSession:
 
         logger.info(f"Ending match {self._match_id}")
         if reason == EndReason.DISCONNECT_TIMEOUT:
-            await self._match_finished(self._match_id, self._connected_users.pop())
+            winner = self._connected_users.pop()
+            self._score[self._player_mapping[winner]] = WINNING_SCORE
+            await self._match_finished(self._match_id, winner)
             logger.info("Match ended due to disconnect timeout")
         elif reason == EndReason.MATCH_START_TIMEOUT:
             await self._match_finished(self._match_id, None)
             logger.info("Match ended due to timeout")
         elif reason == EndReason.DRAW:
+            self._score[0] = 0
+            self._score[1] = 0
             await self._match_finished(self._match_id, None)
             logger.info("Match ended due to timeout and draw")
         elif reason == EndReason.DISCONNECTED_TOO_MANY_TIMES:
             logger.info("Match ended due to too many disconnects")
-            await self._match_finished(self._match_id, self._connected_users.pop())
+            logger.info(f"Connected users: {self._connected_users}")
+            winner = self._connected_users.pop()
+            self._score[self._player_mapping[winner]] = WINNING_SCORE
+            await self._match_finished(self._match_id, winner)
         elif reason == EndReason.SCORE:
             winner = max(self._score, key=self._score.get)
             await self._match_finished(self._match_id, winner)
@@ -118,17 +127,37 @@ class MatchSession:
         # Delete itself
         del self
 
-    async def _match_finished(self, match_id: str, winner: str, write_to_db: bool = True) -> None:
+    async def _match_finished(self, match_id: str, winner: Optional[str], write_to_db: bool = True) -> None:
         '''Callback when the match is finished'''
         logger.info(f"Match {match_id} finished, winner: {winner}")
-        # if write_to_db:
-            # await self._write_score_to_database() # TODO: Implement this
-        
+        if write_to_db and not self._is_local_match:
+            try:
+                assigned_users = list(self._assigned_users)
+                home_user = await sync_to_async(CustomUser.objects.get)(id=assigned_users[0])
+                visitor_user = await sync_to_async(CustomUser.objects.get)(id=assigned_users[1])
+
+                game = Games(
+                    home_id=home_user,
+                    visitor_id=visitor_user,
+                    home_score=self._score[0],
+                    visitor_score=self._score[1]
+                )
+
+                await sync_to_async(game.save)()
+                logger.info(f"Game saved with ID: {game.id}")
+            except Exception as e:
+                logger.error(f"Error saving game to database: {e}")
+
         if self._on_match_finished is not None:
-            if asyncio.iscoroutinefunction(self._on_match_finished):
-                await self._on_match_finished(match_id, self._playerID_to_userID(winner))
+            if winner is not None:
+                winner_user_id = self._playerID_to_userID(winner)
             else:
-                self._on_match_finished(match_id, self._playerID_to_userID(winner))
+                winner_user_id = None
+
+            if asyncio.iscoroutinefunction(self._on_match_finished):
+                await self._on_match_finished(match_id, winner_user_id)
+            else:
+                self._on_match_finished(match_id, winner_user_id)
 
     #############################
     #      Timer functions      #
@@ -251,14 +280,6 @@ class MatchSession:
             await self._send_start_timer_update_message(seconds)
             await asyncio.sleep(1)
         logger.debug("Game timer ended, starting game")
-
-    #############################
-    #     Database functions    #
-    #############################
-
-    async def _write_score_to_database(self) -> None:
-        '''Write the score to the database'''
-        pass
 
     #############################
     # Callbacks from the game   #

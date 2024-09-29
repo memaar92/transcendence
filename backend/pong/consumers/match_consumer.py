@@ -1,11 +1,11 @@
 import json
-import sys
+import asyncio
+import os
+import yaml
 from channels.generic.websocket import AsyncWebsocketConsumer
 from pong.match_tournament.match_session import MatchSession
 from pong.match_tournament.data_managment.matches import Matches
 from pong.match_tournament.data_managment.user import User
-import os
-import yaml
 from jsonschema import ValidationError
 from django.conf import settings
 from pong.schemas.match_schema import (
@@ -72,7 +72,7 @@ class MatchConsumer(AsyncWebsocketConsumer):
 
         await self.channel_layer.group_discard(self._match_id, self.channel_name)
         if self._match_session:
-            await self._match_session.disconnect_user(self._user_id)
+            asyncio.create_task(self._match_session.disconnect_user(self._user_id))
             self._match_session = None
 
 
