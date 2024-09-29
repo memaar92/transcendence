@@ -5,6 +5,7 @@ from typing import Set, List, Tuple, Optional, Callable
 from pong.match_tournament.match_session import MatchSession
 from pong.match_tournament.data_managment.matches import Matches
 from uuid import uuid4
+from typing import Dict
 
 logger = logging.getLogger("tournament")
 
@@ -18,12 +19,13 @@ class TournamentSession:
         self._active_users: Set[str] = set() # Users that are still in the tournament
         self._matches: List[Tuple[str, str]] = []
         self._results: List[Optional[str]] = []
+        self._user_wins: Dict[str, int] = {} # Number of wins for each user
         self._winner: Optional[str] = None
         self._running = False
         self._condition = asyncio.Condition()
         self._on_finished = on_finished
 
-        self._assigned_users.add(owner_user_id)
+        self.add_user(owner_user_id)
         self._channel_layer = get_channel_layer()
         logger.debug(f"Created tournament session {self}")
 
@@ -42,6 +44,8 @@ class TournamentSession:
             if self._winner is not None:
                 logger.info(f"Tournament {self._id} finished with winner {self._winner}")
                 self._running = False
+        if self._winner is not None:
+            await self._tournament_finished_message()
         self._on_finished(self._id)
 
     def _generate_round_robin_schedule(self) -> None:
@@ -103,11 +107,15 @@ class TournamentSession:
 
     async def match_finished_callback(self, match_id: str, winner: str) -> None:
         self._results.append(winner)
+        if winner is not None:
+            winner = str(winner)  # Ensure winner is a string
+            if winner not in self._user_wins:
+                self._user_wins[winner] = 0  # Initialize if not present
+            self._user_wins[winner] += 1
         Matches.remove_match(match_id)
         # Notify the condition variable that the match is finished
         async with self._condition:
             self._condition.notify_all()
-
 
     async def _create_match(self, user1: str, user2: str) -> None:
         '''Create a match between two users'''
@@ -135,13 +143,26 @@ class TournamentSession:
             }
         )
 
+    async def _tournament_finished_message(self) -> None:
+        '''Send a tournament finished message to the users'''
+        for user_id in self._assigned_users:
+            await self._channel_layer.group_send(
+                f"user_{user_id}",
+                {
+                    'type': 'tournament_finished',
+                    'tournament_name': self._name,
+                    'user_scores': self._user_wins,
+                }
+            )
 
     def add_user(self, user_id: str):
         '''Add a user to the tournament set'''
         self._assigned_users.add(user_id)
-
+        self._user_wins[str(user_id)] = 0  # Initialize the user's wins to zero
+    
     def remove_user(self, user_id: str):
         self._assigned_users.remove(user_id)
+        self._user_wins.pop(str(user_id), None)  # Remove the user from the wins dictionary
 
     def get_id(self) -> str:
         return self._id

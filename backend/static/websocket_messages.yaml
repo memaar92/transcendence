@@ -92,6 +92,40 @@ backend_matchmaking_messages_schema:
         Inform the user that he has a match in progress and
         offer the option to reconnect to the match.
 
+  tournament_finished:
+    description: |
+      Sent when a tournament is finished.
+      (Active connection only)"
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["tournament_finished"]
+        example: "tournament_finished"
+      tournament_name:
+        type: string
+        example: "tournament1"
+      user_scores:
+        type: object
+        properties:
+          user_id:
+            type: string
+            example: "user1"
+          wins:
+            type: number
+            example: 2
+        required:
+          - user_id
+          - wins
+    required:
+      - type
+      - tournament_name
+      - user_scores
+
+    frontend_processing:
+      description: |
+        Inform the user that the tournament is finished and show the results.
+
 # Matchmaking socket: frontend -> backend.
 frontend_matchmaking_messages_schema:
   active_connection:

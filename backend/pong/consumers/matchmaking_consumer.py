@@ -241,6 +241,16 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             'type': 'tournament_canceled'
         }))
 
+    async def tournament_finished(self, event):
+        '''Handle the tournament_finished message'''
+
+        # Check if the current connection is the active connection (Current tab in the browser)
+        if not self._is_active_connection():
+            return
+
+        logger.debug(f"Received tournament_finished event: {event}")
+        await self.send(text_data=json.dumps(event))
+
     ###################################
     #    Matchmaking message handlers #
     ###################################
@@ -369,7 +379,6 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             'type': 'open_tournaments_list',
             'tournaments': tournament_data
         }))
-
 
     ###################################
     #      Helper functions           #
