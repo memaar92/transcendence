@@ -10,8 +10,8 @@ logger = logging.getLogger("game_session")
 
 WORLD_SIZE = Vector2(16, 9)
 PADDLE_SIZE = Vector2(0.5, 2)
-PADDLE_SPEED = 0.1
-BALL_SPEED = 0.1
+PADDLE_SPEED = 4
+BALL_SPEED = 4
 BALL_SIZE = 0.2
 
 class GameSession:
@@ -31,15 +31,15 @@ class GameSession:
         elif player_id == 1:
             self.paddle_right.direction = direction
 
-    async def calculate_game_state(self) -> None:
-        self.paddle_left.move()
-        self.paddle_right.move()
-        self.ball.move()
+    async def calculate_game_state(self, delta_time: float) -> None:
+        self.paddle_left.move(delta_time)
+        self.paddle_right.move(delta_time)
+        self.ball.move(delta_time)
 
-        if self.ball.position.x < 0:
+        if self.ball.get_position().x < 0:
             await self._on_player_scored(1) # Call the callback function
             self.ball.reset()
-        elif self.ball.position.x + self.ball.size > WORLD_SIZE.x:
+        elif self.ball.get_position().x + self.ball.get_size() > WORLD_SIZE.x:
             await self._on_player_scored(0) # Call the callback function
             self.ball.reset()
 
@@ -57,7 +57,7 @@ class GameSession:
         struct.pack_into('<f', byte_array, 4, self.paddle_left.position.y)
         struct.pack_into('<f', byte_array, 8, self.paddle_right.position.x)
         struct.pack_into('<f', byte_array, 12, self.paddle_right.position.y)
-        struct.pack_into('<f', byte_array, 16, self.ball.position.x)
-        struct.pack_into('<f', byte_array, 20, self.ball.position.y)
+        struct.pack_into('<f', byte_array, 16, self.ball.get_position().x)
+        struct.pack_into('<f', byte_array, 20, self.ball.get_position().y)
 
         return byte_array

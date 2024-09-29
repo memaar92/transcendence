@@ -8,18 +8,22 @@ class Paddle:
         self.direction: int = 0 # -1, 0, 1
         self.world_size: Vector2 = world_size
 
-    def move(self):
+    def move(self, delta_time: float) -> None:
         if self.direction == 0:
             return
-        velocity = self.speed * self.direction
-        new_y = self.position.y + velocity
+        # velocity = self.speed * self.direction
+        # new_y = self.position.y + velocity
 
-        if new_y < 0:
-            self.position.y = 0
-        elif new_y + self.size.y > self.world_size.y:
-            self.position.y = self.world_size.y - self.size.y
-        else:
-            self.position.y = new_y
+        # if new_y < 0:
+        #     self.position.y = 0
+        # elif new_y + self.size.y > self.world_size.y:
+        #     self.position.y = self.world_size.y - self.size.y
+        # else:
+        #     self.position.y = new_y
+
+        self.position.y += self.direction * self.speed * delta_time
+        # Ensure the paddle stays within the world bounds
+        self.position.y = max(0, min(self.position.y, self.world_size.y - self.size.y))
 
     def to_dict(self):
         return {

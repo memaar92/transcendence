@@ -3,6 +3,7 @@ from ..game_logic.game_session import GameSession
 from channels.layers import get_channel_layer
 import asyncio
 import logging
+import time
 from enum import Enum, auto
 
 logger = logging.getLogger("match")
@@ -51,7 +52,12 @@ class MatchSession:
 
     async def _main_loop(self) -> None:
         '''Main loop of the match'''
+        last_time = time.time()
         while not self._stop_requested:
+            current_time = time.time()
+            delta_time = current_time - last_time
+            last_time = current_time
+
             if not self._is_match_running:
                 await self._monitor_match_start()
                 self._is_match_running = True
@@ -59,8 +65,10 @@ class MatchSession:
             if self._is_game_stopped:
                 await self._start_timer()
                 self._is_game_stopped = False
+                # Reset last_time after the timer to avoid large delta_time
+                last_time = time.time()
             if self.is_every_user_connected() and not self._stop_requested:
-                await self._game_session.calculate_game_state()
+                await self._game_session.calculate_game_state(delta_time)
                 await self._send_position_update()
             if not self._stop_requested:
                 await asyncio.sleep(self._tick_speed)
