@@ -150,7 +150,6 @@ class MatchConsumer(AsyncWebsocketConsumer):
         }))
 
 
-
     ### Channel Layer Callbacks ###
 
     async def user_mapping(self, event):
