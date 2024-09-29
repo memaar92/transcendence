@@ -15,9 +15,12 @@ class Ball:
                 collider_list: list = None):
         self._position: Vector2 = position
         self._direction: Vector2 = direction
-        self._speed: float = speed
+        self._base_speed: float = speed
+        self._speed_multiplier: float = 0.25
+        self._current_speed: float = speed
         self._size: int = size
         self._start_pos: Vector2 = copy.deepcopy(position)
+        self._time_alive: float = 0
 
         # Game configuration
         self._canvas_size: Vector2 = canvas_size
@@ -29,7 +32,9 @@ class Ball:
     def move(self, delta_time: float) -> None:
         """Update the ball's position based on its speed and direction."""
 
-        movement_vector = self._direction * self._speed * delta_time
+        # Update the ball's speed based on how long it has been alive
+        self._current_speed = self._base_speed + self._time_alive * self._speed_multiplier
+        movement_vector = self._direction * self._current_speed * delta_time
         new_position = self._position + movement_vector
         if self._is_colliding_with_wall(new_position):
             movement_vector.y *= -1
@@ -38,6 +43,7 @@ class Ball:
             movement_vector.x *= -1
             self._direction.x *= -1
         self._position += movement_vector
+        self._time_alive += delta_time
 
     def reset(self):
         """Reset the ball to its starting position."""
@@ -78,7 +84,7 @@ class Ball:
         return self._size
     
     def get_speed(self):
-        return self._speed
+        return self._current_speed
     
     def get_direction(self):
         return self._direction

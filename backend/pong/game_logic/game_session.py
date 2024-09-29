@@ -10,7 +10,7 @@ logger = logging.getLogger("game_session")
 
 WORLD_SIZE = Vector2(16, 9)
 PADDLE_SIZE = Vector2(0.5, 2)
-PADDLE_SPEED = 4
+PADDLE_SPEED = 5
 BALL_SPEED = 4
 BALL_SIZE = 0.2
 

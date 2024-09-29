@@ -15,7 +15,7 @@ GAME_START_TIMER = 3 # Time in seconds before the game starts
 
 TICK_RATE = 60
 
-WINNING_SCORE = 3
+WINNING_SCORE = 11
 
 class EndReason(Enum):
     DISCONNECT_TIMEOUT = auto()
