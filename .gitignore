@@ -1,0 +1,8 @@
+__pycache__/
+backend/static/
+.dev_ips
+**/migrations/
+database/
+secrets/
+backend/mediafiles/profile_pics/
+.venv/

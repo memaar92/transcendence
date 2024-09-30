@@ -1,0 +1,87 @@
+services:
+  backend:
+    container_name: backend
+    build: docker/backend/
+    image: backend:latest
+    restart: unless-stopped
+    volumes:
+      - .:/app
+      - ./secrets/django_admin_email.txt:/run/secrets/django_admin_email
+      - ./secrets/django_admin_password.txt:/run/secrets/django_admin_password
+      - ./secrets/django_admin_user.txt:/run/secrets/django_admin_user
+    depends_on:
+      - postgresql
+      - redis
+    secrets:
+      - psql_password
+      - psql_user
+      - psql_database
+      - email_host
+      - email_pw
+      - oauth_secret
+      - oauth_client_id
+
+  nginx:
+    container_name: nginx
+    build: docker/nginx/
+    image: nginx:latest
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./frontend:/var/www/html/frontend
+      - ./backend/mediafiles:/var/www/html/mediafiles
+      - ./backend/static:/app/backend/static/
+    depends_on:
+      - backend
+
+  postgresql:
+    image: postgres:latest
+    container_name: postgres
+    restart: unless-stopped
+    volumes:
+      - ./database:/var/lib/postgresql/data/pgdata
+# TODO: delete for deployment
+    ports:
+      - 5432:5432
+# TODO: maybe add another not root user for safety in deployment
+    secrets:
+      - psql_password
+      - psql_user
+      - psql_database
+    environment:
+      - POSTGRES_PASSWORD_FILE=/run/secrets/psql_password
+      - POSTGRES_USER_FILE=/run/secrets/psql_user
+      - POSTGRES_DB_FILE=/run/secrets/psql_database
+      - PGDATA=/var/lib/postgresql/data/pgdata
+  
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: unless-stopped
+    volumes:
+      - ./docker/redis/config/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+
+secrets:
+  psql_password:
+    file: ./secrets/postgresql_password.txt
+  psql_user:
+    file: ./secrets/postgresql_user.txt
+  psql_database:
+    file: ./secrets/postgresql_database.txt
+  psql_su_password:
+    file: ./secrets/postgresql_su_password.txt
+  django_admin_password:
+    file: ./secrets/django_admin_password.txt
+  django_admin_user:
+    file: ./secrets/django_admin_user.txt
+  oauth_secret:
+    file: ./secrets/oauth_secret.txt
+  oauth_client_id:
+    file: ./secrets/oauth_client_id.txt
+  email_host:
+    file: ./secrets/email_host.txt
+  email_pw:
+    file: ./secrets/email_host_pw.txt
