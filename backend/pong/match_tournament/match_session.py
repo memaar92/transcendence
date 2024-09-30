@@ -7,6 +7,7 @@ import asyncio
 import logging
 import time
 from enum import Enum, auto
+from uuid import uuid4
 
 logger = logging.getLogger("match")
 
@@ -30,7 +31,7 @@ class EndReason(Enum):
 class MatchSession:
     def __init__(self, user_id_1: str, user_id_2: Optional[str], on_match_finished: Optional[Callable[[str, str], None]] = None):
         '''Initialize and start a match between two users'''
-        self._match_id = str(id(self))  # Generating a unique id
+        self._match_id = str(uuid4())
         self._assigned_users = {user_id_1, user_id_2} if user_id_2 is not None else {user_id_1}
         self._blocked_users = set()
         self._connected_users = set()
