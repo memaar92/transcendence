@@ -45,6 +45,7 @@ class ChatHandler {
           this.currentReceiverId = null;
           this.initScrollHandling();
           this.initFiltering();
+          this.initTabHandling();
       }
     }
 
@@ -347,9 +348,9 @@ class ChatHandler {
   createButton(text, senderId, receiverId, isAccept) {
     const button = document.createElement('button');
     if (!isAccept)
-      button.className = 'mainButton reject';
+      button.className = 'button reject';
     else 
-      button.className = 'mainButton';
+      button.className = 'button';
     button.textContent = text;
 
     button.onclick = () => {
@@ -388,7 +389,7 @@ class ChatHandler {
       }
   
       // Update the block button to unblock button
-      const blockButton = friendItem.querySelector('.mainButton.reject');
+      const blockButton = friendItem.querySelector('.button.reject');
       if (blockButton) {
         blockButton.textContent = 'Unblock';
         blockButton.classList.replace('reject', 'unblock');
@@ -411,7 +412,7 @@ class ChatHandler {
       friendItem.classList.add('friends');
       
       // Remove the unblock button
-      const unblockButton = friendItem.querySelector('.mainButton');
+      const unblockButton = friendItem.querySelector('.button');
       if (unblockButton) {
         unblockButton.remove();
       }
@@ -454,6 +455,9 @@ class ChatHandler {
   
       const userImg = document.createElement('img');
       userImg.src = user.profile_picture_url;
+      userImg.onclick = () => {
+        this.router.navigate(`/users/${user.id}`);
+      };
       userImg.alt = user.name;
       userImg.className = 'user-avatar';
   
@@ -588,6 +592,9 @@ class ChatHandler {
   
       const friendImg = document.createElement('img');
       friendImg.src = friend.profile_picture_url;
+      friendImg.onclick = () => {
+        this.router.navigate(`/users/${friend.id}`);
+      };
       friendImg.alt = friend.name;
       friendImg.className = 'friends-avatar';
   
@@ -644,7 +651,7 @@ class ChatHandler {
     chatButton.innerHTML = svgContent;
   
     const blockButton = document.createElement('button');
-    blockButton.className = 'mainButton reject';
+    blockButton.className = 'button reject';
     blockButton.textContent = 'Block';
     blockButton.onclick = () => {
       this.blockFriend(this.senderId, friend.id);
@@ -657,7 +664,7 @@ class ChatHandler {
     const unblockButton = document.createElement('button');
 
     if (unblockButton) {
-      unblockButton.className = 'mainButton';
+      unblockButton.className = 'button';
       unblockButton.textContent = 'Unblock';
       unblockButton.onclick = () => {
         this.unblockFriend(this.senderId, friend.id);
@@ -827,6 +834,41 @@ class ChatHandler {
     // Apply initial filter
     this.applyFilter();
   }
+
+  initTabHandling() {
+    const tabs = document.querySelectorAll('.nav-link');
+    const tabContents = document.querySelectorAll('.tab-pane');
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', (event) => {
+            event.preventDefault();
+
+            const targetId = tab.getAttribute('href').substring(1);
+            const targetTabContent = document.getElementById(targetId);
+
+            const tabInstance = new bootstrap.Tab(tab);
+            
+            tabInstance.show();
+
+            localStorage.setItem('activeTab', tab.id);
+        });
+    });
+
+    const activeTab = localStorage.getItem('activeTab');
+    if (activeTab) {
+        const activeTabElement = document.getElementById(activeTab);
+        const tabInstance = new bootstrap.Tab(activeTabElement);
+        tabInstance.show();
+    } else {
+        const defaultTab = document.querySelector('.nav-link.active');
+        const tabInstance = new bootstrap.Tab(defaultTab);
+        tabInstance.show();
+    }
+
+    tabContents.forEach(tabContent => {
+        tabContent.classList.remove('d-none');
+    });
+}
 
   applyFilter() {
     const items = document.getElementsByClassName("friends-item");

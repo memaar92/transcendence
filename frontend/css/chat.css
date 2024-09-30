@@ -35,6 +35,7 @@
   object-fit: cover;
   margin-bottom: 0.5rem;
   border: 5px solid #7A35EC;
+  cursor: pointer;
 }  
 
 .username {
@@ -50,17 +51,6 @@
 .user-item img:hover {
   transform: translateY(-5px);
   transition: ease-in-out;
-}  
-
-/* Additional styles for other components */
-.button {
-  color: var(--dl-color-theme-neutral-dark);
-  display: inline-block;
-  padding: 0.5rem 1rem;
-  border-color: var(--dl-color-theme-neutral-dark);
-  border-width: 1px;
-  border-radius: 4px;
-  background-color: var(--dl-color-theme-neutral-light);
 }  
 
 .input {
@@ -149,9 +139,6 @@
 #content {
   display: flex;
   flex-direction: column;
-  height: 70vh;
-  width: 80vw;
-  margin: 10vh auto;
   border: 2px solid white;
   border-radius: 15px;
   overflow: auto;
@@ -280,6 +267,7 @@
   font-weight: lighter;
   box-sizing: border-box; /* Ensure padding and border are included in the width */
   justify-content: center;
+  cursor: pointer;
 }
 
 .chats-item:last-child {
@@ -322,7 +310,6 @@
   border-radius: 50%;
   border-width: 2px;
   margin-right: 15px;
-  cursor: pointer;
 }
 
 .chats-item img:hover {
@@ -645,12 +632,12 @@
   gap: 15px;
 }
 
-.mainButton.reject {
+.button.reject {
   background-color: #ff4d4d;
   box-shadow: 0 4px 0px 0px #ff3333cc;
 }
 
-.mainButton.reject:hover {
+.button.reject:hover {
   background-color: #ff6868
 }
 
