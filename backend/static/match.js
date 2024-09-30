@@ -7,7 +7,7 @@ window.connectToMatch = function(match_id) {
     let leftPlayerScore = 0;
     let rightPlayerScore = 0;
 
-    const matchSocket = new WebSocket('ws://' + window.location.host + '/ws/pong/match/' + match_id + '/');
+    const matchSocket = new WebSocket('wss://' + window.location.host + '/wss/pong/match/' + match_id + '/');
     matchSocket.onopen = function(e) {
         console.log('Match WebSocket connection established.');
         hideReconnectButton();

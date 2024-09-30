@@ -8,7 +8,7 @@ let isActiveTab = false;
 let matchmakingSocket = null;
 
 function createWebSocket() {
-    matchmakingSocket = new WebSocket('ws://' + window.location.host + '/ws/pong/matchmaking/');
+    matchmakingSocket = new WebSocket('wss://' + window.location.host + '/wss/pong/matchmaking/');
 
     // Socket event handlers
     matchmakingSocket.onopen = function(e) {
