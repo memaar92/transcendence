@@ -16,6 +16,8 @@ services:
       - psql_password
       - psql_user
       - psql_database
+      - email_host
+      - email_pw
       - oauth_secret
       - oauth_client_id
 
@@ -79,3 +81,7 @@ secrets:
     file: ./secrets/oauth_secret.txt
   oauth_client_id:
     file: ./secrets/oauth_client_id.txt
+  email_host:
+    file: ./secrets/email_host.txt
+  email_pw:
+    file: ./secrets/email_host_pw.txt
