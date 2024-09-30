@@ -1,7 +1,5 @@
 import json
 import asyncio
-import os
-import yaml
 from channels.generic.websocket import AsyncWebsocketConsumer
 from pong.match_tournament.match_session import MatchSession
 from pong.match_tournament.data_managment.matches import Matches
@@ -14,14 +12,6 @@ from pong.schemas.match_schema import (
 
 import logging
 logger = logging.getLogger("match_consumer")
-
-# Load YAML file from the static directory in your app
-yaml_file_path = os.path.join(settings.BASE_DIR, 'static', 'websocket_messages.yaml')
-
-with open(yaml_file_path, 'r') as yaml_file:
-    message_definitions = yaml.safe_load(yaml_file)
-
-frontend_match_messages_schema = message_definitions['frontend_match_messages_schema']
 
 class MatchConsumer(AsyncWebsocketConsumer):
 

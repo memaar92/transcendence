@@ -8,8 +8,6 @@ import asyncio
 import json
 import logging
 import time
-import os
-import yaml
 from jsonschema import ValidationError
 from django.conf import settings
 from pong.schemas.matchmaking_schema import (
@@ -29,15 +27,6 @@ from pong.schemas.matchmaking_schema import (
 logger = logging.getLogger("matchmaking_consumer")
 
 RATE_LIMIT_GET_REQUESTS = 0.4 # Rate limit for get requests in seconds
-
-
-# Load YAML file from the static directory in your app
-yaml_file_path = os.path.join(settings.BASE_DIR, 'static', 'websocket_messages.yaml')
-
-with open(yaml_file_path, 'r') as yaml_file:
-    message_definitions = yaml.safe_load(yaml_file)
-
-frontend_matchmaking_messages_schema = message_definitions['frontend_matchmaking_messages_schema']
 
 class MatchmakingConsumer(AsyncWebsocketConsumer):
     _user_connections = {} # Keep track of user connections the active connection(browser tab) for each user
