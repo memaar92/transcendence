@@ -10,7 +10,7 @@ class Router {
 
     api.get("/token/check/").then(
       async (result) => {
-        var unregistered_urls = new Set(["/", "/home", "/login", "/register", "/verify_2fa", "/email_verification"]);
+        var unregistered_urls = new Set(["/", "/home", "/login", "/register", "/email_verification"]);
 
         const json = await result.json()
         const status = json["logged-in"]
