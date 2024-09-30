@@ -11,6 +11,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = ['id', 'email', 'displayname', 'profile_picture', 'password', 'is_2fa_enabled', 'is_42_auth']
         extra_kwargs = {'password': {'write_only': True}}
+        extra_kwargs = {'is_42_auth': {'read_only': True}}
 
     def update(self, instance, validated_data):
         if instance.is_42_auth and 'password' in validated_data:

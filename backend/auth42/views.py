@@ -89,7 +89,7 @@ class AuthWith42View(APIView, CookieCreationMixin):
             'Authorization': 'Bearer ' + oauth_response['access_token']
         }).json()
 
-        user = CustomUser.objects.filter(email=user_info['email']).values('email', 'is_42_auth')
+        user = CustomUser.objects.filter(email=user_info['email']).values('email', 'is_42_auth', 'is_2fa_enabled')
         if user.exists() and user.first()['is_42_auth'] == False:
             # case: wrong auth method
             response = Response(status=302)
@@ -99,6 +99,9 @@ class AuthWith42View(APIView, CookieCreationMixin):
             register42User(user_info['email'], user_info['image']['versions']['small'])
         token = get_tokens_for_user(CustomUser.objects.get(email=user_info['email']))
         response = Response(token, status=302)
-        response['Location'] = 'https://localhost/main_menu'
+        if user.first()['is_2fa_enabled'] == True:
+            response['Location'] = 'https://localhost/verify_2fa'
+        else:
+            response['Location'] = 'https://localhost/main_menu'
         self.createCookies(response)
         return response
