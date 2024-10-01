@@ -168,6 +168,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     await self.handleHomeContext(data)
                 case 'chat':
                     await self.handleChatContext(data)
+                case 'none':
+                    print ("Context is none")
                 case 'setup':
                     self.context = data.get('type', None)
                     await self.send(text_data=json.dumps({'type': 'user_id', 'user_id': self.user_id, 'context': self.context}))
@@ -406,7 +408,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             relationship = Relationship.objects.get(
                 Q(user1_id=user_id_1, user2_id=user_id_2) | Q(user1_id=user_id_2, user2_id=user_id_1)
             )
-            relationship.update_status(status, blocker_id=user_id_1 if status == RelationshipStatus.BLOCKED else None)
+            relationship.update_status(status, user_id_1)
         except Relationship.DoesNotExist:
             Relationship.objects.create(user1_id=user_id_1, user2_id=user_id_2, status=status)
 

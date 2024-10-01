@@ -21,7 +21,7 @@ class Router {
         } else {
           window.addEventListener("popstate", this.handlePopState.bind(this));
           this.bindLinks();
-          this.navigate(window.location.pathname);
+          this.navigate(window.location.pathname + window.location.search, false);
         }
       }
     );
@@ -122,9 +122,7 @@ class Router {
   }
 
   handlePostUpdate() {
-    if (window.location.pathname.startsWith('/live_chat')) {
-      updateChat(this, this.currentRoute.params);
-    }
+    updateChat(this, this.currentRoute.params);
   }
 
   async updateView() {

@@ -35,13 +35,8 @@ class RelationshipStatusView(APIView):
                 relationship.requester_id = user_id_1
                 relationship.save()
             if 'status' in request.data:
+                print(request.user.id)
                 relationship.update_status(request.data['status'], request.user.id)
-            if 'requester' in request.data:
-                if request.data['requester'] is None:
-                    relationship.requester = None
-                else:
-                    relationship.requester = User.objects.get(id=request.data['requester'])
-                relationship.save()
             relationship_data = serialize('json', [relationship])
             relationship_dict = json.loads(relationship_data)[0]
             return JsonResponse({"relationship": relationship_dict}, status=200)

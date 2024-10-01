@@ -88,140 +88,127 @@ async function getUsersRelationship() {
 
 async function createProfileButton() {
   const myId = await getMyId();
+  const userId = localStorage.getItem("UID");
   const relationship = await getUsersRelationship();
   const profileContainer = document.getElementById("user-content");
   const buttonContainer = document.createElement("div");
   var button = document.createElement("button");
   button.classList.add("button");
 
-  console.log(relationship);
   if (relationship && relationship["status"]) {
     if (relationship["status"] == "BF") {
       button.textContent = "Unfriend";
-      button.addEventListener("click", cancelFriendRequest);
+      button.addEventListener("click", () => updateUserRelationship(myId, userId, "DF"));
       buttonContainer.appendChild(button);
       button = document.createElement("button");
       button.classList.add("button");
       button.textContent = "Block";
-      button.addEventListener("click", blockFriend);
+      button.addEventListener("click", () => updateUserRelationship(myId, userId, "BL"));
     } else if (relationship["status"] == "PD") {
       if (relationship["requester"] == myId) {
         button.textContent = "Cancel Request";
-        button.addEventListener("click", cancelFriendRequest);
-      }
-      else
-      {
+        button.addEventListener("click", () => updateUserRelationship(myId, userId, "DF"));
+      } else {
         button.textContent = "Accept Request";
-        button.addEventListener("click", acceptFriendRequest);
+        button.addEventListener("click", () => updateUserRelationship(myId, userId, "BF"));
         buttonContainer.appendChild(button);
         button = document.createElement("button");
-        button.classList.add("button");
+        button.classList.add("confirm-button");
         button.textContent = "Decline Request";
-        button.addEventListener("click", cancelFriendRequest);
+        button.addEventListener("click", () => updateUserRelationship(myId, userId, "DF"));
       }
     } else if (relationship["status"] == "BL") {
-      button.textContent = "Blocked";
+      if (relationship["blocker"] == myId) {
+        button.textContent = "Unblock";
+        button.addEventListener("click", () => updateUserRelationship(myId, userId, "BF"));
+      }
+      else {
+        button.textContent = "Unfriend";
+        button.addEventListener("click", () => updateUserRelationship(myId, userId, "DF"));
+      }
+      const profilePhoto = document.getElementById("profile-photo");
+      const profilePhotoWrapper = document.getElementById("profile-photo-wrapper");
+      
+      // profilePhoto.style.filter = "grayscale(100%)";
+      // profilePhoto.style.opacity = "0.5";
+      profilePhoto.style.width = "256px";
+      profilePhoto.style.height = "256px";
+      
+      const width = profilePhotoWrapper.clientWidth;
+      const height = profilePhotoWrapper.clientHeight;
+      
+      const svgNS = "http://www.w3.org/2000/svg";
+      const svg = document.createElementNS(svgNS, "svg");
+      svg.setAttribute("width", width);
+      svg.setAttribute("height", height);
+      svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+      svg.style.position = "absolute";
+      svg.style.top = "0";
+      svg.style.left = "0";
+      svg.style.zIndex = "1";
+      
+      const line1 = document.createElementNS(svgNS, "line");
+      line1.setAttribute("x1", 20); // Starting x-coordinate
+      line1.setAttribute("y1", 20); // Starting y-coordinate
+      line1.setAttribute("x2", width - 20); // Ending x-coordinate
+      line1.setAttribute("y2", height - 20); // Ending y-coordinate
+      line1.setAttribute("stroke", "white");
+      line1.setAttribute("stroke-width", "10");
+      line1.setAttribute("stroke-linecap", "round");
+      line1.setAttribute("stroke-opacity", "0.7");
+      
+      const line2 = document.createElementNS(svgNS, "line");
+      line2.setAttribute("x1", width - 20); // Starting x-coordinate
+      line2.setAttribute("y1", 20); // Starting y-coordinate
+      line2.setAttribute("x2", 20); // Ending x-coordinate
+      line2.setAttribute("y2", height - 20); // Ending y-coordinate
+      line2.setAttribute("stroke", "white");
+      line2.setAttribute("stroke-width", "10");
+      line2.setAttribute("stroke-linecap", "round");
+      line2.setAttribute("stroke-opacity", "0.7");
+      
+      svg.appendChild(line1);
+      svg.appendChild(line2);
+      
+      profilePhotoWrapper.appendChild(svg);           
     } else {
       button.textContent = "Add Friend";
-      button.addEventListener("click", makeFriendRequest);
+      button.addEventListener("click", () => updateUserRelationship(myId, userId, "PD", myId));
     }
   } else {
     button.textContent = "Add Friend";
-    button.addEventListener("click", makeFriendRequest);
+    button.addEventListener("click", () => updateUserRelationship(myId, userId, "PD", myId));
   }
 
   buttonContainer.appendChild(button);
 
-  const profilePhoto = document.getElementById("profile-photo");
-  profileContainer.insertBefore(buttonContainer, profilePhoto.nextSibling);
+  const profilePhotoWrapper = document.getElementById("profile-photo-wrapper");
+  profileContainer.insertBefore(buttonContainer, profilePhotoWrapper.nextSibling);
 }
 
 await createProfileButton();
 
-async function makeFriendRequest() {
-  const myId = await getMyId();
-  const result = await api.patch(`/chat/users/relationships/${myId}/${localStorage.getItem("UID")}/`, {
-    status: "PD",
-    requester: myId,
+async function updateUserRelationship(myId, userId, status)
+{
+  const result = await api.patch(`/chat/users/relationships/${myId}/${userId}/`, {
+    status: status,
   });
-  if (result.status == 400)
-  {
-    await result.json()
-      .then(data => {
-        if (data.errors) {
-          showAlert(JSON.stringify(data.errors));
-        } else {
-          showAlert('No errors found');
-        }
-      })
-      .catch(error => {
-        showAlert(`Error parsing JSON: ${error.message}`);
-      });
-  }
+  await checkHttpStatus(result);
 }
 
-async function cancelFriendRequest() {
-  const myId = await getMyId();
-  const result = await api.patch(`/chat/users/relationships/${myId}/${localStorage.getItem("UID")}/`, {
-    status: "DF",
-    requester: null,
-  });
+async function checkHttpStatus(result){
   if (result.status == 400)
-  {
-    await result.json()
-      .then(data => {
-        if (data.errors) {
-          showAlert(JSON.stringify(data.errors));
-        } else {
-          showAlert('No errors found');
-        }
-      })
-      .catch(error => {
-        showAlert(`Error parsing JSON: ${error.message}`);
-      });
-  }
-}
-
-async function acceptFriendRequest() {
-  const myId = await getMyId();
-  const result = await api.patch(`/chat/users/relationships/${myId}/${localStorage.getItem("UID")}/`, {
-    status: "BF",
-    requester: null,
-  });
-  if (result.status == 400)
-  {
-    await result.json()
-      .then(data => {
-        if (data.errors) {
-          showAlert(JSON.stringify(data.errors));
-        } else {
-          showAlert('No errors found');
-        }
-      })
-      .catch(error => {
-        showAlert(`Error parsing JSON: ${error.message}`);
-      });
-  }
-}
-
-async function blockFriend() {
-  const myId = await getMyId();
-  const result = await api.patch(`/chat/users/relationships/${myId}/${localStorage.getItem("UID")}/`, {
-    status: "BL",
-    requester: null,
-  });
-  if (result.status == 400)
-  {
-    await result.json()
-      .then(data => {
-        if (data.errors) {
-          showAlert(JSON.stringify(data.errors));
-        } else {
-          showAlert('No errors found');
-        }
-      })
-      .catch(error => {
-        showAlert(`Error parsing JSON: ${error.message}`);
-      });
-  }
+    {
+      await result.json()
+        .then(data => {
+          if (data.errors) {
+            showAlert(JSON.stringify(data.errors));
+          } else {
+            showAlert('No errors found');
+          }
+        })
+        .catch(error => {
+          showAlert(`Error parsing JSON: ${error.message}`);
+        });
+    }
 }

@@ -11,4 +11,8 @@ export function updateChat(router, params) {
       //   router.navigate('/404');
       chatHandler.init(params, router, 'chat');
     }
+    /* keep the chat handler alive if not in chat interface so that it can still receive messages */
+    else {
+      chatHandler.init(params, router, 'none');
+    }
 }

@@ -24,7 +24,7 @@ class ChatHandler {
       this.ws = new WebSocket(url);
 
       this.ws.onopen = () => {
-          console.log('WebSocket connection opened');
+          console.log('WebSocket connection opened in context:', context);
           this.ws.send(JSON.stringify({ "type": context, "context": 'setup' }));
           if (context === 'chat') {
             this.chatWindowOpened = false;
@@ -71,6 +71,8 @@ class ChatHandler {
       case 'chat':
         this.handleChatContext(content);
         break;
+      case 'none':
+        this.handleNoneContext(content);
       default:
         // console.error('Unknown context:', content.context);
         break;
@@ -135,15 +137,42 @@ class ChatHandler {
           }
         });
         break;
-      case "pending_requests":
-        this.displayChatRequest(content.requests);
+        case "pending_requests":
+          this.displayChatRequest(content.requests);
+          break;
+          default:
+            console.error('Unknown context:', content.type);
+            break;
+          }
+        }
+        
+  handleChatContext(content) {
+    switch (content.type) {
+      case 'chat_message':
+        this.displayChatMessage(content, 'received');
+        break;
+      case 'chat_history':
+        this.displayChatHistory(content.messages);
+        break;
+      case 'error':
+        this.displaySystemMessage(content.message);
         break;
       default:
-        console.error('Unknown context:', content.type);
+        console.error('Error:', content.type);
         break;
     }
   }
 
+  handleNoneContext(content) {
+    switch (content.type) {
+      case 'chat_message':
+        this.displayModal(content);
+        break;
+      default:
+        break;
+    }
+  }
+        
   showLatestMessage(message, senderId, friendId) {
     if (document.querySelector('.no-chats-message')) {
       document.querySelector('.no-chats-message').remove();
@@ -167,23 +196,6 @@ class ChatHandler {
       }
     } else {
       console.warn('Friend item not found (latest message):', friendId);
-    }
-  }
-
-  handleChatContext(content) {
-    switch (content.type) {
-      case 'chat_message':
-        this.displayChatMessage(content, 'received');
-        break;
-      case 'chat_history':
-        this.displayChatHistory(content.messages);
-        break;
-      case 'error':
-        this.displaySystemMessage(content.message);
-        break;
-      default:
-        console.error('Error:', content.type);
-        break;
     }
   }
 

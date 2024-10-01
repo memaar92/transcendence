@@ -34,22 +34,19 @@ class Relationship(models.Model):
     class Meta:
         unique_together = ('user1', 'user2')
 
-    def clean(self):
-        if self.status == self.RelationshipStatus.BLOCKED and not self.blocker:
-            raise ValidationError("Blocker must be set when the status is 'BLOCKED'.")
-        if self.status != self.RelationshipStatus.BLOCKED:
-            self.blocker = None
-
     def save(self, *args, **kwargs):
-        self.clean()
         super().save(*args, **kwargs)
 
-    def update_status(self, new_status, blocker_id=None):
+    def update_status(self, new_status, user_id):
+        if self.status == self.RelationshipStatus.BLOCKED and user_id != self.blocker_id and new_status != self.RelationshipStatus.DEFAULT:
+            raise PermissionError("Only the blocker can change the status of a blocked relationship, except to unfriend.")
         self.status = new_status
         if new_status == self.RelationshipStatus.BLOCKED:
-            if not blocker_id:
-                raise ValidationError("Blocker must be provided when the status is 'BLOCKED'.")
-            self.blocker_id = blocker_id
+            self.blocker_id = user_id
         else:
-            self.blocker = None
+            self.blocker_id = None
+        if new_status == self.RelationshipStatus.PENDING and not self.requester:
+            self.requester_id = user_id
+        else:
+            self.requester_id = None
         self.save()
