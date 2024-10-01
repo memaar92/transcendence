@@ -220,4 +220,20 @@ async function update_userinfo() {
 
   const email = document.getElementById("email");
   email.value = profile_info["email"];
+
+  const is42user = profile_info["is_42_auth"];
+  const editEmail = document.getElementById("edit-email");
+  const editPwd = document.getElementById("edit-pwd");
+  if (is42user) {
+    disableElement(editEmail);
+    disableElement(editPwd);
+  }
+
+function disableElement(element) {
+    element.disabled = true;
+    element.style.backgroundColor = "#d3d3d3";
+    element.style.cursor = "not-allowed";
+    element.style.boxShadow = "0 4px 0 0 #a9a9a9";
+}
+
 }

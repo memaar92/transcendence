@@ -62,7 +62,7 @@ async function tableCreate() {
   document.getElementById("losses").textContent = losses;
 }
 
-// await tableCreate();
+await tableCreate();
 
 async function getUsername(id) {
   const result = await api.get(`/users/${id}/`);
