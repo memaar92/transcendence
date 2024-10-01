@@ -18,7 +18,7 @@ GAME_START_TIMER = 3 # Time in seconds before the game starts
 
 TICK_RATE = 60
 
-WINNING_SCORE = 3
+WINNING_SCORE = 11
 
 class EndReason(Enum):
     DISCONNECT_TIMEOUT = auto()
@@ -64,7 +64,6 @@ class MatchSession:
             if not self._is_match_running:
                 await self._monitor_match_start()
                 self._is_match_running = True
-                await self._send_user_mapping()
             if self._is_game_stopped:
                 await self._start_timer()
                 self._is_game_stopped = False
@@ -201,6 +200,12 @@ class MatchSession:
         while len(self._connected_users) < len(self._assigned_users):
             await asyncio.sleep(0.1)
 
+    async def _send_initialisation_messages(self) -> None:
+        '''Send the necessary messages to the users'''
+        await self._send_user_mapping()
+        await self._send_position_update()
+        await self._send_player_scores_message(self._score[0], self._score[1])
+
     #############################
     #    Connection functions   #
     #############################
@@ -217,12 +222,7 @@ class MatchSession:
         self._on_match_finished_user_callbacks[user_id] = on_match_finished
         logger.debug(f"User {user_id} connected to match {self._match_id}")
 
-        await self._send_position_update()
-        await self._channel_layer.group_send(self._match_id, {
-            "type": "user_connected",
-            "user_id": user_id
-        })
-
+        await self._send_initialisation_messages()
 
         # Check if a blocked user exists and end the match if only one user is left
         if len(self._blocked_users) == 1:
@@ -290,11 +290,7 @@ class MatchSession:
         '''Callback when a player scores'''
         logger.debug(f"Player {player_id} scored")
         self._score[player_id] += 1
-        await self._channel_layer.group_send(self._match_id, {
-            "type": "player_scores",
-            "player1": self._score[0],
-            "player2": self._score[1]
-        })
+        await self._send_player_scores_message(self._score[0], self._score[1])
         
         if self._score[player_id] >= WINNING_SCORE:
             await self._end_match(EndReason.SCORE)
@@ -353,6 +349,14 @@ class MatchSession:
         await self._channel_layer.group_send(self._match_id, {
             "type": "game_over",
             "data": winner
+        })
+    
+    async def _send_player_scores_message(self, player1: int, player2: int) -> None:
+        '''Send a player scores message to the users'''
+        await self._channel_layer.group_send(self._match_id, {
+            "type": "player_scores",
+            "player1": player1,
+            "player2": player2
         })
 
     #############################
