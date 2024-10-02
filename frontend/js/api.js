@@ -1,41 +1,56 @@
 import { router } from "./app.js";
 const API_BASE_URL = "https://localhost/api";
 
+const LOGGED_OUT = 0;
+const LOGGED_IN = 1;
+const MFA_MISSING = 2;
+
+async function handle_not_authorized(response) {
+  if (response.status == 403) {
+    router.navigate("/verify_2fa");
+    return "";
+  }
+  const json = await response.json();
+  if (json["detail"] == "Authentication credentials were not provided.") {
+    // No token
+    const logged_out = document.getElementById("logged_out");
+    let bsAlert = new bootstrap.Toast(logged_out);
+    bsAlert.show();
+    await router.navigate("/home");
+    return LOGGED_OUT;
+  }
+  if (json["code"] == "token_not_valid") {
+    // access token expired
+    const formData = new FormData();
+    formData.append("refresh", ""); // Add your refresh token or leave it as empty
+
+    const response = await fetch(`${API_BASE_URL}/token/refresh/`, {
+      method: "POST",
+      body: formData, // Use the FormData object as the body
+    });
+    const json = await response.json();
+    if (json["code"] == "token_not_valid") {
+      // access and refresh token expired
+      const logged_out = document.getElementById("logged_out");
+      let bsAlert = new bootstrap.Toast(logged_out);
+      bsAlert.show();
+      await router.navigate("/home");
+    } else if (response.ok) {
+      return LOGGED_IN;
+    }
+    return LOGGED_OUT;
+  }
+}
 
 export const api = {
   get: async (endpoint) => {
     const response = await fetch(`${API_BASE_URL}${endpoint}`);
-    if (response.status == 401) // Not Authorized
-    {
-      const json = await response.json()
-      if (json["detail"] == "Authentication credentials were not provided.")
-      {
-          // No token
-          const logged_out = document.getElementById('logged_out');
-          let bsAlert = new bootstrap.Toast(logged_out);
-          bsAlert.show();
-          await router.navigate("/home");
-      }
-      if (json["code"] == "token_not_valid")
-      {
-        // access token expired
-        const formData = new FormData();
-        formData.append('refresh', '');  // Add your refresh token or leave it as empty
-
-        const response = await fetch(`${API_BASE_URL}/token/refresh/`, {
-            method: "POST",
-            body: formData  // Use the FormData object as the body
-        });
-        const json = await response.json()
-        if (json["code"] == "token_not_valid")
-        {
-          // access and refresh token expired
-          const logged_out = document.getElementById('logged_out');
-          let bsAlert = new bootstrap.Toast(logged_out);
-          bsAlert.show();
-          await router.navigate("/home");
-        }
+    if (!response.ok) {
+      // Not Authorized
+      if ((await handle_not_authorized(response)) == LOGGED_IN) {
         return await fetch(`${API_BASE_URL}${endpoint}`);
+      } else {
+        return null;
       }
     }
     if (response.status == 404) {
@@ -52,36 +67,9 @@ export const api = {
       },
       body: JSON.stringify(data),
     });
-    if (response.status == 401) // Not Authorized
-    {
-      const json = await response.json()
-      if (json["detail"] == "Authentication credentials were not provided.")
-      {
-          // No token
-          const logged_out = document.getElementById('logged_out');
-          let bsAlert = new bootstrap.Toast(logged_out);
-          bsAlert.show();
-          await router.navigate("/home");
-      }
-      if (json["code"] == "token_not_valid")
-      {
-        // access token expired
-        const formData = new FormData();
-        formData.append('refresh', '');  // Add your refresh token or leave it as empty
-
-        const response = await fetch(`${API_BASE_URL}/token/refresh/`, {
-            method: "POST",
-            body: formData  // Use the FormData object as the body
-        });
-        const json = await response.json()
-        if (json["code"] == "token_not_valid")
-        {
-          // access and refresh token expired
-          const logged_out = document.getElementById('logged_out');
-          let bsAlert = new bootstrap.Toast(logged_out);
-          bsAlert.show();
-          await router.navigate("/home");
-        }
+    if (!response.ok) {
+      // Not Authorized
+      if ((await handle_not_authorized(response)) == LOGGED_IN) {
         return await fetch(`${API_BASE_URL}${endpoint}`, {
           method: "POST",
           headers: {
@@ -89,6 +77,8 @@ export const api = {
           },
           body: JSON.stringify(data),
         });
+      } else {
+        return null;
       }
     }
     return response;
@@ -102,36 +92,9 @@ export const api = {
       },
       body: JSON.stringify(data),
     });
-    if (response.status == 401) // Not Authorized
-    {
-      const json = await response.json()
-      if (json["detail"] == "Authentication credentials were not provided.")
-      {
-          // No token
-          const logged_out = document.getElementById('logged_out');
-          let bsAlert = new bootstrap.Toast(logged_out);
-          bsAlert.show();
-          await router.navigate("/home");
-      }
-      if (json["code"] == "token_not_valid")
-      {
-        // access token expired
-        const formData = new FormData();
-        formData.append('refresh', '');  // Add your refresh token or leave it as empty
-
-        const response = await fetch(`${API_BASE_URL}/token/refresh/`, {
-            method: "POST",
-            body: formData  // Use the FormData object as the body
-        });
-        const json = await response.json()
-        if (json["code"] == "token_not_valid")
-        {
-          // access and refresh token expired
-          const logged_out = document.getElementById('logged_out');
-          let bsAlert = new bootstrap.Toast(logged_out);
-          bsAlert.show();
-          await router.navigate("/home");
-        }
+    if (!response.ok) {
+      // Not Authorized
+      if ((await handle_not_authorized(response)) == LOGGED_IN) {
         return await fetch(`${API_BASE_URL}${endpoint}`, {
           method: "PATCH",
           headers: {
@@ -139,6 +102,8 @@ export const api = {
           },
           body: JSON.stringify(data),
         });
+      } else {
+        return null;
       }
     }
     return response;
@@ -148,39 +113,14 @@ export const api = {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: "DELETE",
     });
-    if (response.status == 401) // Not Authorized
-    {
-      const json = await response.json()
-      if (json["detail"] == "Authentication credentials were not provided.")
-      {
-          // No token
-          const logged_out = document.getElementById('logged_out');
-          let bsAlert = new bootstrap.Toast(logged_out);
-          bsAlert.show();
-          await router.navigate("/home");
-      }
-      if (json["code"] == "token_not_valid")
-      {
-        // access token expired
-        const formData = new FormData();
-        formData.append('refresh', '');  // Add your refresh token or leave it as empty
-
-        const response = await fetch(`${API_BASE_URL}/token/refresh/`, {
-            method: "POST",
-            body: formData  // Use the FormData object as the body
-        });
-        const json = await response.json()
-        if (json["code"] == "token_not_valid")
-        {
-          // access and refresh token expired
-          const logged_out = document.getElementById('logged_out');
-          let bsAlert = new bootstrap.Toast(logged_out);
-          bsAlert.show();
-          await router.navigate("/home");
-        }
+    if (!response.ok) {
+      // Not Authorized
+      if ((await handle_not_authorized(response)) == LOGGED_IN) {
         return await fetch(`${API_BASE_URL}${endpoint}`, {
           method: "DELETE",
         });
+      } else {
+        return null;
       }
     }
     return response;
