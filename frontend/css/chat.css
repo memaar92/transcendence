@@ -776,3 +776,57 @@
 .friends-item img, .chats-item img{
   border: 4px solid grey;
 }
+
+.chat-notification-indicator {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  background-color: #7A35EC;
+  border-radius: 50%;
+  left: calc(100% + 25px);
+  top: 50%;
+  transform: translateY(-50%);
+  transform-origin: center;
+  box-shadow: 0 0 10px #7A35EC;
+}
+
+.pulse-animation {
+  animation-name: pulse;
+  animation-duration: 1s;
+  animation-iteration-count: 3;
+}
+
+@keyframes pulse {
+  0% {
+    transform: translateY(-50%) scale(1);
+  }
+  50% {
+    transform: translateY(-50%) scale(1.2);
+  }
+  100% {
+    transform: translateY(-50%) scale(1);
+  }
+}
+
+.menu-link:hover {
+  text-shadow: 
+  0 0 10px rgba(255, 255, 255, 0.548),
+  0 0 20px rgba(255, 255, 255, 0.548),
+  0 0 30px rgba(255, 255, 255, 0.548);
+}
+
+#chat-link {
+  position: relative;
+}
+
+/* @keyframes glow {
+  0% {
+    box-shadow: 0 0 10px #7A35EC;
+  }
+  50% {
+    box-shadow: 0 0 20px #7A35EC;
+  }
+  100% {
+    box-shadow: 0 0 10px #7A35EC;
+  }
+} */

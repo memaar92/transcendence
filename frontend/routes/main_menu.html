@@ -1,3 +1,4 @@
+
 <script src="/js/main_menu.js" type="module"></script>
 <div id="profile" class="profile-container">
   <img id="profile-photo-icon" src="profile-photo.jpg" alt="Profile Photo" class="profile-photo">
@@ -6,8 +7,11 @@
 
 <nav class="menu">
   <ul>
-    <li><a href="/game_menu" data-router-link>play</a></li>
-    <li><a href="/tournament" data-router-link>tournament</a></li>
-    <li><a href="/live_chat" data-router-link>chat</a></li>
+    <li class="menu-link"><a href="/game_menu" data-router-link>play</a></li>
+    <li class="menu-link"><a href="/tournament" data-router-link>tournament</a></li>
+    <li id="chat-menu-item" class="menu-link">
+      <a id="chat-link" href="/live_chat" data-router-link>chat</a>
+    </li> 
   </ul>
 </nav>
+

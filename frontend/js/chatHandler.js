@@ -91,7 +91,6 @@ class ChatHandler {
         this.updateUnreadMessages(content);
         break;
       case 'chat_message':
-        /* if there is not chats item with the receiver id, create one from the id, img url and name of the corresponding friend object */
         if (!document.querySelector(`.chats-item[data-id="${content.sender_id}"]`)) {
           const friendItem = document.querySelector(`.friends-item[data-id="${content.sender_id}"]`);
           if (friendItem) {
@@ -166,11 +165,35 @@ class ChatHandler {
   handleNoneContext(content) {
     switch (content.type) {
       case 'chat_message':
-        this.displayModal(content);
+        this.displayIndicator();
+        break;
+      case 'unread_counts':
+        if (Object.keys(content.unread_messages).length > 0) {
+          this.displayIndicator();
+        }
         break;
       default:
         break;
     }
+  }
+
+  displayIndicator() {
+    const chatMenuItem = document.getElementById('chat-menu-item');
+    const chatLink = chatMenuItem.querySelector('a');
+  
+    let indicator = document.getElementById('chat-notification-indicator');
+    if (!indicator) {
+      indicator = document.createElement('span');
+      indicator.id = 'chat-notification-indicator';
+      indicator.classList.add('chat-notification-indicator');
+      chatLink.appendChild(indicator);
+    }
+    
+    indicator.classList.add('pulse-animation');
+    setTimeout(() => {
+      indicator.classList.remove('pulse-animation');
+    },
+    3000);
   }
         
   showLatestMessage(message, senderId, friendId) {
@@ -479,7 +502,6 @@ class ChatHandler {
   
       userItem.appendChild(userImg);
       userItem.appendChild(userName);
-      // userItem.onclick = () => this.openChatModal(user.id, user.name);
   
       userListWrapper.appendChild(userItem);
     });
@@ -843,7 +865,6 @@ class ChatHandler {
       });
     });
   
-    // Apply initial filter
     this.applyFilter();
   }
 
@@ -904,3 +925,14 @@ export default {
   }
 };
 
+function debounce(func, delay) {
+  let timeoutId;
+  return function(...args) {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    timeoutId = setTimeout(() => {
+      func.apply(this, args);
+    }, delay);
+  };
+}

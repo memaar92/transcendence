@@ -177,6 +177,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         await self.send_friends_info(self.user_id)
                         await self.send_unread_messages_count(self.user_id)
                         await self.send_pending_chat_notifications(self.user_id)
+                    if self.context == 'none':
+                        await self.send_unread_messages_count(self.user_id)
                     await self.broadcast_user_list()
                 case _:
                     await self.send(text_data=json.dumps({

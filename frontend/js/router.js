@@ -8,16 +8,16 @@ class Router {
     this.app = null;
     this.currentHistoryPosition = 0;
     this.maxHistoryPosition = 0;
+    this.excludedPaths = ['/main_menu', '/live_chat', '/live_chat/chat_room']; // Excluded paths for notification
 
     api.get("/token/check/").then(
       async (result) => {
         var unregistered_urls = new Set(["/", "/home", "/login", "/register", "/verify_2fa", "/email_verification"]);
 
-        const json = await result.json()
-        const status = json["logged-in"]
+        const json = await result.json();
+        const status = json["logged-in"];
         if (status && unregistered_urls.has(window.location.pathname)) {
           this.navigate("/main_menu");
-
         } else {
           window.addEventListener("popstate", this.handlePopState.bind(this));
           this.bindLinks();
@@ -65,7 +65,7 @@ class Router {
     }
     return null;
   }
-  
+
   async navigate(path, pushState = true) {
     let route = this.routes.find((r) => r.path === path);
     if (!route) {
@@ -73,10 +73,7 @@ class Router {
     }
 
     const oldPath = this.currentRoute ? this.currentRoute.path : null;
-  
-    // Find the new route
-  
-    // Handle special cases
+
     if (path.startsWith("/users/")) {
       route = {
         templateUrl: "/routes/users.html",
@@ -89,27 +86,22 @@ class Router {
         templateUrl: "/routes/404.html"
       };
     }
-  
-    // Update current route
+
     this.currentRoute = route;
-  
-    // Push state if needed
+
     if (pushState && oldPath !== path) {
       history.pushState({ path: path }, "", path);
     }
     await this.updateView();
   }
-  
+
   handlePopState(event) {
     if (event.state && event.state.path) {
-      // Use navigate but don't push a new state
       this.navigate(event.state.path, false);
     } else {
-      // Handle the case when there's no state (e.g., initial page load)
       this.navigate(window.location.pathname, false);
     }
   }
-  
 
   bindLinks() {
     document.addEventListener("click", (e) => {
@@ -123,6 +115,13 @@ class Router {
 
   handlePostUpdate() {
     updateChat(this, this.currentRoute.params);
+  }
+
+  insertNotification() {
+    const notificationDiv = document.createElement('div');
+    notificationDiv.innerHTML = '<p>This is a notification message</p>';
+    notificationDiv.style.cssText = 'position:fixed;top:0;width:100%;background-color:yellow;padding:10px;text-align:center;z-index:1000;';
+    this.app.prepend(notificationDiv);
   }
 
   async updateView() {
@@ -139,6 +138,10 @@ class Router {
         .forEach((script) => script.remove());
 
       this.app.append(...doc.body.childNodes);
+
+      if (!this.excludedPaths.includes(this.currentRoute.path)) {
+        this.insertNotification();
+      }
 
       const loadScript = (scriptElement) => {
         return new Promise((resolve, reject) => {
@@ -167,7 +170,6 @@ class Router {
     } catch (error) {
       this.app.innerHTML = "<p>Error loading content</p>";
     }
-    console.log("after updated view");
     this.handlePostUpdate();
   }
 }
