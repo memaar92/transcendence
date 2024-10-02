@@ -20,6 +20,85 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
+import os
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    
+    # Formatters define the structure of the log messages
+    'formatters': {
+        'verbose': {
+            'format': '[{asctime}] [{levelname}] [{module}] {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+
+    # Handlers define how the logs will be processed (e.g., console or file)
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'debug.log'),
+            'formatter': 'verbose',
+        },
+    },
+
+    # Loggers define the actual log groups for your project
+    'loggers': {
+        'django': {  # Logger for Django core components
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'daphne': {  # Logger for Daphne
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'match': {  # Logger for handling match-specific logs
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'tournament': {  # Logger for handling tournament-specific logs
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'matchmaking_consumer': {  # Logger for handling MatchmakingConsumer-specific logs
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'match_consumer': {  # Logger for handling MatchConsumer-specific logs
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'game_session': {  # Logger for handling GameSession-specific logs
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'data_managment': {  # Logger for handling Datamanagment-specific logs (e.g., Matches, Users, etc.)
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}
+
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-g=eom8w39!m$+1xegc@p!(6&uiqzdl$9i@$v5z!f$@m#2#_!7s'
 
@@ -49,7 +128,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
-    'matchmaking',
     'pong',
 ]
 

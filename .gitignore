@@ -6,3 +6,5 @@ database/
 secrets/
 backend/mediafiles/profile_pics/
 .venv/
+Pong.lwp
+debug.log
