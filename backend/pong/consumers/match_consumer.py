@@ -1,244 +1,181 @@
 import json
-import redis
 import asyncio
-from ..services import redis_service as rs
 from channels.generic.websocket import AsyncWebsocketConsumer
-from asgiref.sync import sync_to_async
-from ..utils.states import MatchState, UserOnlineStatus
+from pong.match_tournament.match_session import MatchSession
+from pong.match_tournament.data_managment.matches import Matches
+from pong.match_tournament.data_managment.user import User
+from jsonschema import ValidationError
+from django.conf import settings
+from pong.schemas.match_schema import (
+    PlayerInput
+)
 
 import logging
-logger = logging.getLogger("PongConsumer")
-
-redis_instance = redis.StrictRedis(host='redis', port=6379, db=0)
+logger = logging.getLogger("match_consumer")
 
 class MatchConsumer(AsyncWebsocketConsumer):
 
-    broadcast_tasks = {}
-    broadcast_locks = {}
-    match_states = {}
-
-    MAX_RECONNECT_ATTEMPTS = 3
-
     def __init__(self):
         super().__init__()
-        self.groups = []
-        self.match_id = None
-        self.user_id = None
-        self.pubsub = None
-        self.current_state = None
-        self.disconnect_timer_task = None
-        self.connection_established = False
+        self._match_id: str = None
+        self._user_id: str = None
+        self._group_name: str = None
+        self._match_session: MatchSession = None
+        self._connection_established: bool = False
 
     async def connect(self):
         # Extracting the match_id from the URL route parameters
-        self.match_id = self.scope['url_route']['kwargs']['match_id']
-        self.user_id = self.scope["user"].id
+        self._match_id = self.scope['url_route']['kwargs']['match_id']
 
-        if not await self.is_valid_connection(self.match_id, self.user_id):
+        # Extracting the user_id from the scope
+        self._user_id = self.scope["user"].id
+
+        # Group name for the match
+        self._group_name = f"match_{self._match_id}"
+
+        # Check if the connection is valid
+        if not await self.is_valid_connection(self._match_id, self._user_id):
             await self.close()
-            logger.info(f"User {self.user_id} is not allowed to connect to match {self.match_id}")
+            logger.info(f"User {self._user_id} is not allowed to connect to match {self._match_id}")
             return
 
-        # Initialize pubsub connection
-        self.pubsub = redis_instance.pubsub()
-        
-        # Subscribe to the match state channel
-        await rs.PubSub.subscribe_to_match_state_channel(self.pubsub, self.match_id)
-
         # Add the connection to the channel group for this match
-        await self.channel_layer.group_add(self.match_id, self.channel_name)
+        await self.channel_layer.group_add(self._match_id, self.channel_name)
 
         # Accept the WebSocket connection
         await self.accept()
-        self.connection_established = True
-        await rs.Match.increment_reconnection_attempts(self.match_id, self.user_id)
-        logger.info(f"Reconnect attempts for user {self.user_id} in match {self.match_id}: {await rs.Match.get_reconnect_attempts(self.match_id, self.user_id)}")
-        logger.info(f"User {self.user_id} connected to match {self.match_id}")
+        self._connection_established = True
 
-        # Set user_id, match_id and online status in Redis
-        await rs.User.set_online_status(self.user_id, UserOnlineStatus.PLAYING)
-        await rs.User.set_match_id(self.user_id, self.match_id)
+        self._match_session = Matches.get_match(self._match_id)
+        await self._match_session.connect_user(self._user_id, self._match_session_is_finished_callback)
 
-        # Initialize lock for the match_id if not already present
-        if self.match_id not in MatchConsumer.broadcast_locks:
-            MatchConsumer.broadcast_locks[self.match_id] = asyncio.Lock()
-
-        # Create a broadcast task for the match if not already present
-        async with MatchConsumer.broadcast_locks[self.match_id]:
-            if self.match_id not in MatchConsumer.broadcast_tasks:
-                MatchConsumer.broadcast_tasks[self.match_id] = asyncio.create_task(self.broadcast_match_data())
-                MatchConsumer.match_states[self.match_id] = asyncio.create_task(self.state_change_listener())
-            else:
-                await rs.PubSub.publish_match_state_channel(self.match_id, MatchState.RUNNING)
 
     async def disconnect(self, close_code):
+        logger.debug(f"Disconnect called for user {self._user_id} with close code {close_code}")
+
 
         # Run the disconnect logic only if the connection was established
-        if not self.connection_established:
+        if not self._connection_established:
+            logger.info(f"Connection not established for user {self._user_id}, so not disconnecting")
+            return
+        self._connection_established = False
+
+        await self.channel_layer.group_discard(self._match_id, self.channel_name)
+        if self._match_session:
+            asyncio.create_task(self._match_session.disconnect_user(self._user_id))
+            self._match_session = None
+
+
+    async def receive(self, text_data: str): # TODO: Implement this
+
+        try:
+            data = json.loads(text_data)
+        except json.JSONDecodeError:
+            logger.error("Failed to decode JSON")
             return
         
-        # Handle user disconnecting from the match
-        await rs.User.set_online_status(self.user_id, UserOnlineStatus.ONLINE)
-        logger.info(f"User {self.user_id} disconnected from match {self.match_id}")
-        await self.channel_layer.group_discard(self.match_id, self.channel_name)
-    
-        # Check if there are any listeners left
-        if await rs.Match.get_connected_users_count(self.match_id) == 0:
-            # Perform necessary cleanup
-            logger.info(f"No connected Users left for match {self.match_id}")
-            if self.match_id in MatchConsumer.broadcast_locks:
-                async with MatchConsumer.broadcast_locks[self.match_id]:
-                    if self.match_id in MatchConsumer.broadcast_tasks:
-                        MatchConsumer.broadcast_tasks[self.match_id].cancel()
-                        del MatchConsumer.broadcast_tasks[self.match_id]
-                        del MatchConsumer.match_states[self.match_id]
-                    # Delete the lock for the match_id
-                    del MatchConsumer.broadcast_locks[self.match_id]
-        else:
-            await rs.PubSub.publish_match_state_channel(self.match_id, MatchState.PAUSED)
-            logger.info(f"Match {self.match_id} is paused")
+        message_type = data.get("type")
 
-    async def receive(self, text_data):
-        # data = json.loads(text_data)
-        
-        # # Update match state in Redis
-        # redis_instance.set(f"match:{self.match_id}:state", text_data)
-        
-        # # Broadcast match state to all players
-        # await self.channel_layer.group_send(
-        #     self.match_id,
-        #     {
-        #         'type': 'match_update',
-        #         'data': data
-        #     }
-        # )
-        pass
-
-    async def match_update(self, event):
-        # Send match update to WebSocket
-        await self.send(text_data=json.dumps(event['data']))
-
-    async def broadcast_match_data(self):
-        previous_state = None
-        while True:
-            if self.current_state == MatchState.RUNNING:
-                if previous_state != MatchState.RUNNING:
-                    if previous_state == MatchState.PAUSED and self.disconnect_timer_task:
-                        self.disconnect_timer_task.cancel()
-                        self.disconnect_timer_task = None
-                    previous_state = MatchState.RUNNING
-                    await self.channel_layer.group_send(
-                        self.match_id,
-                        {
-                            'type': 'match_update',
-                            'data': {'state': 'running'}
-                        }
-                    )
-            elif self.current_state == MatchState.PAUSED:
-                if previous_state != MatchState.PAUSED:
-                    previous_state = MatchState.PAUSED
-                    await self.channel_layer.group_send(
-                        self.match_id,
-                        {
-                            'type': 'match_update',
-                            'data': {'state': 'paused'}
-                        }
-                    )
-                    await self.handle_player_disconnect()
-            elif self.current_state == MatchState.FINISHED:
-                if previous_state != MatchState.FINISHED:
-                    previous_state = MatchState.FINISHED
-                    await self.channel_layer.group_send(
-                        self.match_id,
-                        {
-                            'type': 'match_update',
-                            'data': {'state': 'finished'}
-                        }
-                    )           
-            await asyncio.sleep(0.1)
-
-
-
-    async def state_change_listener(self):
-        loop = asyncio.get_event_loop()
-        while True:
-            message = await loop.run_in_executor(None, self.pubsub.get_message, True, 0.1)
-            if message:
-                logger.info(f"Received message: {message}")
-                if message['type'] == 'message':
-                    self.current_state = message['data'].decode('utf-8')
-                        
-    async def handle_player_disconnect(self):
-        if self.disconnect_timer_task:
-            self.disconnect_timer_task.cancel()
-        
-        self.disconnect_timer_task = asyncio.create_task(self.start_disconnect_timer())
-
-    async def start_disconnect_timer(self):
         try:
-            await asyncio.sleep(5)  # 30-second timer
-            await self.handle_disconnect_timeout()
-        except asyncio.CancelledError:
-            logger.info("Disconnect timer cancelled")
+            if message_type == await PlayerInput.get_type():
+                try:
+                    msg = PlayerInput(**data)
+                    await self._match_session.update_player_direction(self._user_id, msg.direction, msg.player_id)
+                except ValidationError as e:
+                    logger.error(f"Invalid message data: {e}")
+                except Exception as e:
+                    logger.error(f"Failed to update player direction: {e}")
+            else:
+                logger.error(f"Invalid message type: {message_type}")
+        except Exception as e:
+            logger.error(f"Failed to process message: {e}")
 
-    async def handle_disconnect_timeout(self):
-        logger.info("Player did not reconnect in time. Declaring the other player as the winner.")
-        logger.info(f"Player {self.user_id} is declared as the winner.")
-        await self.channel_layer.group_send(
-            self.match_id,
-            {
-                'type': 'match_update',
-                'data': {'state': 'finished', 'winner': self.user_id}
-            }
-        )
-        await rs.PubSub.publish_match_state_channel(self.match_id, MatchState.FINISHED)
-        await self.disconnect(1000)
 
     async def is_valid_connection(self, match_id, user_id):
 
         # User is not authenticated
-        if self.user_id is None:
+        if self._user_id is None:
             logger.info("User not authenticated")
             return False
-        
-        # Convert user_id to string for use in Redis
-        self.user_id = str(self.user_id)
 
         # No Match ID provided
-        if self.match_id is None:
+        if self._match_id is None:
             logger.info("Match ID not provided")
             return False
         
-        # Match ID is not a string
-        if not isinstance(self.match_id, str):
-            logger.info("Match ID is not a string")
-            return False
-        
         # Match ID does not exist
-        if not await rs.Match.exists(self.match_id):
-            logger.info(f"Match {self.match_id} not found")
-            return False
-        
-        # User is already connected to a match
-        logger.info(f"USER {self.user_id} IS PLAYING: {await rs.User.is_playing(self.user_id)}")
-        if await rs.User.is_playing(self.user_id):
-            logger.info(f"User {self.user_id} is already connected to a match")
+        if not Matches.is_match_registered(self._match_id):
+            logger.info(f"Match {self._match_id} not found")
             return False
 
         # User is not part of the match
-        if not await rs.Match.is_user_part_of_match(self.match_id, self.user_id):
-            logger.info(f"User {self.user_id} is not part of match {self.match_id}")
+        if not Matches.is_user_assigned_to_match(self._match_id, self._user_id):
+            logger.info(f"User {self._user_id} is not part of match {self._match_id}")
             return False
 
-        # Match is not in progress
-        if not await rs.Match.is_match_in_progress(self.match_id):
-            logger.info(f"Match {self.match_id} is not in progress")
+        # User is already connected to a match or tournament
+        if User.is_user_connected_to_match(self._user_id, self._match_id):
+            logger.info(f"User {self._user_id} is already connected to a match")
             return False
         
-        # User has exceeded the maximum reconnect attempts
-        if await rs.Match.get_reconnect_attempts(self.match_id, self.user_id) >= MatchConsumer.MAX_RECONNECT_ATTEMPTS:
-            logger.info(f"User {self.user_id} has exceeded the maximum reconnect attempts")
+        # Is the user blocked to connect to the match
+        if User.is_user_blocked(self._user_id, self._match_id):
+            logger.info(f"User {self._user_id} is blocked from connecting to match {self._match_id}")
             return False
 
         return True
     
+    async def _match_session_is_finished_callback(self, winner: str):
+        # self._connection_established = False
+        await self._send_game_over_message(winner)
+        self._match_session = None
+        await self.close()
+
+    async def _send_game_over_message(self, winner: str) -> None:
+        '''Send a game over message to the users'''
+        logger.debug(f"Sending game over message to users")
+        await self.send(text_data=json.dumps({
+            "type": "game_over",
+            "data": winner
+        }))
+
+
+    ### Channel Layer Callbacks ###
+
+    async def user_mapping(self, event):
+        logger.info(f"User mapping: {event}")
+        await self.safe_send(text_data=json.dumps(event))
+
+    async def position_update(self, event):
+        # Extract the byte array from the event
+        game_state_bytes = event.get("data")
+        if game_state_bytes:
+            await self.safe_send(bytes_data=game_state_bytes)
+
+    async def user_connected(self, event):
+        logger.info(f"User {event} connected")
+        if event.get("user_id") != self._user_id:
+            return
+        await self.safe_send(text_data=json.dumps(event))
+
+    async def user_disconnected(self, event):
+        logger.info(f"User {event} disconnected")
+        await self.safe_send(text_data=json.dumps(event))
+
+    async def start_timer_update(self, event):
+        await self.safe_send(text_data=json.dumps(event))
+
+    async def player_scores(self, event):
+        await self.safe_send(text_data=json.dumps(event))
+
+    async def safe_send(self, text_data: str = None, bytes_data: bytes = None):
+        if self._connection_established:
+            try:
+                if text_data is not None:
+                    await self.send(text_data=text_data)
+                elif bytes_data is not None:
+                    await self.send(bytes_data=bytes_data)
+            except Exception as e:
+                logger.error(f"Failed to send message: {e}")
+        else:
+            logger.warning("Attempted to send message on closed connection")
