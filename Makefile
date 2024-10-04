@@ -55,6 +55,7 @@ restart_backend:
 
 fclean: down
 	docker system prune -af
+	docker volume rm $$(docker volume ls -q | grep trans_database)
 
 dclean:
 	docker-compose -f docker-compose.yml down -v --rmi local
