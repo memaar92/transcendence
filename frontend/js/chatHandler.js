@@ -1,3 +1,4 @@
+// import { api } from './api.js';
 class ChatHandler {
   constructor() {
     this.ws = null;
@@ -9,49 +10,88 @@ class ChatHandler {
   }
 
   async init(params, router, context) {
-      this.router = router;
+    this.router = router;
 
-      // console.log('Params:', params);
-      const url = `wss://${window.location.host}/ws/live_chat/}`;
-      // console.log('WebSocket URL:', url);
+    // console.log('Params:', params);
+    const url = `wss://${window.location.host}/ws/live_chat/}`;
+    // console.log('WebSocket URL:', url);
 
-      if (this.ws) {
-          console.log('Closing existing WebSocket connection');
-          this.ws.close();
-      }
-
-      console.log('Creating new WebSocket connection');
-      this.ws = new WebSocket(url);
-
-      this.ws.onopen = () => {
-          console.log('WebSocket connection opened in context:', context);
-          this.ws.send(JSON.stringify({ "type": context, "context": 'setup' }));
-          if (context === 'chat') {
-            this.chatWindowOpened = false;
-          }
-      };
-
-      this.ws.onerror = (e) => {
-          // console.error('WebSocket error:', e);
-      };
-
-      this.ws.onmessage = this.onMessage.bind(this);
-      this.ws.onclose = (e) => this.onClose(e, context);
-
-      if (context === 'chat') {
-        this.currentReceiverId = params.recipient;
-        this.chatWindowOpened = false;
-      } else {
-          this.currentReceiverId = null;
-          this.initScrollHandling();
-          this.initFiltering();
-          this.initTabHandling();
-      }
+    if (this.ws) {
+        console.log('Closing existing WebSocket connection');
+        this.ws.close();
     }
+
+    console.log('Creating new WebSocket connection');
+    this.ws = new WebSocket(url);
+
+    this.ws.onopen = () => {
+        console.log('WebSocket connection opened in context:', context);
+        this.ws.send(JSON.stringify({ "type": context, "context": 'setup' }));
+        if (context === 'chat') {
+          this.chatWindowOpened = false;
+        }
+    };
+
+    this.ws.onerror = (e) => {
+        // console.error('WebSocket error:', e);
+    };
+
+    this.ws.onmessage = this.onMessage.bind(this);
+    this.ws.onclose = (e) => this.onClose(e, context);
+
+    if (context === 'chat') {
+      this.currentReceiverId = params.recipient;
+      this.chatWindowOpened = false;
+    } else {
+        this.currentReceiverId = null;
+        this.initScrollHandling();
+        this.initFiltering();
+        this.initTabHandling();
+    }
+  }
 
   async onClose(event) {
     console.log('WebSocket connection closed:', event.code, event.reason);
   }
+
+  // async checkToken() {
+  //   try {
+  //     const response = await api.get('/token/check');
+  //     const json = await response.json();
+  //     console.log('Token refresh response:', json);
+  //     if (json['logged-in'] === false) {
+  //       throw new Error('User is not logged in');
+  //     }
+  //     return true;
+  //   } catch (error) {
+  //     console.error('Error refreshing token:', error);
+  //     throw error;
+  //   }
+  // }
+
+  // async reconnect() {
+  //   try {
+  //     this.ws = new WebSocket(`wss://${window.location.host}/ws/live_chat/`);
+  //   } catch (error) {
+  //     console.error('Failed to reconnect:', error);
+  //   }
+  // }
+
+  // async onClose(event, context) {
+  //   console.log('WebSocket connection closed:', event.code, event.reason);
+  
+  //   if (event.code === 1006) {
+  //     try {
+  //       await this.checkToken();
+  //       await this.reconnect(context);
+  //     } catch (error) {
+  //       console.error('Failed to authenticate:', error);
+  //       this.router.navigate('/login');
+  //     }
+  //   } else {
+  //     setTimeout(() => this.reconnect(), 5000);
+  //   }
+  // }
 
   onMessage(event) {
     const content = JSON.parse(event.data);
@@ -166,6 +206,7 @@ class ChatHandler {
     switch (content.type) {
       case 'chat_message':
         this.displayIndicator();
+        this.displayNotification(content);
         break;
       case 'unread_counts':
         if (Object.keys(content.unread_messages).length > 0) {
@@ -179,8 +220,17 @@ class ChatHandler {
 
   displayIndicator() {
     const chatMenuItem = document.getElementById('chat-menu-item');
-    const chatLink = chatMenuItem.querySelector('a');
+    if (!chatMenuItem) {
+      console.warn('Chat menu item not found');
+      return;
+    }
   
+    const chatLink = chatMenuItem.querySelector('a');
+    if (!chatLink) {
+      console.warn('Chat link not found');
+      return;
+    }
+
     let indicator = document.getElementById('chat-notification-indicator');
     if (!indicator) {
       indicator = document.createElement('span');
@@ -194,6 +244,45 @@ class ChatHandler {
       indicator.classList.remove('pulse-animation');
     },
     3000);
+  }
+
+  displayNotification(content) {
+    const container = document.getElementById('notifications');
+    if (!container) {
+      return;
+    }
+    // Create a new div for the toast
+    const toastEl = document.createElement('div');
+    toastEl.classList.add('chat-toast', 'notification');
+    toastEl.setAttribute('role', 'alert');
+    toastEl.setAttribute('aria-live', 'assertive');
+    toastEl.setAttribute('aria-atomic', 'true');
+    toastEl.setAttribute('data-bs-delay', '5000');
+
+    // Add the inner HTML for the toast content with custom classes
+    toastEl.innerHTML = `
+      <div class="toast-header chat-toast-header">
+        <strong class="me-auto">Notification</strong>
+        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+      <div class="toast-body chat-toast-body">
+        New message from ${content.sender_name}
+      </div>
+    `;
+
+    // Append the new toast to the container
+    container.appendChild(toastEl);
+
+    // Initialize the toast using Bootstrap's JS API
+    const toast = new bootstrap.Toast(toastEl);
+    toast.show();
+
+    // Remove the toast after it is hidden with a slight delay
+    toastEl.addEventListener('hidden.bs.toast', () => {
+      setTimeout(() => {
+        toastEl.remove();
+      }, 300); // Adjust the delay as needed
+    });
   }
         
   showLatestMessage(message, senderId, friendId) {
@@ -906,12 +995,12 @@ class ChatHandler {
   applyFilter() {
     const items = document.getElementsByClassName("friends-item");
     const filter = this.currentFilter === 'all' ? '' : this.currentFilter;
-    
+
     Array.from(items).forEach(item => {
       if (!filter || item.classList.contains(filter)) {
-        item.classList.add("show");
+        item.classList.add("chat-show");
       } else {
-        item.classList.remove("show");
+        item.classList.remove("chat-show");
       }
     });
   }

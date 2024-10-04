@@ -313,7 +313,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'message_key': 'message'})
 
             await self.save_message(sender_id, receiver_id, message)
-            await self.send_unread_messages_count(receiver_id)
         except Exception as e:
             error_message = f"Error sending message: {str(e)}"
             error_traceback = traceback.format_exc()

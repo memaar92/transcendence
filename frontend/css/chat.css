@@ -293,6 +293,13 @@
   font-size: 1.5rem;
   border-bottom: 1px solid #e9ecef !important;
   padding: 10px;
+  overflow-x: auto; /* Enable horizontal scrolling */
+  gap: 1rem; /* Space between items */
+  padding-bottom: 10px;
+  white-space: nowrap; /* Prevent text from wrapping */
+  max-width: 100%; /* Ensure it fits within the container */
+  justify-content: center;
+  align-items: center; */
 }
 
 .friends-item img {
@@ -523,20 +530,8 @@
   isolation: isolate;
 }
 
-.show {
-  display: flex; /* Use flexbox for a single line */
-  overflow-x: auto; /* Enable horizontal scrolling */
-  gap: 1rem; /* Space between items */
-  padding-bottom: 10px;
-  white-space: nowrap; /* Prevent text from wrapping */
-  max-width: 100%; /* Ensure it fits within the container */
-  justify-content: center;
-  align-items: center;
-}
-
-.show > * {
-  flex: 0 0 auto; /* Prevent items from growing or shrinking */
-  box-sizing: border-box; /* Include padding and border in the element's total width */
+.chat-show {
+  display: flex;
 }
 
 .filter-container {
@@ -830,3 +825,19 @@
     box-shadow: 0 0 10px #7A35EC;
   }
 } */
+
+.toastchat-toast {
+  background-color: #ffff7e;
+  border: 1px solid #333;
+  color: #333;
+  width: 100%;
+}
+
+.chat-toast-header {
+  background-color: #333;
+  color: #fff;
+}
+
+.chat-toast-body {
+  color: #333;
+}

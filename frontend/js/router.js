@@ -119,8 +119,9 @@ class Router {
 
   insertNotification() {
     const notificationDiv = document.createElement('div');
-    notificationDiv.innerHTML = '<p>This is a notification message</p>';
-    notificationDiv.style.cssText = 'position:fixed;top:0;width:100%;background-color:yellow;padding:10px;text-align:center;z-index:1000;';
+    notificationDiv.setAttribute('id', 'notifications');
+    notificationDiv.setAttribute('position', 'fixed');
+    notificationDiv.style.cssText = 'position:fixed;top:0;width:100%;padding:10px;text-align:center;z-index:1000;';
     this.app.prepend(notificationDiv);
   }
 
