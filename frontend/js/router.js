@@ -8,11 +8,11 @@ class Router {
     this.app = null;
     this.currentHistoryPosition = 0;
     this.maxHistoryPosition = 0;
-    this.excludedPaths = ['/main_menu', '/live_chat', '/live_chat/chat_room']; // Excluded paths for notification
+    this.excludedPaths = ['/main_menu', '/live_chat', '/live_chat/chat_room'];
+    this.unregistered_urls = ["/", "/home", "/login", "/register", "/email_verification"];
 
     api.get("/token/check/").then(
       async (result) => {
-        var unregistered_urls = new Set(["/", "/home", "/login", "/register", "/email_verification"]);
 
         const json = await result.json();
         const status = json["logged-in"];
@@ -171,7 +171,9 @@ class Router {
     } catch (error) {
       this.app.innerHTML = "<p>Error loading content</p>";
     }
-    this.handlePostUpdate();
+    if (!this.unregistered_urls.includes(this.currentRoute.path)) {
+      this.handlePostUpdate();
+    }
   }
 }
 

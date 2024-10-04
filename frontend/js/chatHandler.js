@@ -1,4 +1,4 @@
-// import { api } from './api.js';
+import { api } from './api.js';
 class ChatHandler {
   constructor() {
     this.ws = null;
@@ -50,49 +50,50 @@ class ChatHandler {
     }
   }
 
-  async onClose(event) {
-    console.log('WebSocket connection closed:', event.code, event.reason);
+  // async onClose(event) {
+  //   console.log('WebSocket connection closed:', event.code, event.reason);
+  // }
+
+  async checkToken() {
+    try {
+      const response = await api.get('/token/check');
+      const json = await response.json();
+      console.log('Token refresh response:', json);
+      if (json['logged-in'] === false) {
+        throw new Error('User is not logged in');
+      }
+      return true;
+    } catch (error) {
+      console.error('Error refreshing token:', error);
+      throw error;
+    }
   }
 
-  // async checkToken() {
-  //   try {
-  //     const response = await api.get('/token/check');
-  //     const json = await response.json();
-  //     console.log('Token refresh response:', json);
-  //     if (json['logged-in'] === false) {
-  //       throw new Error('User is not logged in');
-  //     }
-  //     return true;
-  //   } catch (error) {
-  //     console.error('Error refreshing token:', error);
-  //     throw error;
-  //   }
-  // }
+  async reconnect() {
+    try {
+      this.ws = new WebSocket(`wss://${window.location.host}/ws/live_chat/`);
+    } catch (error) {
+      console.error('Failed to reconnect:', error);
+    }
+  }
 
-  // async reconnect() {
-  //   try {
-  //     this.ws = new WebSocket(`wss://${window.location.host}/ws/live_chat/`);
-  //   } catch (error) {
-  //     console.error('Failed to reconnect:', error);
-  //   }
-  // }
-
-  // async onClose(event, context) {
-  //   console.log('WebSocket connection closed:', event.code, event.reason);
+  async onClose(event, context) {
+    console.log('WebSocket connection closed:', event.code, event.reason);
   
-  //   if (event.code === 1006) {
-  //     try {
-  //       await this.checkToken();
-  //       await this.reconnect(context);
-  //     } catch (error) {
-  //       console.error('Failed to authenticate:', error);
-  //       this.router.navigate('/login');
-  //     }
-  //   } else {
-  //     setTimeout(() => this.reconnect(), 5000);
-  //   }
-  // }
-
+    if (event.code === 1006) {
+      try {
+        await this.checkToken();
+        await this.reconnect(context);
+      } catch (error) {
+        console.error('Failed to authenticate:', error);
+        this.router.navigate('/home');
+      }
+    // } else {
+    //   setTimeout(() => this.reconnect(), 5000);
+    // }
+    }
+  }
+  
   onMessage(event) {
     const content = JSON.parse(event.data);
     console.log('Received message:', content);
