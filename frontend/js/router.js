@@ -16,7 +16,7 @@ class Router {
 
         const json = await result.json();
         const status = json["logged-in"];
-        if (status && unregistered_urls.has(window.location.pathname)) {
+        if (status && this.unregistered_urls.includes(window.location.pathname)) {
           this.navigate("/main_menu");
         } else {
           window.addEventListener("popstate", this.handlePopState.bind(this));
