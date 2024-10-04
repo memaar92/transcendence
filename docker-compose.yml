@@ -41,7 +41,7 @@ services:
     container_name: postgres
     restart: unless-stopped
     volumes:
-      - ./database:/var/lib/postgresql/data/pgdata
+      - trans_database:/var/lib/postgresql/data/pgdata
 # TODO: delete for deployment
     ports:
       - 5432:5432
@@ -63,6 +63,9 @@ services:
     volumes:
       - ./docker/redis/config/redis.conf:/usr/local/etc/redis/redis.conf
     command: redis-server /usr/local/etc/redis/redis.conf
+
+volumes:
+  trans_database:
 
 secrets:
   psql_password:
