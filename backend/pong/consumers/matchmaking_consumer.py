@@ -1,9 +1,9 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
-from pong.match_tournament.match_session_handler import MatchSessionHandler
-from pong.match_tournament.tournament_session_handler import TournamentSessionHandler
-from pong.match_tournament.data_managment.tournaments import Tournaments
-from pong.match_tournament.data_managment.user import User
-from pong.match_tournament.data_managment.matchmaking_queue import MatchmakingQueue
+from ..match.match_session_handler import MatchSessionHandler
+from ..tournament.tournament_session_handler import TournamentSessionHandler
+from ..data_managment.tournaments import Tournaments
+from ..data_managment.user import User
+from ..data_managment.matchmaking_queue import MatchmakingQueue
 import asyncio
 import json
 import logging

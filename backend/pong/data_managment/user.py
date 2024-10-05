@@ -1,6 +1,6 @@
-from pong.match_tournament.data_managment.matchmaking_queue import MatchmakingQueue
-from pong.match_tournament.data_managment.matches import Matches
-from pong.match_tournament.data_managment.tournaments import Tournaments
+from ..data_managment.matchmaking_queue import MatchmakingQueue
+from ..data_managment.matches import Matches
+from ..data_managment.tournaments import Tournaments
 from typing import Optional
 import logging
 

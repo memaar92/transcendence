@@ -1,5 +1,5 @@
 from typing import Dict, Optional
-from pong.match_tournament.tournament_session import TournamentSession
+from ..tournament.tournament_session import TournamentSession
 import logging
 
 logger = logging.getLogger("data_managment")

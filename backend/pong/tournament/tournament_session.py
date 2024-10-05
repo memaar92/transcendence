@@ -2,8 +2,8 @@ import logging
 import asyncio
 from channels.layers import get_channel_layer
 from typing import Set, List, Tuple, Optional, Callable
-from pong.match_tournament.match_session import MatchSession
-from pong.match_tournament.data_managment.matches import Matches
+from ..match.match_session import MatchSession
+from ..data_managment.matches import Matches
 from uuid import uuid4
 from typing import Dict
 
