@@ -9,6 +9,8 @@ from typing import Dict
 
 logger = logging.getLogger("tournament")
 
+TIME_BETWEEN_MATCHES = 5  # Time in seconds between matches
+
 class TournamentSession:
     def __init__(self, owner_user_id, name: str, size: int, on_finished: Callable[[str], None]):
         self._id = uuid4().hex
@@ -104,6 +106,10 @@ class TournamentSession:
     async def _start_matches(self) -> None:
         for match in self._matches:
             async with self._condition:
+                await self._send_upcoming_match_message(match[0])
+                await self._send_upcoming_match_message(match[1])
+                # Wait for the specified number of seconds before starting the next match
+                await asyncio.sleep(TIME_BETWEEN_MATCHES)
                 # Create a new match session
                 await self._create_match(match[0], match[1])
                 # Wait until the match is finished
@@ -132,7 +138,7 @@ class TournamentSession:
         '''Send the tournament schedule to the users'''
         for user_id in self._assigned_users:
             await self._channel_layer.group_send(
-                f"user_{user_id}",
+                f"mm_{user_id}",
                 {
                     'type': 'tournament_schedule',
                     'tournament_name': self._name,
@@ -151,7 +157,7 @@ class TournamentSession:
         '''Send a match ready message to a user'''
         channel_layer = get_channel_layer()
         await channel_layer.group_send(
-            f"user_{user_id}",
+            f"mm_{user_id}",
             {
                 'type': 'remote_match_ready',
                 'match_id': match_id,
@@ -162,7 +168,7 @@ class TournamentSession:
     async def _send_drop_out_message(self, user_id: str) -> None:
         '''Send a drop out message to the user'''
         await self._channel_layer.group_send(
-            f"user_{user_id}",
+            f"mm_{user_id}",
             {
                 'type': 'tournament_drop_out',
                 'tournament_name': self._name,
@@ -173,13 +179,24 @@ class TournamentSession:
         '''Send a tournament finished message to the users'''
         for user_id in self._assigned_users:
             await self._channel_layer.group_send(
-                f"user_{user_id}",
+                f"mm_{user_id}",
                 {
                     'type': 'tournament_finished',
                     'tournament_name': self._name,
                     'user_scores': self._user_wins,
                 }
             )
+
+    async def _send_upcoming_match_message(self, user_id: str) -> None:
+        '''Send a notification message to a user about an upcoming match'''
+        channel_layer = get_channel_layer()
+        await channel_layer.group_send(
+            f"chat_{user_id}",
+            {
+                'type': 'upcoming_match',
+                'tournament_name': self._name,
+            }
+        )
 
     def add_user(self, user_id: str):
         '''Add a user to the tournament set'''
