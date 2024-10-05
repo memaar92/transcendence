@@ -240,6 +240,26 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
         logger.debug(f"Received tournament_finished event: {event}")
         await self.send(text_data=json.dumps(event))
 
+    async def tournament_schedule(self, event):
+        '''Handle the tournament_schedule message'''
+
+        # Check if the current connection is the active connection (Current tab in the browser)
+        if not self._is_active_connection():
+            return
+
+        logger.debug(f"Received tournament_schedule event: {event}")
+        await self.send(text_data=json.dumps(event))
+
+    async def tournament_drop_out(self, event):
+        '''Handle the tournament_drop_out message'''
+
+        # Check if the current connection is the active connection (Current tab in the browser)
+        if not self._is_active_connection():
+            return
+
+        logger.debug(f"Received tournament_drop_out event: {event}")
+        await self.send(text_data=json.dumps(event))
+
     ###################################
     #    Matchmaking message handlers #
     ###################################
