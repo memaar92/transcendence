@@ -20,8 +20,10 @@ BALL_SIZE = settings.GAME_CONFIG['ball']['size']
 class GameSession:
     def __init__(self, on_player_scored: Callable[[str], None]) -> None:
         self._on_player_scored = on_player_scored
-        self.paddle_left = Paddle(position=Vector2(0, WORLD_SIZE.y / 2), size=PADDLE_SIZE, speed=PADDLE_SPEED, world_size=WORLD_SIZE, center_of_mass=Vector2(PADDLE_CENTER_OF_MASS.x * -1, PADDLE_CENTER_OF_MASS.y))
-        self.paddle_right = Paddle(position=Vector2(WORLD_SIZE.x - PADDLE_SIZE.x, WORLD_SIZE.y / 2), size=PADDLE_SIZE, speed=PADDLE_SPEED, world_size=WORLD_SIZE, center_of_mass=PADDLE_CENTER_OF_MASS)
+        paddle_left_position = Vector2(0, WORLD_SIZE.y / 2 - PADDLE_SIZE.y / 2)
+        paddle_right_position = Vector2(WORLD_SIZE.x - PADDLE_SIZE.x, WORLD_SIZE.y / 2 - PADDLE_SIZE.y / 2)
+        self.paddle_left = Paddle(position=paddle_left_position, size=PADDLE_SIZE, speed=PADDLE_SPEED, world_size=WORLD_SIZE, center_of_mass=Vector2(PADDLE_CENTER_OF_MASS.x * -1, PADDLE_CENTER_OF_MASS.y))
+        self.paddle_right = Paddle(position=paddle_right_position, size=PADDLE_SIZE, speed=PADDLE_SPEED, world_size=WORLD_SIZE, center_of_mass=PADDLE_CENTER_OF_MASS)
         self.ball = Ball(Vector2(WORLD_SIZE.x / 2, WORLD_SIZE.y / 2), direction=degree_to_vector(55), speed=BALL_SPEED, size=BALL_SIZE, canvas_size=WORLD_SIZE, collider_list=[self.paddle_left, self.paddle_right])
 
     def __del__(self):
