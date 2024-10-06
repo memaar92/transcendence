@@ -10,8 +10,8 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ['id', 'email', 'displayname', 'profile_picture', 'password', 'is_2fa_enabled', 'is_42_auth']
-        extra_kwargs = {'password': {'write_only': True}}
-        extra_kwargs = {'is_42_auth': {'read_only': True}}
+        extra_kwargs = {'password': {'write_only': True},
+        'is_42_auth': {'read_only': True}}
 
     def update(self, instance, validated_data):
         if instance.is_42_auth and 'password' in validated_data:
@@ -33,7 +33,10 @@ class GameSerializer(serializers.ModelSerializer):
     class Meta:
         model = Games
         fields = ['id', 'home_id', 'visitor_id', 'visitor_score', 'home_score', 'created_at']
-
+        extra_kwargs = {
+            'home_id': {'allow_null': True},
+            'visitor_id': {'allow_null': True}
+        }
 class UserCreateSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
 
