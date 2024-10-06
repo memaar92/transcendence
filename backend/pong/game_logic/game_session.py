@@ -6,15 +6,16 @@ from .paddle import Paddle
 from .utils.vector2 import Vector2
 from .utils.vector_utils import degree_to_vector
 from typing import Callable
+from django.conf import settings
 
 logger = logging.getLogger("game_session")
 
-WORLD_SIZE = Vector2(16, 9)
-PADDLE_SIZE = Vector2(0.5, 2)
-PADDLE_SPEED = 6.5
-PADDLE_CENTER_OF_MASS = Vector2(PADDLE_SIZE.x * 1.5, PADDLE_SIZE.y / 2)
-BALL_SPEED = 8
-BALL_SIZE = 0.2
+WORLD_SIZE = Vector2(settings.GAME_CONFIG['world_size'][0], settings.GAME_CONFIG['world_size'][1])
+PADDLE_SIZE = Vector2(settings.GAME_CONFIG['paddle']['size'][0], settings.GAME_CONFIG['paddle']['size'][1])
+PADDLE_SPEED = settings.GAME_CONFIG['paddle']['speed']
+PADDLE_CENTER_OF_MASS = Vector2(settings.GAME_CONFIG['paddle']['center_of_mass'][0], settings.GAME_CONFIG['paddle']['center_of_mass'][1])
+BALL_SPEED = settings.GAME_CONFIG['ball']['speed']
+BALL_SIZE = settings.GAME_CONFIG['ball']['size']
 
 class GameSession:
     def __init__(self, on_player_scored: Callable[[str], None]) -> None:

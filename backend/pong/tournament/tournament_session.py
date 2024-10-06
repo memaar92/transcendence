@@ -6,10 +6,11 @@ from ..match.match_session import MatchSession
 from ..data_managment.matches import Matches
 from uuid import uuid4
 from typing import Dict
+from django.conf import settings
 
 logger = logging.getLogger("tournament")
 
-TIME_BETWEEN_MATCHES = 5  # Time in seconds between matches
+TIME_BETWEEN_MATCHES = settings.TOURNAMENT_CONFIG['time_between_matches']
 
 class TournamentSession:
     def __init__(self, owner_user_id, name: str, size: int, on_finished: Callable[[str], None]):

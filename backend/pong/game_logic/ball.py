@@ -1,8 +1,11 @@
+from django.conf import settings
 from .utils.vector2 import Vector2
 from .utils.vector_utils import degree_to_vector
 import logging
 
 logger = logging.getLogger("Ball")
+
+SPEED_MULTIPLIER = settings.GAME_CONFIG['ball']['speed_multiplier']
 
 class Ball:
     def __init__(self,
@@ -15,7 +18,6 @@ class Ball:
         self._position: Vector2 = position
         self._direction: Vector2 = direction
         self._base_speed: float = speed
-        self._speed_multiplier: float = 0.15
         self._current_speed: float = speed
         self._size: int = size
         self._start_pos: Vector2 = position.copy()
@@ -32,7 +34,7 @@ class Ball:
         """Update the ball's position based on its speed and direction."""
 
         # Update the ball's speed based on how long it has been alive
-        self._current_speed = self._base_speed + self._time_alive * self._speed_multiplier
+        self._current_speed = self._base_speed + self._time_alive * SPEED_MULTIPLIER
         movement_vector = self._direction * self._current_speed * delta_time
         new_position = self._position + movement_vector
 
