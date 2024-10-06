@@ -2,10 +2,10 @@ import logging
 from typing import Dict, Optional, Callable
 from .match_session import MatchSession
 from channels.layers import get_channel_layer
-from pong.match_tournament.data_managment.matchmaking_queue import MatchmakingQueue
-from pong.match_tournament.data_managment.matches import Matches
-from pong.match_tournament.data_managment.user import User
-from pong.match_tournament.data_managment.tournaments import Tournaments
+from ..data_managment.matchmaking_queue import MatchmakingQueue
+from ..data_managment.matches import Matches
+from ..data_managment.user import User
+from ..data_managment.tournaments import Tournaments
 
 logger = logging.getLogger("match")
 

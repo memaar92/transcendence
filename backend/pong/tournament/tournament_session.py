@@ -2,8 +2,8 @@ import logging
 import asyncio
 from channels.layers import get_channel_layer
 from typing import Set, List, Tuple, Optional, Callable
-from pong.match_tournament.match_session import MatchSession
-from pong.match_tournament.data_managment.matches import Matches
+from ..match.match_session import MatchSession
+from ..data_managment.matches import Matches
 from uuid import uuid4
 from typing import Dict
 
@@ -17,7 +17,7 @@ class TournamentSession:
         self._max_players = size
         self._assigned_users: Set[str] = set() # Users that are assigned to the tournament
         self._active_users: Set[str] = set() # Users that are still in the tournament
-        self._matches: List[Tuple[str, str]] = []
+        self._matches: List[Tuple[str, str]] = [] # List of matches, user1 vs user2 and so on
         self._results: List[Optional[str]] = []
         self._user_wins: Dict[str, int] = {} # Number of wins for each user
         self._winner: Optional[str] = None
@@ -38,8 +38,9 @@ class TournamentSession:
         while self._running:
             self._reset_tracking_variables()
             self._generate_round_robin_schedule()
+            await self._send_tournament_schedule()
             await self._start_matches()
-            self._determine_winner()
+            await self._determine_winner()
             
             if self._winner is not None:
                 logger.info(f"Tournament {self._id} finished with winner {self._winner}")
@@ -55,7 +56,7 @@ class TournamentSession:
             for j in range(i + 1, n):
                 self._matches.append((users[i], users[j]))
 
-    def _determine_winner(self) -> None:
+    async def _determine_winner(self) -> None:
         # Initialize the score dictionary
         score = {user: 0 for user in self._active_users}
 
@@ -89,7 +90,10 @@ class TournamentSession:
             self._winner = None  # It's a draw
 
         # Filter users with the maximum score
-        self._active_users = {user for user in self._active_users if score[user] == max_score}
+        for user in score:
+            if score[user] != max_score:
+                self._active_users.discard(user)
+                await self._send_drop_out_message(user)
 
     def _reset_tracking_variables(self) -> None:
         '''Reset the tracking variables for a new round'''
@@ -124,6 +128,18 @@ class TournamentSession:
         Matches.add_match(match_session)
         await self._send_match_ready_message(match_session.get_id(), user1, user2)
 
+    async def _send_tournament_schedule(self) -> None:
+        '''Send the tournament schedule to the users'''
+        for user_id in self._assigned_users:
+            await self._channel_layer.group_send(
+                f"user_{user_id}",
+                {
+                    'type': 'tournament_schedule',
+                    'tournament_name': self._name,
+                    'matches': self._matches,
+                }
+            )
+
     async def _send_match_ready_message(self, match_id: str, user1: str, user2: str) -> None:
         '''Send a match ready message to both users'''
         match = Matches.get_match(match_id)
@@ -140,6 +156,16 @@ class TournamentSession:
                 'type': 'remote_match_ready',
                 'match_id': match_id,
                 'opponent_id': opponent_id
+            }
+        )
+
+    async def _send_drop_out_message(self, user_id: str) -> None:
+        '''Send a drop out message to the user'''
+        await self._channel_layer.group_send(
+            f"user_{user_id}",
+            {
+                'type': 'tournament_drop_out',
+                'tournament_name': self._name,
             }
         )
 
