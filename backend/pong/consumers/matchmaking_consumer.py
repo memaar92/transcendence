@@ -45,7 +45,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             logger.error("User not authenticated")
             return
 
-        self.group_name = f"user_{self.user_id}"
+        self.group_name = f"mm_{self.user_id}"
 
         # Add user to the group
         await self.channel_layer.group_add(

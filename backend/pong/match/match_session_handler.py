@@ -95,7 +95,7 @@ class MatchSessionHandler:
         '''Send a match ready message to a user'''
         channel_layer = get_channel_layer()
         await channel_layer.group_send(
-            f"user_{user_id}",
+            f"mm_{user_id}",
             {
                 'type': 'remote_match_ready',
                 'match_id': match_id,

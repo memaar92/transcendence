@@ -107,7 +107,7 @@ class TournamentSessionHandler:
 
         if user_id == tournament.get_owner_user_id():
             await cls._channel_layer.group_send(
-                f"user_{user_id}",
+                f"mm_{user_id}",
                 {
                     'type': 'tournament_starting',
                 }
@@ -147,7 +147,7 @@ class TournamentSessionHandler:
             for user in tournament.get_users():
                 try:
                     await cls._channel_layer.group_send(
-                        f"user_{user}",
+                        f"mm_{user}",
                         {
                             'type': 'tournament_canceled',
                     });
