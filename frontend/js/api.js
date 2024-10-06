@@ -45,7 +45,7 @@ async function handle_not_authorized(response) {
 export const api = {
   get: async (endpoint) => {
     const response = await fetch(`${API_BASE_URL}${endpoint}`);
-    if (!response.ok) {
+    if (!response.ok && response.status != 404) {
       // Not Authorized
       if ((await handle_not_authorized(response)) == LOGGED_IN) {
         return await fetch(`${API_BASE_URL}${endpoint}`);
@@ -67,7 +67,7 @@ export const api = {
       },
       body: JSON.stringify(data),
     });
-    if (!response.ok) {
+    if (!response.ok && response.status != 404) {
       // Not Authorized
       if ((await handle_not_authorized(response)) == LOGGED_IN) {
         return await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -92,7 +92,7 @@ export const api = {
       },
       body: JSON.stringify(data),
     });
-    if (!response.ok) {
+    if (!response.ok && response.status != 404) {
       // Not Authorized
       if ((await handle_not_authorized(response)) == LOGGED_IN) {
         return await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -113,7 +113,7 @@ export const api = {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: "DELETE",
     });
-    if (!response.ok) {
+    if (!response.ok && response.status != 404) {
       // Not Authorized
       if ((await handle_not_authorized(response)) == LOGGED_IN) {
         return await fetch(`${API_BASE_URL}${endpoint}`, {
