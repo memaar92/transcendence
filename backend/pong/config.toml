@@ -27,4 +27,4 @@ reconnect_timeout = 10      # Time in seconds until a user must reconnect after 
 [tournament]
 
 time_between_matches = 5    # Seconds between matches in a tournament
-max_players = 12            # (NOT USED YET) Maximum number of players in a tournament
+max_players = 12            # Maximum number of players allowed in a tournament
