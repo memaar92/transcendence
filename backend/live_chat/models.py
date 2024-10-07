@@ -34,9 +34,6 @@ class Relationship(models.Model):
     class Meta:
         unique_together = ('user1', 'user2')
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-
     def update_status(self, new_status, user_id):
         if self.status == self.RelationshipStatus.BLOCKED and user_id != self.blocker_id and new_status != self.RelationshipStatus.DEFAULT:
             raise PermissionError("Only the blocker can change the status of a blocked relationship, except to unfriend.")
@@ -45,8 +42,8 @@ class Relationship(models.Model):
             self.blocker_id = user_id
         else:
             self.blocker_id = None
-        if new_status == self.RelationshipStatus.PENDING and not self.requester:
+        if new_status == self.RelationshipStatus.PENDING and self.requester is None:
             self.requester_id = user_id
-        else:
+        elif new_status != self.RelationshipStatus.PENDING:
             self.requester_id = None
         self.save()

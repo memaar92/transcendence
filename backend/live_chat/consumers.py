@@ -25,7 +25,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def send_message_to_user(self, receiver_id, message_info):
         print (f"Message type: {message_info.get('message_type')}")
         await self.channel_layer.group_send(
-            str(receiver_id),
+            f"chat_{receiver_id}",
             {
                 "type": "send_websocket_message",  
                 "text": json.dumps({
@@ -39,6 +39,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 }),
             }
         )
+
+    # for the patch method in the RelationshipStatusView
+    async def http_send_friends_info(self, event):
+        user_id = event['user_id']
+        await self.send_friends_info(user_id)
+
+    # for the patch method in the RelationshipStatusView
+    async def http_send_pending_chat_notifications(self, event):
+        user_id = event['user_id']
+        await self.send_pending_chat_notifications(user_id)
 
     async def send_friends_info(self, user_id):
         friends_list = await self.get_friends_list(user_id)
@@ -116,7 +126,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return
         self.user_id = str(self.scope['user'].id)
         self.context = None
-        self.user_group_name = self.user_id
+        self.user_group_name = f"chat_{self.user_id}"
 
         # Check if the user already has active connections
         is_new_connection = self.user_id not in ChatConsumer.active_connections
@@ -326,6 +336,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def chat_request_accepted(self, data):
         sender_id = data['sender_id']
         receiver_id = data['receiver_id']
+        if (await self.get_status(sender_id, receiver_id)) != RelationshipStatus.PENDING:
+            await self.send_message_to_user(sender_id, {
+                'message': await self.get_user_field(receiver_id, 'displayname') + ' cancelled the request.',
+                'message_type': 'request_status',
+                'message_key': 'message'
+            })
+
         await self.update_status(sender_id, receiver_id, RelationshipStatus.BEFRIENDED)
 
         await self.send_message_to_user(sender_id, {
@@ -344,10 +361,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.broadcast_user_list()
 
     async def chat_request_denied(self, data):
-        receiver_displayname = await self.get_user_displayname(data['receiver_id'])
-        # await self.update_status(data['sender_id'], data['receiver_id'], RelationshipStatus.DEFAULT)
+        if (await self.get_status(data['sender_id'], data['receiver_id'])) != RelationshipStatus.PENDING:
+            return
+        receiver_displayname = await self.get_user_field(data['receiver_id'], 'displayname')
+        await self.update_status(data['sender_id'], data['receiver_id'], RelationshipStatus.DEFAULT)
         await self.send_message_to_user(data['sender_id'], {
-            'message': f'Your chat request to {receiver_displayname} was denied.',
+            'message': f'Your friend request was denied by {receiver_displayname}',
             'message_type': 'request_status',
             'message_key': 'message'
         })

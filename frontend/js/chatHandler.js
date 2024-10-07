@@ -321,13 +321,14 @@ class ChatHandler {
     const usernameMatch = content.message.match(/(\b\w+\b)$/);
     const username = usernameMatch ? usernameMatch[0] : 'User';
     const messageWithHighlightedUsername = content.message.replace(username, `<span style="color: #0083e8;">${username}</span>`);
+    const headerText = content.type === 'chat_request_accepted' ? 'Friend Request Accepted!' : 'Friend Request Denied!';
 
     // Define the full modal structure
     modalContainer.innerHTML = `
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Friend Request Accepted!</h5>
+            <h5 class="modal-title">${headerText}</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
