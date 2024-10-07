@@ -9,6 +9,7 @@ from channels.layers import get_channel_layer
 
 logger = logging.getLogger("tournament")
 
+MIN_PLAYERS = settings.TOURNAMENT_CONFIG['min_players']
 MAX_PLAYERS = settings.TOURNAMENT_CONFIG['max_players']
 
 class TournamentSessionHandler:
@@ -23,8 +24,8 @@ class TournamentSessionHandler:
             raise ValueError("Tournament name is required")
         if not size:
             raise ValueError("Tournament size is required")
-        if size < 2:
-            raise ValueError("Tournament size must be at least 2")
+        if size < MIN_PLAYERS:
+            raise ValueError("tournament size is too small")
         if size > MAX_PLAYERS:
             raise ValueError("tournament size is too large")
         User.check_if_user_is_registered_somewhere(owner_user_id)
