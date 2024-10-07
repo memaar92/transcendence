@@ -37,7 +37,7 @@ services:
       - backend
 
   postgresql:
-    image: postgres:16.0
+    image: postgres:latest
     container_name: postgres
     restart: unless-stopped
     volumes:
