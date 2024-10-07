@@ -8,22 +8,23 @@ import logging
 import time
 from enum import Enum, auto
 from uuid import uuid4
+from django.conf import settings
 
 logger = logging.getLogger("match")
 
-DISCONNECT_THRESHOLD = 3
-MATCH_START_TIMEOUT = 10
-RECONNECT_TIMEOUT = 10
-GAME_START_TIMER = 3 # Time in seconds before the game starts
+MAX_RECONNECTIONS = settings.MATCH_CONFIG['max_reconnections']
+MATCH_CONNECT_TIMEOUT = settings.MATCH_CONFIG['match_connect_timeout']
+RECONNECT_TIMEOUT = settings.MATCH_CONFIG['reconnect_timeout']
+MATCH_START_TIMER = settings.MATCH_CONFIG['match_start_timer']
 
-TICK_RATE = 60
+TICK_RATE = settings.MATCH_CONFIG['tick_rate']
 
-WINNING_SCORE = 11
+SCORE_LIMIT = settings.MATCH_CONFIG['score_limit']
 
 class EndReason(Enum):
     DISCONNECT_TIMEOUT = auto()
     DISCONNECTED_TOO_MANY_TIMES = auto()
-    MATCH_START_TIMEOUT = auto()
+    MATCH_CONNECT_TIMEOUT = auto()
     DRAW = auto()
     SCORE = auto()
     LOCAL_MATCH_ABORTED = auto()
@@ -85,10 +86,10 @@ class MatchSession:
         logger.info(f"Ending match {self._match_id}")
         if reason == EndReason.DISCONNECT_TIMEOUT:
             winner = self._connected_users.pop()
-            self._score[self._player_mapping[winner]] = WINNING_SCORE
+            self._score[self._player_mapping[winner]] = SCORE_LIMIT
             await self._match_finished(self._match_id, winner)
             logger.info("Match ended due to disconnect timeout")
-        elif reason == EndReason.MATCH_START_TIMEOUT:
+        elif reason == EndReason.MATCH_CONNECT_TIMEOUT:
             await self._match_finished(self._match_id, None)
             logger.info("Match ended due to timeout")
         elif reason == EndReason.DRAW:
@@ -100,7 +101,7 @@ class MatchSession:
             logger.info("Match ended due to too many disconnects")
             logger.info(f"Connected users: {self._connected_users}")
             winner = self._connected_users.pop()
-            self._score[self._player_mapping[winner]] = WINNING_SCORE
+            self._score[self._player_mapping[winner]] = SCORE_LIMIT
             await self._match_finished(self._match_id, winner)
         elif reason == EndReason.SCORE:
             winner = max(self._score, key=self._score.get)
@@ -189,11 +190,11 @@ class MatchSession:
         if self._stop_requested:
             return
         try:
-            await asyncio.wait_for(self._wait_for_users_to_connect(), timeout=MATCH_START_TIMEOUT)
+            await asyncio.wait_for(self._wait_for_users_to_connect(), timeout=MATCH_CONNECT_TIMEOUT)
             logger.debug("All users connected, match starting.")
         except asyncio.TimeoutError:
             logger.debug("Match start timeout, not all users connected.")
-            await self._end_match(EndReason.MATCH_START_TIMEOUT)
+            await self._end_match(EndReason.MATCH_CONNECT_TIMEOUT)
 
     async def _wait_for_users_to_connect(self) -> None:
         '''Wait until both users are connected'''
@@ -246,7 +247,7 @@ class MatchSession:
             return True
         await self._send_user_disconnected_message(user_id)
         self._disconnect_count[user_id] += 1
-        if self._disconnect_count[user_id] >= DISCONNECT_THRESHOLD:
+        if self._disconnect_count[user_id] >= MAX_RECONNECTIONS:
             await self._end_match(EndReason.DISCONNECTED_TOO_MANY_TIMES)
             return True
         logger.debug(f"Disconnect count: {self._disconnect_count[user_id]}")
@@ -277,7 +278,7 @@ class MatchSession:
         if self._stop_requested:
             return
         '''Start the timer before the game starts'''
-        for seconds in range(GAME_START_TIMER, -1, -1):
+        for seconds in range(MATCH_START_TIMER, -1, -1):
             await self._send_start_timer_update_message(seconds)
             await asyncio.sleep(1)
         logger.debug("Game timer ended, starting game")
@@ -292,7 +293,7 @@ class MatchSession:
         self._score[player_id] += 1
         await self._send_player_scores_message(self._score[0], self._score[1])
         
-        if self._score[player_id] >= WINNING_SCORE:
+        if self._score[player_id] >= SCORE_LIMIT:
             await self._end_match(EndReason.SCORE)
 
     #############################

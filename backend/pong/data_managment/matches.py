@@ -1,5 +1,5 @@
 from typing import Dict, Optional
-from pong.match_tournament.match_session import MatchSession
+from ..match.match_session import MatchSession
 import logging
 import sys
 

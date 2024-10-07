@@ -1,9 +1,9 @@
 import logging
-from pong.match_tournament.tournament_session import TournamentSession
-from pong.match_tournament.data_managment.tournaments import Tournaments
-from pong.match_tournament.data_managment.user import User
-from pong.match_tournament.data_managment.matches import Matches
-from pong.match_tournament.data_managment.matchmaking_queue import MatchmakingQueue
+from ..tournament.tournament_session import TournamentSession
+from ..data_managment.tournaments import Tournaments
+from ..data_managment.user import User
+from ..data_managment.matches import Matches
+from ..data_managment.matchmaking_queue import MatchmakingQueue
 from channels.layers import get_channel_layer
 
 logger = logging.getLogger("tournament")
@@ -107,7 +107,7 @@ class TournamentSessionHandler:
 
         if user_id == tournament.get_owner_user_id():
             await cls._channel_layer.group_send(
-                f"user_{user_id}",
+                f"mm_{user_id}",
                 {
                     'type': 'tournament_starting',
                 }
@@ -147,7 +147,7 @@ class TournamentSessionHandler:
             for user in tournament.get_users():
                 try:
                     await cls._channel_layer.group_send(
-                        f"user_{user}",
+                        f"mm_{user}",
                         {
                             'type': 'tournament_canceled',
                     });

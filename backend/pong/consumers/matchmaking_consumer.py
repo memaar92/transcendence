@@ -1,9 +1,9 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
-from pong.match_tournament.match_session_handler import MatchSessionHandler
-from pong.match_tournament.tournament_session_handler import TournamentSessionHandler
-from pong.match_tournament.data_managment.tournaments import Tournaments
-from pong.match_tournament.data_managment.user import User
-from pong.match_tournament.data_managment.matchmaking_queue import MatchmakingQueue
+from ..match.match_session_handler import MatchSessionHandler
+from ..tournament.tournament_session_handler import TournamentSessionHandler
+from ..data_managment.tournaments import Tournaments
+from ..data_managment.user import User
+from ..data_managment.matchmaking_queue import MatchmakingQueue
 import asyncio
 import json
 import logging
@@ -45,7 +45,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             logger.error("User not authenticated")
             return
 
-        self.group_name = f"user_{self.user_id}"
+        self.group_name = f"mm_{self.user_id}"
 
         # Add user to the group
         await self.channel_layer.group_add(
@@ -238,6 +238,26 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             return
 
         logger.debug(f"Received tournament_finished event: {event}")
+        await self.send(text_data=json.dumps(event))
+
+    async def tournament_schedule(self, event):
+        '''Handle the tournament_schedule message'''
+
+        # Check if the current connection is the active connection (Current tab in the browser)
+        if not self._is_active_connection():
+            return
+
+        logger.debug(f"Received tournament_schedule event: {event}")
+        await self.send(text_data=json.dumps(event))
+
+    async def tournament_drop_out(self, event):
+        '''Handle the tournament_drop_out message'''
+
+        # Check if the current connection is the active connection (Current tab in the browser)
+        if not self._is_active_connection():
+            return
+
+        logger.debug(f"Received tournament_drop_out event: {event}")
         await self.send(text_data=json.dumps(event))
 
     ###################################

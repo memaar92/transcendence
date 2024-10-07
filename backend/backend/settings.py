@@ -13,14 +13,13 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 from pathlib import Path
 import os
 from datetime import timedelta
+import toml
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
-
-import os
 
 LOGGING = {
     'version': 1,
@@ -98,6 +97,17 @@ LOGGING = {
     },
 }
 
+# Path to the configuration files
+PONG_CONFIG_FILE_PATH = os.path.join(BASE_DIR, 'pong', 'config.toml')
+
+# Read the configuration file
+with open(PONG_CONFIG_FILE_PATH, 'r') as config_file:
+     config = toml.load(config_file)
+
+GAME_CONFIG = config['game']
+MATCH_CONFIG = config['match']
+TOURNAMENT_CONFIG = config['tournament']
+     
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-g=eom8w39!m$+1xegc@p!(6&uiqzdl$9i@$v5z!f$@m#2#_!7s'

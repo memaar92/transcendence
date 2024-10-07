@@ -1,12 +1,12 @@
 import json
 import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
-from pong.match_tournament.match_session import MatchSession
-from pong.match_tournament.data_managment.matches import Matches
-from pong.match_tournament.data_managment.user import User
+from ..match.match_session import MatchSession
+from ..data_managment.matches import Matches
+from ..data_managment.user import User
 from jsonschema import ValidationError
 from django.conf import settings
-from pong.schemas.match_schema import (
+from ..schemas.match_schema import (
     PlayerInput
 )
 

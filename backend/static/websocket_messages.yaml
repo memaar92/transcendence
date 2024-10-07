@@ -126,6 +126,58 @@ backend_matchmaking_messages_schema:
       description: |
         Inform the user that the tournament is finished and show the results.
 
+  tournament_drop_out:
+    description: |
+      Sent when a user drops out of a tournament.
+      (Active connection only)"
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["tournament_drop_out"]
+        example: "tournament_drop_out"
+      tournament_name:
+        type: string
+        example: "tournament1"
+    required:
+      - type
+      - tournament_name
+
+    frontend_processing:
+      description: |
+        Inform the user that he dropped out of the tournament.
+
+  tournament_schedule:
+    description: |
+      Sent for every new round in a tournament.
+      (Active connection only)
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["tournament_schedule"]
+        example: "tournament_schedule"
+      tournament_name:
+        type: string
+        example: "tournament1"
+      matches:
+        type: array
+        items:
+          type: array
+          items:
+            type: string
+            example: "user_id"
+          minItems: 2
+          maxItems: 2
+    required:
+      - type
+      - tournament_name
+      - matches
+
+    frontend_processing:
+      description: |
+        Inform the user about the schedule for the next round.
+
 # Matchmaking socket: frontend -> backend.
 frontend_matchmaking_messages_schema:
   active_connection:

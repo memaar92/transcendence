@@ -2,10 +2,10 @@ import logging
 from typing import Dict, Optional, Callable
 from .match_session import MatchSession
 from channels.layers import get_channel_layer
-from pong.match_tournament.data_managment.matchmaking_queue import MatchmakingQueue
-from pong.match_tournament.data_managment.matches import Matches
-from pong.match_tournament.data_managment.user import User
-from pong.match_tournament.data_managment.tournaments import Tournaments
+from ..data_managment.matchmaking_queue import MatchmakingQueue
+from ..data_managment.matches import Matches
+from ..data_managment.user import User
+from ..data_managment.tournaments import Tournaments
 
 logger = logging.getLogger("match")
 
@@ -95,7 +95,7 @@ class MatchSessionHandler:
         '''Send a match ready message to a user'''
         channel_layer = get_channel_layer()
         await channel_layer.group_send(
-            f"user_{user_id}",
+            f"mm_{user_id}",
             {
                 'type': 'remote_match_ready',
                 'match_id': match_id,
