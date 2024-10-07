@@ -13,6 +13,8 @@ import json
 import traceback
 import uuid
 from django_redis import get_redis_connection
+from pong.data_managment.user import User as PongUser
+from pong.match.match_session_handler import MatchSessionHandler
 
 RelationshipStatus = Relationship.RelationshipStatus
 User = get_user_model()
@@ -114,6 +116,26 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'message_type': 'pending_requests',
             'message_key': 'requests'
         })
+    
+    async def create_match(self, user_id):
+        try:
+            await self.check_users_registered(user_id)
+        except Exception as e:
+            await self.send(text_data=json.dumps({
+                'type': 'game_error',
+                'message': str(e)
+            }))
+            return
+        match = await MatchSessionHandler.create_match(self.user_id, user_id)
+        await MatchSessionHandler.send_match_ready_message(match.get_id(), self.user_id, user_id)
+
+    # async def notify_match_ready(self, event):
+
+    async def check_users_registered(self, user_id):
+        if PongUser.is_user_registered(self.user_id):
+            raise ValueError("You are already registered for a match or a tournament. Cancel your current registration to start a new one.")
+        if PongUser.is_user_registered(user_id):
+            raise ValueError("The other user is already registered for a match or a tournament. Please try again later.")
 
     async def connect(self):
         if self.scope['user'] and not isinstance(self.scope['user'], AnonymousUser):
@@ -211,6 +233,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     await self.chat_request_accepted(data)
                 case 'chat_request_denied':
                     await self.chat_request_denied(data)
+                case 'game_invite':
+                    await self.create_match(data['receiver_id'])
                 case _:
                     await self.send(text_data=json.dumps({
                         'type': 'error',

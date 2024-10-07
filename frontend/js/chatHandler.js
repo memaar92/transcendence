@@ -781,8 +781,17 @@ class ChatHandler {
     blockButton.onclick = () => {
       this.blockFriend(this.senderId, friend.id);
     };
-  
-    return [chatButton, blockButton];
+
+    const gameInviteButton = document.createElement('button');
+    gameInviteButton.className = 'button';
+    gameInviteButton.textContent = 'Play';
+    gameInviteButton.onclick = () => {
+      this.ws.send(JSON.stringify({
+        'type': 'game_invite',
+        'sender_id': this.senderId,
+        'receiver_id': friend.id
+      }))};
+    return [chatButton, blockButton, gameInviteButton];
   }
 
   createBlockedFilterButtons(friend) {
