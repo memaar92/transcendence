@@ -1,11 +1,13 @@
 SHELL := /bin/bash
 
+BASE_IP = 	$(shell ip -o route get to 8.8.8.8 | sed -n 's/.*src \([0-9.]\+\).*/\1/p')
+
 all: get_ips build
 
 up:
 	docker-compose up -d
 
-build:
+build: set_ip
 	docker-compose up --build
 
 it:
@@ -74,6 +76,11 @@ get_ips:
 	echo "Ethernet IP: " $$(ip addr show | grep inet | grep -E 'enp|eth' | awk '{print $$2}' | cut -d/ -f1 | xargs) && \
 	echo "Public IPv4: " $$(curl -s ifconfig.me -4) && \
 	echo "Public IPv6: " $$(curl -s ifconfig.me -6);
+
+set_ip:
+	echo $(BASE_IP)
+	sed -i 's|BASE_IP = .*|BASE_IP = "$(BASE_IP)"|' backend/backend/settings.py
+	sed -i 's|ALLOWED_HOSTS = .*|ALLOWED_HOSTS = ["$(BASE_IP)", "localhost", "127.0.0.1"]|' backend/backend/settings.py
 
 re: fclean all
 

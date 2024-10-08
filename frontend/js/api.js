@@ -1,5 +1,5 @@
 import { router } from "./app.js";
-const API_BASE_URL = "https://localhost/api";
+const API_BASE_URL = `${window.location.origin}/api`;
 
 const LOGGED_OUT = 0;
 const LOGGED_IN = 1;
