@@ -1,16 +1,13 @@
 SHELL := /bin/bash
 
-API_BASE_URL=https://localhost/api
 BASE_IP = 	$(shell ip -o route get to 8.8.8.8 | sed -n 's/.*src \([0-9.]\+\).*/\1/p')
-
 
 all: get_ips build
 
 up:
 	docker-compose up -d
 
-build:
-	set_ip
+build: set_ip
 	docker-compose up --build
 
 it:
@@ -82,8 +79,8 @@ get_ips:
 
 set_ip:
 	echo $(BASE_IP)
-#	sed -i 's|const API_BASE_URL = .*|const API_BASE_URL = "https://$(BASE_IP)/api";|' frontend/js/api.js
-	sed -i 's|ALLOWED_HOSTS = .*|ALLOWED_HOSTS = ["$(BASE_IP)"]|' backend/backend/settings.py
+	sed -i 's|BASE_IP = .*|BASE_IP = "$(BASE_IP)"|' backend/backend/settings.py
+	sed -i 's|ALLOWED_HOSTS = .*|ALLOWED_HOSTS = ["$(BASE_IP)", "localhost", "127.0.0.1"]|' backend/backend/settings.py
 
 re: fclean all
 
