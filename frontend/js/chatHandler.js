@@ -1,4 +1,6 @@
 import { api } from './api.js';
+// import { connectToMatch } from '../../backend/static/match.js';
+
 class ChatHandler {
   constructor() {
     this.ws = null;
@@ -177,14 +179,21 @@ class ChatHandler {
           }
         });
         break;
-        case "pending_requests":
-          this.displayChatRequest(content.requests);
-          break;
-          default:
-            console.error('Unknown context:', content.type);
-            break;
-          }
+      case 'pending_requests':
+        this.displayChatRequest(content.requests);
+        break;
+      case 'match_id':
+        if (content.match_id) {
+          window.location.href = '/pong/'; // Reminder: change to this.router.navigate('/pong');
+          console.log('Match ID:', content.match_id);
+          connectToMatch(content.match_id);
         }
+        break;
+      default:
+        console.error('Unknown context:', content.type);
+        break;
+      }
+    }
         
   handleChatContext(content) {
     switch (content.type) {
@@ -788,10 +797,10 @@ class ChatHandler {
     gameInviteButton.onclick = () => {
       this.ws.send(JSON.stringify({
         'type': 'game_invite',
-        'sender_id': this.senderId,
-        'receiver_id': friend.id
-      }))};
-    return [chatButton, blockButton, gameInviteButton];
+        'receiver_id': friend.id,
+      }));
+    };
+    return [gameInviteButton, chatButton, blockButton];
   }
 
   createBlockedFilterButtons(friend) {

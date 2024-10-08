@@ -51,3 +51,26 @@ class User:
         if match:
             return match.get_opponent_user_id(user_id)
         return None
+
+    @classmethod
+    def get_registered_game_type(cls, user_id: str) -> Optional[str]:
+        '''Get the type of game the user is registered to'''
+        if Matches.is_user_registered(user_id):
+            return "match"
+        elif Tournaments.is_user_registered(user_id):
+            return "tournament"
+        elif MatchmakingQueue.is_user_registered(user_id):
+            return "queue"
+        return None
+
+    @classmethod
+    def assign_to_game(cls, user_id: str, game_type: str, game_id: str) -> None:
+        '''Assign a user to a game'''
+        if game_type == "match":
+            Matches.get_match(game_id).assign_user(user_id)
+        elif game_type == "tournament":
+            Tournaments.get_tournament(game_id).assign_user(user_id)
+        elif game_type == "queue":
+            MatchmakingQueue.assign_user(user_id)
+        else:
+            raise ValueError(f"Invalid game type: {game_type}")

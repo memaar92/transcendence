@@ -78,13 +78,25 @@ async function getMyId() {
 
 async function getUsersRelationship() {
   const myId = await getMyId();
-  const result = await api.get(`/chat/users/relationships/${myId}/${localStorage.getItem("UID")}/`);
-  if (result.status == 400) {
+  try {
+    const response = await api.get(`/chat/users/relationships/${myId}/${localStorage.getItem("UID")}/`);
+
+    if (!response.ok) {
+      if (response.status === 400) {
+        console.log("Relationship does not exist");
+        return null;
+      }
+      throw new Error("Unexpected error");
+    }
+
+    const info = await response.json();
+    return info["relationship"]["fields"];
+  } catch (error) {
+    console.warn("Error fetching relationship:", error);
     return null;
   }
-  const info = await result.json();
-  return info["relationship"]["fields"];
 }
+
 
 async function createProfileButton() {
   const myId = await getMyId();

@@ -15,6 +15,7 @@ import uuid
 from django_redis import get_redis_connection
 from pong.data_managment.user import User as PongUser
 from pong.match.match_session_handler import MatchSessionHandler
+from pong.data_managment.matches import Matches
 
 RelationshipStatus = Relationship.RelationshipStatus
 User = get_user_model()
@@ -117,7 +118,32 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'message_key': 'requests'
         })
     
+    # async def send_current_game_registration(self, user_id):
+    #     game_type = PongUser.get_registered_game_type(user_id)
+    #     # if the user is registered but not for a queue then send a notification
+    #     if game_type and game_type != "queue":
+    #         await self.send_message_to_user(user_id, {
+    #             'message': game_type,
+    #             'message_type': 'current_game_registration',
+    #             'message_key': 'game_type'
+    #         })
+    
+    # when game invitation message is received from the frontend register the inviter to the match before creating the match because the invitee also has to accept the invitation
+    async def wait_for_match(self, user_id):
+        if await self.get_status(self.user_id, user_id) != RelationshipStatus.BEFRIENDED:
+            return
+        if PongUser.is_user_registered(user_id):
+            await self.send(text_data=json.dumps({
+                'type': 'game_error',
+                'message': "The other user is already registered for a match or a tournament. Please try again later."
+            }))
+            return
+        else :
+            await PongUser.assign_to_game(user_id, "match", None)
+
     async def create_match(self, user_id):
+        if await self.get_status(self.user_id, user_id) != RelationshipStatus.BEFRIENDED:
+            return
         try:
             await self.check_users_registered(user_id)
         except Exception as e:
@@ -127,7 +153,26 @@ class ChatConsumer(AsyncWebsocketConsumer):
             }))
             return
         match = await MatchSessionHandler.create_match(self.user_id, user_id)
+        await self.send_message_to_user(self.user_id, {
+            'message_type': 'match_id',
+            'message_key': 'match_id',
+            'message': match.get_id(),
+        })
+        await self.send_message_to_user(user_id, {
+            'message_type': 'match_id',
+            'message_key': 'match_id',
+            'message': match.get_id(),
+        })
         await MatchSessionHandler.send_match_ready_message(match.get_id(), self.user_id, user_id)
+
+    # async def upcoming_match(self, event):
+    #     await self.send(text_data=json.dumps({
+    #         'type': 'chat_message',
+    #         'message': f"Upcoming match with!"
+    #     }))
+
+    # async def send_pending_game_notifications(self, event):
+    #     MatchSessionHandler.send_match_ready_message(event['match_id'], event['user1'], event['user2'])
 
     # async def notify_match_ready(self, event):
 
