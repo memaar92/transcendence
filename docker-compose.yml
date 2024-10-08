@@ -42,10 +42,6 @@ services:
     restart: unless-stopped
     volumes:
       - trans_database:/var/lib/postgresql/data/pgdata
-# TODO: delete for deployment
-    ports:
-      - 5432:5432
-# TODO: maybe add another not root user for safety in deployment
     secrets:
       - psql_password
       - psql_user
