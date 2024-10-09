@@ -113,10 +113,15 @@ class MatchSession:
         else:
             logger.error("Invalid end reason")
 
+        if winner is not None:
+            loser = self._userID_to_playerID(self.get_opponent_user_id(self._playerID_to_userID(winner)))
+        else:
+            loser = None
+
         # Call the MatchConsumer to disconnect the users
         for user_id, callback in self._on_match_finished_user_callbacks.items():
             if callback is not None:
-                await callback(winner)
+                await callback(winner, loser)
 
         # Stop the main loop
         self._main_loop_task.cancel()

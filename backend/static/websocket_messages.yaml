@@ -659,6 +659,32 @@ backend_match_messages_schema:
       description: |
         Update the player scores in the frontend.
     
+  game_over:
+    description: |
+      Sent when the game is over.
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["game_over"]
+        example: "game_over"
+      winner:
+        type: number
+        enum: [0, 1] # 0: left, 1: right
+        example: 1
+      loser:
+        type: number
+        enum: [0, 1] # 0: left, 1: right
+        example: 0
+    required:
+      - type
+      - winner
+      - loser
+
+    frontend_processing:
+      description: |
+        Show the game over screen in the frontend.
+
 # Match socket: frontend -> backend.
 frontend_match_messages_schema:
 

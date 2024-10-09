@@ -125,18 +125,18 @@ class MatchConsumer(AsyncWebsocketConsumer):
 
         return True
     
-    async def _match_session_is_finished_callback(self, winner: str):
-        # self._connection_established = False
-        await self._send_game_over_message(winner)
+    async def _match_session_is_finished_callback(self, winner: str, loser: str):
+        await self._send_game_over_message(winner, loser)
         self._match_session = None
         await self.close()
 
-    async def _send_game_over_message(self, winner: str) -> None:
+    async def _send_game_over_message(self, winner: str, loser: str) -> None:
         '''Send a game over message to the users'''
         logger.debug(f"Sending game over message to users")
         await self.send(text_data=json.dumps({
             "type": "game_over",
-            "data": winner
+            "winner": winner,
+            "loser": loser
         }))
 
 
