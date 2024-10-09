@@ -58,7 +58,7 @@ class Redirect42Auth(APIView):
     )
 
     def get(self, request):
-        target_url = 'https://api.intra.42.fr/oauth/authorize?client_id=' + get_secret('oauth_client_id') + '&redirect_uri=https%3A%2F%2Flocalhost%2Fapi%2F42auth&response_type=code'
+        target_url = 'https://api.intra.42.fr/oauth/authorize?client_id=' + get_secret('oauth_client_id') + '&redirect_uri=https%3A%2F%2F' + settings.BASE_IP + '%2Fapi%2F42auth&response_type=code'
         return redirect(target_url)
 
 
@@ -78,12 +78,12 @@ class AuthWith42View(APIView, CookieCreationMixin):
             'grant_type': 'authorization_code',
             'client_id': get_secret('oauth_client_id'),
             'client_secret': get_secret('oauth_secret'),
-            'redirect_uri': 'https://localhost/api/42auth'
+            'redirect_uri': 'https://' + settings.BASE_IP + '/api/42auth'
         }).json()
         if (oauth_response.get('error')):
             #case: issue with 42 auth
             response = Response(status=302)
-            response['Location'] = 'https://localhost/auth_failed'
+            response['Location'] = 'https://' + settings.BASE_IP + '/auth_failed'
             return response
         user_info = requests.get('https://api.intra.42.fr/v2/me', headers={
             'Authorization': 'Bearer ' + oauth_response['access_token']
@@ -93,15 +93,15 @@ class AuthWith42View(APIView, CookieCreationMixin):
         if user.exists() and user.first()['is_42_auth'] == False:
             # case: wrong auth method
             response = Response(status=302)
-            response['Location'] = 'https://localhost/auth_failed'
+            response['Location'] = 'https://' + settings.BASE_IP + '/auth_failed'
             return response
         elif not user.exists():
             register42User(user_info['email'], user_info['image']['versions']['small'])
         token = get_tokens_for_user(CustomUser.objects.get(email=user_info['email']))
         response = Response(token, status=302)
         if user.first()['is_2fa_enabled'] == True:
-            response['Location'] = 'https://localhost/verify_2fa'
+            response['Location'] = 'https://' + settings.BASE_IP + '/verify_2fa'
         else:
-            response['Location'] = 'https://localhost/main_menu'
+            response['Location'] = 'https://' + settings.BASE_IP + '/main_menu'
         self.createCookies(response)
         return response

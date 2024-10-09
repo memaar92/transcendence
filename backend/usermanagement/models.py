@@ -51,8 +51,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
 class Games(models.Model):
     id = models.AutoField(primary_key=True)
-    home_id = models.ForeignKey(CustomUser, related_name='home_games', on_delete=models.SET_NULL, null=True)
-    visitor_id = models.ForeignKey(CustomUser, related_name='visitor_games', on_delete=models.SET_NULL, null=True)
+    home_id = models.ForeignKey(CustomUser, related_name='home_games', on_delete=models.SET_NULL, null=True, blank=True)
+    visitor_id = models.ForeignKey(CustomUser, related_name='visitor_games', on_delete=models.SET_NULL, null=True, blank=True)
     
     visitor_score = models.IntegerField()
     home_score = models.IntegerField()
