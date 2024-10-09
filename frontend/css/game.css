@@ -1,0 +1,5 @@
+#game-field {
+    width: 90%;
+    height: 90%;
+    aspect-ratio: 16 / 9;
+}

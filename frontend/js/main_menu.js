@@ -1,6 +1,8 @@
 import { api } from "./api.js";
 import { router } from "./app.js";
+import { hubSocket } from "./app.js";
 
+hubSocket.connect();
 const result = await api.get("/profile/");
 const profile_info = await result.json();
 
