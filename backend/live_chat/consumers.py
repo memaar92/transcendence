@@ -186,19 +186,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'message_key': 'message'
         })
 
-    async def send_pending_game_notifications(self):
-        pending_games = await self.get_pending_game_invitations(self.user_id)
-        game_invitations_list = []
-        for game in pending_games:
-            game_invitations_list.append({
-                'inviter_id': game.inviter_id,
-                'invitee_id': game.user1_id if game.user2_id == game.inviter_id else game.user2_id
-            })
-        await self.send_message_to_user(self.user_id, {
-            'message': game_invitations_list,
-            'message_type': 'pending_games',
-            'message_key': 'games'
-        })
+    # async def send_pending_game_notifications(self):
+    #     pending_games = await self.get_pending_game_invitations(self.user_id)
+    #     game_invitations_list = []
+    #     for game in pending_games:
+    #         game_invitations_list.append({
+    #             'inviter_id': game.inviter_id,
+    #             'invitee_id': game.user1_id if game.user2_id == game.inviter_id else game.user2_id
+    #         })
+    #     await self.send_message_to_user(self.user_id, {
+    #         'message': game_invitations_list,
+    #         'message_type': 'pending_games',
+    #         'message_key': 'games'
+    #     })
         
 
     # async def notify_match_ready(self, event):
@@ -281,7 +281,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         await self.send_friends_info(self.user_id)
                         await self.send_unread_messages_count(self.user_id)
                         await self.send_pending_chat_notifications(self.user_id)
-                        await self.send_pending_game_notifications()
+                        # await self.send_pending_game_notifications()
                     if self.context == 'none':
                         await self.send_unread_messages_count(self.user_id)
                     await self.broadcast_user_list()
@@ -574,7 +574,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'name': friend_user.displayname,
                 'profile_picture_url': friend_user.profile_picture.url if friend_user.profile_picture else None,
                 'chat': True if Message.objects.filter(Q(sender_id=user_id, receiver_id=friend_id) | Q(sender_id=friend_id, receiver_id=user_id)).exists() else False,
-                'status': friend.status
+                'status': friend.status,
+                'inviter_id': friend.inviter_id,
+                'invitee_id': friend.user1_id if friend.user2_id == friend.inviter_id else friend.user2_id
             })
     
         return friend_list
@@ -653,9 +655,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
         relationship.save()
         print ("Inviter ID: ", relationship.inviter_id)
 
-    @database_sync_to_async
-    def get_pending_game_invitations(self, user_id):
-        pending_invitations = Relationship.objects.filter(
-            Q(user1_id=user_id) | Q(user2_id=user_id) & ~Q(inviter_id=None)
-        )
-        return list(pending_invitations)
+    # @database_sync_to_async
+    # def get_pending_game_invitations(self, user_id):
+    #     pending_invitations = Relationship.objects.filter(
+    #         Q(user1_id=user_id) | Q(user2_id=user_id) & ~Q(inviter_id=None)
+    #     )
+    #     return list(pending_invitations)

@@ -205,9 +205,10 @@ class ChatHandler {
           window.localStorage.setItem('game_id', content.match_id);
           this.router.navigate('/game');
         }
-      case 'pending_games':
-        this.displayPendingGames(content.games);
         break;
+      // case 'pending_games':
+      //   this.displayPendingGames(content.games);
+      //   break;
       case 'game_invite_cancelled':
         console.log(content.message);
         const friendItem = document.querySelector(`.friends-item[data-id="${content.message}"]`);
@@ -333,59 +334,67 @@ class ChatHandler {
     });
   }
 
-  displayPendingGames(games) {
-
-    const friendsListElement = document.querySelector('.friends-scroll-container');
-    if (!friendsListElement) {
-      console.warn('Friends list container not found');
-      return;
-    }
-    const friendsItems = friendsListElement.querySelectorAll('.friends-item.friends');
-    friendsItems.forEach(friendItem => {
-      const gameInviteButton = document.createElement('button');
-      gameInviteButton.className = 'button';
-      gameInviteButton.id = 'game-invite-button';
-      gameInviteButton.textContent = 'Play';
+  createGameButton(inviter_id, friend_id) {
+    const gameInviteButton = document.createElement('button');
+    gameInviteButton.className = 'button';
+    gameInviteButton.id = 'game-invite-button';
+  
+    // Track the current state (invite sent or not)
+    let isInviteSent = false;
+  
+    // Helper function to update the button's appearance and behavior
+    const updateButtonState = () => {
+      if (isInviteSent) {
+        gameInviteButton.textContent = 'Cancel';
+        gameInviteButton.onclick = cancelInvite;
+      } else {
+        gameInviteButton.textContent = 'Play';
+        gameInviteButton.onclick = sendInvite;
+      }
+    };
+  
+    // Function to handle sending the game invite
+    const sendInvite = () => {
+      this.ws.send(JSON.stringify({
+        'type': 'game_invite',
+        'sender_id': this.senderId,
+        'receiver_id': friend_id
+      }));
+      isInviteSent = true;
+      updateButtonState();
+    };
+  
+    // Function to handle cancelling the game invite
+    const cancelInvite = () => {
+      this.ws.send(JSON.stringify({
+        'type': 'game_invite_cancelled',
+        'sender_id': this.senderId,
+        'receiver_id': friend_id
+      }));
+      isInviteSent = false;
+      updateButtonState();
+    };
+  
+    // Initialize the button depending on the state of inviter_id
+    if (inviter_id === null) {
+      isInviteSent = false;
+      updateButtonState();
+    } else if (inviter_id === this.senderId) {
+      isInviteSent = true;
+      updateButtonState();
+    } else {
+      // If the invite came from someone else, show "Join"
+      gameInviteButton.textContent = 'Join';
       gameInviteButton.onclick = () => {
         this.ws.send(JSON.stringify({
-          'type': 'game_invite',
-          'sender_id': this.senderId,
-          'receiver_id': friendItem.getAttribute('data-id')
+          'type': 'game_invite_accepted',
+          'sender_id': inviter_id,
+          'receiver_id': this.senderId
         }));
       };
-      friendItem.appendChild(gameInviteButton);
     }
-    );
-    games.forEach((game) => {
-      if (game.inviter_id === this.senderId) {
-        const friendItem = document.querySelector(`.friends-item[data-id="${game.invitee_id}"]`);
-        if (friendItem) {
-          const gameInviteButton = friendItem.querySelector('#game-invite-button');
-          gameInviteButton.textContent = 'Cancel';
-          gameInviteButton.onclick = () => {
-            this.ws.send(JSON.stringify({
-              'type': 'game_invite_cancelled',
-              'sender_id': this.senderId,
-              'receiver_id': game.invitee_id
-            }));
-          };
-        }
-      }
-      else {
-        const friendItem = document.querySelector(`.friends-item[data-id="${game.inviter_id}"]`);
-        if (friendItem) {
-          const gameInviteButton = friendItem.querySelector('#game-invite-button');
-          gameInviteButton.textContent = 'Join';
-          gameInviteButton.onclick = () => {
-            this.ws.send(JSON.stringify({
-              'type': 'game_invite_accepted',
-              'sender_id': game.inviter_id,
-              'receiver_id': this.senderId
-            }));
-          };
-        }
-      }
-    });
+  
+    return gameInviteButton;
   }
         
   showLatestMessage(message, senderId, friendId) {
@@ -883,7 +892,10 @@ class ChatHandler {
     blockButton.onclick = () => {
       this.blockFriend(this.senderId, friend.id);
     };
-    return [chatButton, blockButton];
+
+    const gameButton = this.createGameButton(friend.inviter_id, friend.id);
+
+    return [gameButton, chatButton, blockButton];
   }
 
   createBlockedFilterButtons(friend) {
