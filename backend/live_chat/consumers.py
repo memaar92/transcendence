@@ -173,6 +173,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
     #         'message': f"Upcoming match with!"
     #     }))
 
+    async def game_invite_cancelled(self, user_id):
+        await self.update_inviter(self.user_id, user_id)
+        await self.send_message_to_user(user_id, {
+            'message': self.user_id,
+            'message_type': 'game_invite_cancelled',
+            'message_key': 'message'
+        })
+        await self.send_message_to_user(self.user_id, {
+            'message': user_id,
+            'message_type': 'game_invite_cancelled',
+            'message_key': 'message'
+        })
+
     async def send_pending_game_notifications(self):
         pending_games = await self.get_pending_game_invitations(self.user_id)
         game_invitations_list = []
@@ -302,6 +315,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     })
                 case 'game_invite_accepted':
                     await self.create_match(data['sender_id'])
+                case 'game_invite_cancelled':
+                    await self.game_invite_cancelled(data['receiver_id'])
                 case _:
                     await self.send(text_data=json.dumps({
                         'type': 'error',

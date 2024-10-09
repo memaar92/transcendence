@@ -200,15 +200,30 @@ class ChatHandler {
             }}}
           );
         break;
-      // case 'match_id':
-      //   if (content.sender_id === this.senderId) {
-        // if (content.match_id) {
-        //   window.location.href = '/pong/'; // Reminder: change to this.router.navigate('/pong');
-        //   console.log('Match ID:', content.match_id);
-        //   connectToMatch(content.match_id);
-        // }
+      case 'match_id':
+        if (content.match_id) {
+          window.localStorage.setItem('game_id', content.match_id);
+          this.router.navigate('/game');
+        }
       case 'pending_games':
         this.displayPendingGames(content.games);
+        break;
+      case 'game_invite_cancelled':
+        console.log(content.message);
+        const friendItem = document.querySelector(`.friends-item[data-id="${content.message}"]`);
+        if (friendItem) {
+          const gameInviteButton = friendItem.querySelector('#game-invite-button');
+          gameInviteButton.textContent = 'Play';
+          gameInviteButton.onclick = () => {
+            this.ws.send(JSON.stringify({
+              'type': 'game_invite',
+              'sender_id': this.senderId,
+              'receiver_id': content.message
+            }));
+          }
+        }
+        else
+          console.warn('Friend item not found');
         break;
       default:
         console.error('Unknown context:', content.type);
@@ -319,18 +334,41 @@ class ChatHandler {
   }
 
   displayPendingGames(games) {
+
     const friendsListElement = document.querySelector('.friends-scroll-container');
     if (!friendsListElement) {
       console.warn('Friends list container not found');
       return;
     }
+    const friendsItems = friendsListElement.querySelectorAll('.friends-item.friends');
+    friendsItems.forEach(friendItem => {
+      const gameInviteButton = document.createElement('button');
+      gameInviteButton.className = 'button';
+      gameInviteButton.id = 'game-invite-button';
+      gameInviteButton.textContent = 'Play';
+      gameInviteButton.onclick = () => {
+        this.ws.send(JSON.stringify({
+          'type': 'game_invite',
+          'sender_id': this.senderId,
+          'receiver_id': friendItem.getAttribute('data-id')
+        }));
+      };
+      friendItem.appendChild(gameInviteButton);
+    }
+    );
     games.forEach((game) => {
       if (game.inviter_id === this.senderId) {
         const friendItem = document.querySelector(`.friends-item[data-id="${game.invitee_id}"]`);
         if (friendItem) {
           const gameInviteButton = friendItem.querySelector('#game-invite-button');
           gameInviteButton.textContent = 'Cancel';
-          gameInviteButton.disabled = true;
+          gameInviteButton.onclick = () => {
+            this.ws.send(JSON.stringify({
+              'type': 'game_invite_cancelled',
+              'sender_id': this.senderId,
+              'receiver_id': game.invitee_id
+            }));
+          };
         }
       }
       else {
@@ -845,19 +883,7 @@ class ChatHandler {
     blockButton.onclick = () => {
       this.blockFriend(this.senderId, friend.id);
     };
-
-    const gameInviteButton = document.createElement('button');
-    gameInviteButton.className = 'button';
-    gameInviteButton.id = 'game-invite-button';
-    gameInviteButton.textContent = 'Play';
-    gameInviteButton.onclick = () => {
-      this.ws.send(JSON.stringify({
-        'type': 'game_invite',
-        'sender_id': this.senderId,
-        'receiver_id': friend.id,
-      }));
-    };
-    return [gameInviteButton, chatButton, blockButton];
+    return [chatButton, blockButton];
   }
 
   createBlockedFilterButtons(friend) {
