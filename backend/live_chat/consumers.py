@@ -180,11 +180,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'message_type': 'game_invite_cancelled',
             'message_key': 'message'
         })
-        await self.send_message_to_user(self.user_id, {
-            'message': user_id,
-            'message_type': 'game_invite_cancelled',
-            'message_key': 'message'
-        })
 
     # async def send_pending_game_notifications(self):
     #     pending_games = await self.get_pending_game_invitations(self.user_id)

@@ -213,19 +213,21 @@ class ChatHandler {
         console.log(content.message);
         const friendItem = document.querySelector(`.friends-item[data-id="${content.message}"]`);
         if (friendItem) {
-          const gameInviteButton = friendItem.querySelector('#game-invite-button');
-          gameInviteButton.textContent = 'Play';
-          gameInviteButton.onclick = () => {
-            this.ws.send(JSON.stringify({
-              'type': 'game_invite',
-              'sender_id': this.senderId,
-              'receiver_id': content.message
-            }));
-          }
+            const existingButton = friendItem.querySelector('#game-invite-button');
+            
+            const newGameInviteButton = this.createGameButton(null, content.message);
+            
+            if (existingButton) {
+                friendItem.replaceChild(newGameInviteButton, existingButton);
+            } else {
+                console.warn('Existing game invite button not found');
+                friendItem.appendChild(newGameInviteButton);
+            }
+        } else {
+            console.warn('Friend item not found');
         }
-        else
-          console.warn('Friend item not found');
         break;
+    
       default:
         console.error('Unknown context:', content.type);
         break;
@@ -344,26 +346,33 @@ class ChatHandler {
   
     // Helper function to update the button's appearance and behavior
     const updateButtonState = () => {
+      console.log('Updating button state');
+      gameInviteButton.removeEventListener('click', sendInvite);  // Remove the old event listener
+      gameInviteButton.removeEventListener('click', cancelInvite);  // Remove cancel as well
+      
       if (isInviteSent) {
         gameInviteButton.textContent = 'Cancel';
-        gameInviteButton.onclick = cancelInvite;
+        gameInviteButton.addEventListener('click', cancelInvite);  // Assign cancel event
       } else {
         gameInviteButton.textContent = 'Play';
-        gameInviteButton.onclick = sendInvite;
+        console.log('Assigning send invite event');
+        gameInviteButton.addEventListener('click', sendInvite, { once: true });  // Assign send invite event, ensuring it only fires once
       }
     };
-  
+    
     // Function to handle sending the game invite
     const sendInvite = () => {
+      gameInviteButton.disabled = true;  // Disable the button to prevent double clicking
       this.ws.send(JSON.stringify({
         'type': 'game_invite',
         'sender_id': this.senderId,
         'receiver_id': friend_id
       }));
       isInviteSent = true;
+      gameInviteButton.disabled = false;  // Re-enable the button once invite is sent
       updateButtonState();
     };
-  
+    
     // Function to handle cancelling the game invite
     const cancelInvite = () => {
       this.ws.send(JSON.stringify({
@@ -373,8 +382,8 @@ class ChatHandler {
       }));
       isInviteSent = false;
       updateButtonState();
-    };
-  
+    };    
+
     // Initialize the button depending on the state of inviter_id
     if (inviter_id === null) {
       isInviteSent = false;
@@ -383,6 +392,7 @@ class ChatHandler {
       isInviteSent = true;
       updateButtonState();
     } else {
+      console.log('Inviter ID:', inviter_id);
       // If the invite came from someone else, show "Join"
       gameInviteButton.textContent = 'Join';
       gameInviteButton.onclick = () => {
@@ -393,7 +403,7 @@ class ChatHandler {
         }));
       };
     }
-  
+
     return gameInviteButton;
   }
         
@@ -624,6 +634,12 @@ class ChatHandler {
       if (chatButton) {
         chatButton.remove();
       }
+
+      // Remove the game button
+      const gameButton = friendItem.querySelector('#game-invite-button');
+      if (gameButton) {
+        gameButton.remove();
+      }
   
       // Update the block button to unblock button
       const blockButton = friendItem.querySelector('.button.reject');
@@ -654,7 +670,6 @@ class ChatHandler {
         unblockButton.remove();
       }
   
-      // Re-add the necessary buttons using createFriendsFilterButtons
       const friend = {
         id: receiverId,
         name: friendItem.getAttribute('data-name')
@@ -892,7 +907,7 @@ class ChatHandler {
     blockButton.onclick = () => {
       this.blockFriend(this.senderId, friend.id);
     };
-
+    console.log(friend.inviter_id, friend.id);
     const gameButton = this.createGameButton(friend.inviter_id, friend.id);
 
     return [gameButton, chatButton, blockButton];
