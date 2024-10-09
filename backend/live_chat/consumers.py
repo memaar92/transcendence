@@ -25,7 +25,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     online_users = set()
     active_connections = {}
 
-    async def send_message_to_user(self, receiver_id, message_info):
+    async def send_message_to_user(self, receiver_id, message_info, value = False):
         print (f"Message type: {message_info.get('message_type')}")
         await self.channel_layer.group_send(
             f"chat_{receiver_id}",
@@ -38,7 +38,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "receiver_id": receiver_id,
                     "sender_name": self.scope['user'].displayname,
                     "timestamp": message_info.get("timestamp"),
-                    "message_id": str(uuid.uuid4())
+                    "message_id": str(uuid.uuid4()),
+                    "flag": value
                 }),
             }
         )
@@ -153,6 +154,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             }))
             return
         match = await MatchSessionHandler.create_match(self.user_id, user_id)
+        await self.update_inviter(self.user_id, user_id)
         await self.send_message_to_user(self.user_id, {
             'message_type': 'match_id',
             'message_key': 'match_id',
@@ -171,8 +173,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
     #         'message': f"Upcoming match with!"
     #     }))
 
-    # async def send_pending_game_notifications(self, event):
-    #     MatchSessionHandler.send_match_ready_message(event['match_id'], event['user1'], event['user2'])
+    async def send_pending_game_notifications(self):
+        pending_games = await self.get_pending_game_invitations(self.user_id)
+        game_invitations_list = []
+        for game in pending_games:
+            game_invitations_list.append({
+                'inviter_id': game.inviter_id,
+                'invitee_id': game.user1_id if game.user2_id == game.inviter_id else game.user2_id
+            })
+        await self.send_message_to_user(self.user_id, {
+            'message': game_invitations_list,
+            'message_type': 'pending_games',
+            'message_key': 'games'
+        })
+        
 
     # async def notify_match_ready(self, event):
 
@@ -254,6 +268,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         await self.send_friends_info(self.user_id)
                         await self.send_unread_messages_count(self.user_id)
                         await self.send_pending_chat_notifications(self.user_id)
+                        await self.send_pending_game_notifications()
                     if self.context == 'none':
                         await self.send_unread_messages_count(self.user_id)
                     await self.broadcast_user_list()
@@ -279,7 +294,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 case 'chat_request_denied':
                     await self.chat_request_denied(data)
                 case 'game_invite':
-                    await self.create_match(data['receiver_id'])
+                    await self.update_inviter(data['sender_id'], data['receiver_id'])
+                    await self.send_message_to_user(data['receiver_id'], {
+                        'message': 'You have been invited to a game.',
+                        'message_type': 'game_invite',
+                        'message_key': 'message'
+                    })
+                case 'game_invite_accepted':
+                    await self.create_match(data['sender_id'])
                 case _:
                     await self.send(text_data=json.dumps({
                         'type': 'error',
@@ -418,12 +440,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'message': 'You are now friends with ' + await self.get_user_field(receiver_id, 'displayname'),
             'message_type': 'request_status',
             'message_key': 'message'
-        })
+        }, True)
         await self.send_message_to_user(receiver_id, {
             'message': 'You are now friends with ' + await self.get_user_field(sender_id, 'displayname'),
             'message_type': 'request_status',
             'message_key': 'message'
-        })
+        }, True)
 
         await self.send_friends_info(sender_id)
         await self.send_friends_info(receiver_id)
@@ -603,3 +625,22 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return user.id
         except User.DoesNotExist:
             return None
+
+    @database_sync_to_async 
+    def update_inviter(self, user1_id, user2_id):
+        relationship = Relationship.objects.get(
+            Q(user1_id=user1_id, user2_id=user2_id) | Q(user1_id=user2_id, user2_id=user1_id)
+        ) 
+        if relationship.inviter_id:
+            relationship.inviter_id = None
+        else:
+            relationship.inviter_id = user1_id
+        relationship.save()
+        print ("Inviter ID: ", relationship.inviter_id)
+
+    @database_sync_to_async
+    def get_pending_game_invitations(self, user_id):
+        pending_invitations = Relationship.objects.filter(
+            Q(user1_id=user_id) | Q(user2_id=user_id) & ~Q(inviter_id=None)
+        )
+        return list(pending_invitations)

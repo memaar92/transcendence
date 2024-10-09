@@ -182,12 +182,33 @@ class ChatHandler {
       case 'pending_requests':
         this.displayChatRequest(content.requests);
         break;
-      case 'match_id':
-        if (content.match_id) {
-          window.location.href = '/pong/'; // Reminder: change to this.router.navigate('/pong');
-          console.log('Match ID:', content.match_id);
-          connectToMatch(content.match_id);
-        }
+      case 'game_invite':
+        this.displayModal(content);
+        const friendItems = document.querySelectorAll('.friends-item');
+        friendItems.forEach(friendItem => {
+          if (friendItem.getAttribute('data-id') === content.sender_id && friendItem.classList.contains('friends')) {
+            const gameInviteButton = friendItem.querySelector('#game-invite-button');
+            if (gameInviteButton) {
+              gameInviteButton.textContent = 'Join';
+              gameInviteButton.onclick = () => {
+                this.ws.send(JSON.stringify({
+                  'type': 'game_invite_accepted',
+                  'sender_id': content.sender_id,
+                  'receiver_id': this.senderId
+                }));
+              };
+            }}}
+          );
+        break;
+      // case 'match_id':
+      //   if (content.sender_id === this.senderId) {
+        // if (content.match_id) {
+        //   window.location.href = '/pong/'; // Reminder: change to this.router.navigate('/pong');
+        //   console.log('Match ID:', content.match_id);
+        //   connectToMatch(content.match_id);
+        // }
+      case 'pending_games':
+        this.displayPendingGames(content.games);
         break;
       default:
         console.error('Unknown context:', content.type);
@@ -222,7 +243,9 @@ class ChatHandler {
         if (Object.keys(content.unread_messages).length > 0) {
           this.displayIndicator();
         }
-        break;
+      // case 'match_id':
+      //   this.displayNotification(content);
+      //   break;
       default:
         break;
     }
@@ -294,6 +317,38 @@ class ChatHandler {
       }, 300); // Adjust the delay as needed
     });
   }
+
+  displayPendingGames(games) {
+    const friendsListElement = document.querySelector('.friends-scroll-container');
+    if (!friendsListElement) {
+      console.warn('Friends list container not found');
+      return;
+    }
+    games.forEach((game) => {
+      if (game.inviter_id === this.senderId) {
+        const friendItem = document.querySelector(`.friends-item[data-id="${game.invitee_id}"]`);
+        if (friendItem) {
+          const gameInviteButton = friendItem.querySelector('#game-invite-button');
+          gameInviteButton.textContent = 'Cancel';
+          gameInviteButton.disabled = true;
+        }
+      }
+      else {
+        const friendItem = document.querySelector(`.friends-item[data-id="${game.inviter_id}"]`);
+        if (friendItem) {
+          const gameInviteButton = friendItem.querySelector('#game-invite-button');
+          gameInviteButton.textContent = 'Join';
+          gameInviteButton.onclick = () => {
+            this.ws.send(JSON.stringify({
+              'type': 'game_invite_accepted',
+              'sender_id': game.inviter_id,
+              'receiver_id': this.senderId
+            }));
+          };
+        }
+      }
+    });
+  }
         
   showLatestMessage(message, senderId, friendId) {
     if (document.querySelector('.no-chats-message')) {
@@ -330,7 +385,7 @@ class ChatHandler {
     const usernameMatch = content.message.match(/(\b\w+\b)$/);
     const username = usernameMatch ? usernameMatch[0] : 'User';
     const messageWithHighlightedUsername = content.message.replace(username, `<span style="color: #0083e8;">${username}</span>`);
-    const headerText = content.type === 'chat_request_accepted' ? 'Friend Request Accepted!' : 'Friend Request Denied!';
+    const headerText = content.flag ? 'Friend Request Accepted!' : 'Friend Request Denied!';
 
     // Define the full modal structure
     modalContainer.innerHTML = `
@@ -793,10 +848,12 @@ class ChatHandler {
 
     const gameInviteButton = document.createElement('button');
     gameInviteButton.className = 'button';
+    gameInviteButton.id = 'game-invite-button';
     gameInviteButton.textContent = 'Play';
     gameInviteButton.onclick = () => {
       this.ws.send(JSON.stringify({
         'type': 'game_invite',
+        'sender_id': this.senderId,
         'receiver_id': friend.id,
       }));
     };

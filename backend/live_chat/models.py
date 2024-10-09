@@ -21,6 +21,7 @@ class Relationship(models.Model):
     user2 = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='friend_requests_received', on_delete=models.CASCADE)
     requester = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='sent_requests', on_delete=models.CASCADE, null=True, blank=True)
     blocker = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='blocked_users', on_delete=models.CASCADE, null=True, blank=True)
+    inviter = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='invited_users', on_delete=models.CASCADE, null=True, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     class RelationshipStatus(models.TextChoices):
