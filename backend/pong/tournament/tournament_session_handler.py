@@ -112,12 +112,13 @@ class TournamentSessionHandler:
             raise ValueError(f"tournament does not exist")
 
         if user_id == tournament.get_owner_user_id():
-            await cls._channel_layer.group_send(
-                f"mm_{user_id}",
-                {
-                    'type': 'tournament_starting',
-                }
-            )
+            for user in tournament.get_users():
+                await cls._channel_layer.group_send(
+                    f"mm_{user}",
+                    {
+                        'type': 'tournament_starting',
+                    }
+                )
             await tournament.start()
         else:
             raise ValueError(f"not the tournament owner")
