@@ -657,28 +657,6 @@ class ChatHandler {
 
   unblockFriend(senderId, receiverId) {
     this.updateUserRelationship(senderId, receiverId, 'BF');
-    
-    const friendItem = document.querySelector(`.friends-item[data-id="${receiverId}"]`);
-    
-    if (friendItem) {
-      friendItem.classList.remove('blocked');
-      friendItem.classList.add('friends');
-      
-      // Remove the unblock button
-      const unblockButton = friendItem.querySelector('.button');
-      if (unblockButton) {
-        unblockButton.remove();
-      }
-  
-      const friend = {
-        id: receiverId,
-        name: friendItem.getAttribute('data-name')
-      };
-      const buttons = this.createFriendsFilterButtons(friend);
-      buttons.forEach(button => friendItem.appendChild(button));
-    }
-    
-    this.applyFilter();
   }
 
   displayUserList(data) {

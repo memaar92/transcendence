@@ -54,6 +54,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
         user_id = event['user_id']
         await self.send_pending_chat_notifications(user_id)
 
+    # for the patch method in the RelationshipStatusView
+    async def http_broadcast_user_list(self):
+        await self.broadcast_user_list()
+
     async def send_friends_info(self, user_id):
         friends_list = await self.get_friends_list(user_id)
         await self.send_message_to_user(user_id, {'message': friends_list, 'message_type': 'friends_list', 'message_key': 'friends'})
@@ -81,7 +85,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def broadcast_user_list(self):
         users_info = await self.get_user_list()
+
+        all_blocked_users = {}
         for user_id in ChatConsumer.online_users:
+            friends_list = await self.get_friends_list(user_id)
+            blocked_users = [friend['id'] for friend in friends_list if friend['status'] == RelationshipStatus.BLOCKED]
+            all_blocked_users[user_id] = blocked_users
+
+        for user_id in ChatConsumer.online_users:
+            blocked_users = all_blocked_users.get(user_id, [])
+
+            blocked_by_users = {blocker for blocker, blocked in all_blocked_users.items() if user_id in blocked}
+
             modified_users_info = [
                 {
                     'id': user['id'],
@@ -89,13 +104,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     'profile_picture_url': user['profile_picture'],
                     'is_online': user['id'] in ChatConsumer.online_users
                 }
-                for user in users_info if str(user['id']) != str(user_id)
+                for user in users_info 
+                if user['id'] != user_id and user['id'] not in blocked_users and user['id'] not in blocked_by_users
             ]
+
             user_list_message = json.dumps({
                 'type': 'user_list',
                 'users': modified_users_info
             })
-            await self.send_message_to_user(user_id, {'message': user_list_message, 'message_type': 'user_list', 'message_key': 'users'})
+            await self.send_message_to_user(user_id, {
+                'message': user_list_message,
+                'message_type': 'user_list',
+                'message_key': 'users'
+            })
 
     async def send_pending_chat_notifications(self, user_id):
         pending_requests = await self.get_pending_requests(user_id)
@@ -296,7 +317,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     await self.send_latest_message()
                 case 'update_status':
                     await self.update_status(data['sender_id'], data['receiver_id'], data['status'])
+                    await self.send_friends_info(data['sender_id'])
+                    await self.send_unread_messages_count(data['sender_id'])
                     await self.send_friends_info(data['receiver_id'])
+                    await self.send_unread_messages_count(data['receiver_id'])
+                    await self.broadcast_user_list()
                 case 'chat_request_accepted':
                     await self.chat_request_accepted(data)
                 case 'chat_request_denied':
@@ -549,32 +574,40 @@ class ChatConsumer(AsyncWebsocketConsumer):
         except get_user_model().DoesNotExist:
             return None
 
-    #get the friends list of the user including blocked users
     @database_sync_to_async
     def get_friends_list(self, user_id):
         friends = Relationship.objects.filter(
-            Q(user1_id=user_id) | Q(user2_id=user_id) & (Q(status=RelationshipStatus.BEFRIENDED) | Q(status=RelationshipStatus.BLOCKED)))
+            (Q(user1_id=user_id) | Q(user2_id=user_id)) & 
+            (Q(status=RelationshipStatus.BEFRIENDED) | Q(status=RelationshipStatus.BLOCKED))
+        )
         friend_list = []
         user_model = get_user_model()
-    
+
         for friend in friends:
             if str(friend.user1_id) == str(user_id):
                 friend_id = friend.user2_id
             else:
                 friend_id = friend.user1_id
-    
-            friend_user = user_model.objects.get(id=friend_id)
-            friend_list.append({
-                'id': str(friend_user.id),
-                'name': friend_user.displayname,
-                'profile_picture_url': friend_user.profile_picture.url if friend_user.profile_picture else None,
-                'chat': True if Message.objects.filter(Q(sender_id=user_id, receiver_id=friend_id) | Q(sender_id=friend_id, receiver_id=user_id)).exists() else False,
-                'status': friend.status,
-                'inviter_id': friend.inviter_id,
-                'invitee_id': friend.user1_id if friend.user2_id == friend.inviter_id else friend.user2_id
-            })
-    
+
+            try:
+                friend_user = user_model.objects.get(id=friend_id)
+            except user_model.DoesNotExist:
+                print(f"User with id {friend_id} does not exist")
+                continue
+
+            if friend.blocker_id != friend_id:
+                friend_list.append({
+                    'id': str(friend_user.id),
+                    'name': friend_user.displayname,
+                    'profile_picture_url': friend_user.profile_picture.url if friend_user.profile_picture else None,
+                    'chat': True if Message.objects.filter(Q(sender_id=user_id, receiver_id=friend_id) | Q(sender_id=friend_id, receiver_id=user_id)).exists() else False,
+                    'status': friend.status,
+                    'inviter_id': friend.inviter_id,
+                    'invitee_id': friend.user1_id if friend.user2_id == friend.inviter_id else friend.user2_id
+                })
+
         return friend_list
+
 
     @database_sync_to_async
     def get_unread_messages_count(self, user_id):
