@@ -64,13 +64,6 @@ class RelationshipStatusView(APIView):
                         "user_id": user_id_2
                     }
                 )
-                # async_to_sync(channel_layer.group_send)(
-                #     f"chat_{user_id_1}",
-                #     {
-                #         "type": "http_send_friends_info",
-                #         "user_id": user_id_2
-                #     }
-                # )
             return JsonResponse({"relationship": relationship_dict}, status=200)
         except Exception as e:
             print(e)

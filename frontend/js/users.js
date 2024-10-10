@@ -97,15 +97,20 @@ async function getUsersRelationship() {
   }
 }
 
-
 async function createProfileButton() {
   const myId = await getMyId();
   const userId = localStorage.getItem("UID");
   const relationship = await getUsersRelationship();
   const profileContainer = document.getElementById("user-content");
+
+  // Remove all existing buttons inside the button container and itself
+  document.getElementById("profile-button-container")?.remove();
+
   const buttonContainer = document.createElement("div");
+  buttonContainer.id = "profile-button-container";
   var button = document.createElement("button");
-  button.classList.add("button");
+  button.classList.add("button", "profile-button");
+  button.id = "profile-button";
 
   if (relationship && relationship["status"]) {
     if (relationship["status"] == "BF") {
@@ -113,7 +118,7 @@ async function createProfileButton() {
       button.addEventListener("click", () => updateUserRelationship(myId, userId, "DF"));
       buttonContainer.appendChild(button);
       button = document.createElement("button");
-      button.classList.add("button");
+      button.classList.add("button", "profile-button"); // Ensure the new button gets the same class
       button.textContent = "Block";
       button.addEventListener("click", () => updateUserRelationship(myId, userId, "BL"));
     } else if (relationship["status"] == "PD") {
@@ -125,7 +130,7 @@ async function createProfileButton() {
         button.addEventListener("click", () => updateUserRelationship(myId, userId, "BF"));
         buttonContainer.appendChild(button);
         button = document.createElement("button");
-        button.classList.add("confirm-button");
+        button.classList.add("confirm-button", "profile-button");
         button.textContent = "Decline Request";
         button.addEventListener("click", () => updateUserRelationship(myId, userId, "DF"));
       }
@@ -138,51 +143,10 @@ async function createProfileButton() {
         button.textContent = "Unfriend";
         button.addEventListener("click", () => updateUserRelationship(myId, userId, "DF"));
       }
+      
       const profilePhoto = document.getElementById("profile-photo");
-      const profilePhotoWrapper = document.getElementById("profile-photo-wrapper");
-      
-      // profilePhoto.style.filter = "grayscale(100%)";
-      // profilePhoto.style.opacity = "0.5";
-      profilePhoto.style.width = "256px";
-      profilePhoto.style.height = "256px";
-      
-      const width = profilePhotoWrapper.clientWidth;
-      const height = profilePhotoWrapper.clientHeight;
-      
-      const svgNS = "http://www.w3.org/2000/svg";
-      const svg = document.createElementNS(svgNS, "svg");
-      svg.setAttribute("width", width);
-      svg.setAttribute("height", height);
-      svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-      svg.style.position = "absolute";
-      svg.style.top = "0";
-      svg.style.left = "0";
-      svg.style.zIndex = "1";
-      
-      const line1 = document.createElementNS(svgNS, "line");
-      line1.setAttribute("x1", 20); // Starting x-coordinate
-      line1.setAttribute("y1", 20); // Starting y-coordinate
-      line1.setAttribute("x2", width - 20); // Ending x-coordinate
-      line1.setAttribute("y2", height - 20); // Ending y-coordinate
-      line1.setAttribute("stroke", "white");
-      line1.setAttribute("stroke-width", "10");
-      line1.setAttribute("stroke-linecap", "round");
-      line1.setAttribute("stroke-opacity", "0.7");
-      
-      const line2 = document.createElementNS(svgNS, "line");
-      line2.setAttribute("x1", width - 20); // Starting x-coordinate
-      line2.setAttribute("y1", 20); // Starting y-coordinate
-      line2.setAttribute("x2", 20); // Ending x-coordinate
-      line2.setAttribute("y2", height - 20); // Ending y-coordinate
-      line2.setAttribute("stroke", "white");
-      line2.setAttribute("stroke-width", "10");
-      line2.setAttribute("stroke-linecap", "round");
-      line2.setAttribute("stroke-opacity", "0.7");
-      
-      svg.appendChild(line1);
-      svg.appendChild(line2);
-      
-      profilePhotoWrapper.appendChild(svg);           
+      profilePhoto.style.filter = "grayscale(100%)";
+      profilePhoto.style.opacity = "0.5";
     } else {
       button.textContent = "Add Friend";
       button.addEventListener("click", () => updateUserRelationship(myId, userId, "PD", myId));
@@ -192,6 +156,9 @@ async function createProfileButton() {
     button.addEventListener("click", () => updateUserRelationship(myId, userId, "PD", myId));
   }
 
+  button.onclick = function() {
+    createProfileButton();
+  };
   buttonContainer.appendChild(button);
 
   const profilePhotoWrapper = document.getElementById("profile-photo-wrapper");

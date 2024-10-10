@@ -1,5 +1,5 @@
 import { api } from './api.js';
-// import { connectToMatch } from '../../backend/static/match.js';
+// import { createProfileButton } from './users.js';
 
 class ChatHandler {
   constructor() {
@@ -206,9 +206,6 @@ class ChatHandler {
           this.router.navigate('/game');
         }
         break;
-      // case 'pending_games':
-      //   this.displayPendingGames(content.games);
-      //   break;
       case 'game_invite_cancelled':
         console.log(content.message);
         const friendItem = document.querySelector(`.friends-item[data-id="${content.message}"]`);
@@ -227,7 +224,6 @@ class ChatHandler {
             console.warn('Friend item not found');
         }
         break;
-    
       default:
         console.error('Unknown context:', content.type);
         break;
@@ -245,6 +241,12 @@ class ChatHandler {
       case 'error':
         this.displaySystemMessage(content.message);
         break;
+      case 'match_id':
+        if (content.match_id) {
+          window.localStorage.setItem('game_id', content.match_id);
+          this.router.navigate('/game');
+        }
+        break;
       default:
         console.error('Error:', content.type);
         break;
@@ -261,8 +263,17 @@ class ChatHandler {
         if (Object.keys(content.unread_messages).length > 0) {
           this.displayIndicator();
         }
-      // case 'match_id':
-      //   this.displayNotification(content);
+        break;
+      case 'match_id':
+        if (content.match_id) {
+          window.localStorage.setItem('game_id', content.match_id);
+          this.router.navigate('/game');
+        }
+        break;
+      // case 'friends_list':
+      //   if (window.location.pathname.startsWith('/users/')) {
+      //     createProfileButton();
+      //   }
       //   break;
       default:
         break;
@@ -346,7 +357,6 @@ class ChatHandler {
   
     // Helper function to update the button's appearance and behavior
     const updateButtonState = () => {
-      console.log('Updating button state');
       gameInviteButton.removeEventListener('click', sendInvite);  // Remove the old event listener
       gameInviteButton.removeEventListener('click', cancelInvite);  // Remove cancel as well
       
@@ -355,7 +365,6 @@ class ChatHandler {
         gameInviteButton.addEventListener('click', cancelInvite);  // Assign cancel event
       } else {
         gameInviteButton.textContent = 'Play';
-        console.log('Assigning send invite event');
         gameInviteButton.addEventListener('click', sendInvite, { once: true });  // Assign send invite event, ensuring it only fires once
       }
     };
@@ -392,7 +401,6 @@ class ChatHandler {
       isInviteSent = true;
       updateButtonState();
     } else {
-      console.log('Inviter ID:', inviter_id);
       // If the invite came from someone else, show "Join"
       gameInviteButton.textContent = 'Join';
       gameInviteButton.onclick = () => {
@@ -812,8 +820,11 @@ class ChatHandler {
         friendItem.className = 'friends-item friends';
         var buttons = this.createFriendsFilterButtons(friend);
       } else if (friend.status === 'BL') {
-        friendItem.className = 'friends-item blocked';
-        buttons = this.createBlockedFilterButtons(friend);
+        if (friend.blocker_id === this.senderId) {
+          friendItem.className = 'friends-item blocked';
+          buttons = this.createBlockedFilterButtons(friend);
+        } else
+          friendItem.className = 'friends-item friends';
         console.log(buttons);
       }
       friendItem.setAttribute('data-id', friend.id);

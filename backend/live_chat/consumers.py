@@ -595,16 +595,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 print(f"User with id {friend_id} does not exist")
                 continue
 
-            if friend.blocker_id != friend_id:
-                friend_list.append({
-                    'id': str(friend_user.id),
-                    'name': friend_user.displayname,
-                    'profile_picture_url': friend_user.profile_picture.url if friend_user.profile_picture else None,
-                    'chat': True if Message.objects.filter(Q(sender_id=user_id, receiver_id=friend_id) | Q(sender_id=friend_id, receiver_id=user_id)).exists() else False,
-                    'status': friend.status,
-                    'inviter_id': friend.inviter_id,
-                    'invitee_id': friend.user1_id if friend.user2_id == friend.inviter_id else friend.user2_id
-                })
+            friend_list.append({
+                'id': str(friend_user.id),
+                'name': friend_user.displayname,
+                'profile_picture_url': friend_user.profile_picture.url if friend_user.profile_picture else None,
+                'chat': True if Message.objects.filter(Q(sender_id=user_id, receiver_id=friend_id) | Q(sender_id=friend_id, receiver_id=user_id)).exists() else False,
+                'status': friend.status,
+                'inviter_id': friend.inviter_id,
+                'invitee_id': friend.user1_id if friend.user2_id == friend.inviter_id else friend.user2_id,
+                'blocker_id': friend.blocker_id
+            })
 
         return friend_list
 
