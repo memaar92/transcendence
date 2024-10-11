@@ -45,7 +45,6 @@ class HubSocket {
             router.navigate("/tournament_review");
             return;
         }
-        if (data.type == "tournament_")
 
         if (this.callbackFunction)
         {
