@@ -1,5 +1,6 @@
 import { updateChat } from './live-chat.js';
 import { api } from "./api.js";
+import { hubSocket } from "./app.js";
 
 class Router {
   constructor(routes) {
@@ -13,9 +14,18 @@ class Router {
 
     api.get("/token/check/").then(
       async (result) => {
-
         const json = await result.json();
         const status = json["logged-in"];
+
+        if (!status && !this.unregistered_urls.includes(window.location.pathname)) {
+          this.navigate("/home");
+          return;
+        }
+
+        if (status) {
+          hubSocket.connect();
+        }
+
         if (status && this.unregistered_urls.includes(window.location.pathname)) {
           this.navigate("/main_menu");
         } else {
@@ -67,12 +77,18 @@ class Router {
   }
 
   async navigate(path, pushState = true) {
+    const oldPath = this.currentRoute ? this.currentRoute.path : null;
+    // console.log(oldPath, this.currentRoute.path)
+    if (this.currentRoute && oldPath == path)
+    {
+      return;
+    }
+  
+    // Find the new route
     let route = this.routes.find((r) => r.path === path);
     if (!route) {
       route = this.matchRoute(path);
     }
-
-    const oldPath = this.currentRoute ? this.currentRoute.path : null;
 
     if (path.startsWith("/users/")) {
       route = {

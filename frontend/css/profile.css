@@ -1,4 +1,5 @@
 .container {
+  padding-top: 8vh;
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -22,6 +23,14 @@
 
 .back-button svg:hover {
   transform: scale(1.05);
+}
+
+.tourn-back svg{
+  transition: all 0.1s ease;
+}
+
+.tourn-back svg:hover{
+  transform: scale(1.3);
 }
 
 .profile {

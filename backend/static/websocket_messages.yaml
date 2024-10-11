@@ -328,7 +328,7 @@ frontend_matchmaking_messages_schema:
           example: "tournament1"  # Example tournament ID
         error_message: # Will not be present if the tournament was created
           type: string
-          enum: ["tournament with name exists", "registered to queue", "registered to tournament", "registered to match"]
+          enum: ["tournament with name exists", "registered to queue", "registered to tournament", "registered to match", "tournament size is too large", "tournament size is too small"]
           example: "Already in a tournament"  # Example error message
       required:
         - tournament_created

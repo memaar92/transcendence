@@ -118,8 +118,10 @@ SECURE_SSL_REDIRECT = True
 # #TODO:  SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ["*"]
+#TODO: change to specific hosts
+ALLOWED_HOSTS = ["10.12.8.1", "localhost", "127.0.0.1"]
 
+BASE_IP = "10.12.8.1"
 
 # Application definition
 

@@ -1,4 +1,5 @@
 import Router from "./router.js";
+import HubSocket from "./hubSocket.js"
 
 const routes = [
   { path: "/", templateUrl: "/routes/home.html" },
@@ -18,13 +19,18 @@ const routes = [
   { path: "/live_chat/chat_room", templateUrl: "/routes/chat_room.html" },
   { path: "/game_local", templateUrl: "/routes/game_local.html" },
   { path: "/game", templateUrl: "/routes/game.html" },
+  { path: "/tournament", templateUrl: "/routes/tournament.html" },
+  { path: "/tournament_review", templateUrl: "/routes/tournament_review.html" },
   { path: "/account", templateUrl: "/routes/account.html" },
   { path: "/security", templateUrl: "/routes/security.html" },
   { path: "/appearance", templateUrl: "/routes/appearance.html" },
   { path: "/stats", templateUrl: "/routes/stats.html" },
   { path: "/verify_2fa", templateUrl: "/routes/verify_2fa.html" },
+  { path: "/queue", templateUrl: "/routes/queue.html" },
+  { path: "/endscreen", templateUrl: "/routes/endscreen.html" },
 ];
 
+export const hubSocket = new HubSocket();
 export const router = new Router(routes);
 
 document.addEventListener("DOMContentLoaded", () => {
