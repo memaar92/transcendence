@@ -1,4 +1,5 @@
 import { api } from "./api.js";
+import { hubSocket } from "./app.js";
 
 class Router {
   constructor(routes) {
@@ -14,9 +15,17 @@ class Router {
 
         const json = await result.json()
         const status = json["logged-in"]
+        if (!status && !unregistered_urls.has(window.location.pathname))
+        {
+          this.navigate("/home");
+          return;
+        }
+        if (status){
+          hubSocket.connect();
+        }
+
         if (status && unregistered_urls.has(window.location.pathname)) {
           this.navigate("/main_menu");
-
         } else {
           window.addEventListener("popstate", this.handlePopState.bind(this));
           this.bindLinks();
@@ -36,6 +45,11 @@ class Router {
 
   async navigate(path, pushState = true) {
     const oldPath = this.currentRoute ? this.currentRoute.path : null;
+    // console.log(oldPath, this.currentRoute.path)
+    if (this.currentRoute && oldPath == path)
+    {
+      return;
+    }
   
     // Find the new route
     let route = this.routes.find((r) => r.path === path);

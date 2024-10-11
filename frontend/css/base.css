@@ -65,6 +65,10 @@ h2 {
   background-color: var(--color-accent-hover);
 }
 
+.button:disabled {
+  opacity: 0.3;
+}
+
 .confirm-button {
   background-color: var(--color-confirm);
   box-shadow: 0 4px 0px 0px var(--color-confirm-shadow);
@@ -383,4 +387,53 @@ td {
   top: 0; 
   right: 0; 
   z-index: 1061;
+}
+
+.big-title {
+  font-size: 5rem;
+}
+
+table.dltrc {
+  width: 95%;
+  border-collapse: separate;
+  border-spacing: 0px;
+  border: solid rgb(255, 255, 255) 2px;
+  border-radius: 8px;
+}
+
+tr.dlheader {
+  text-align: center;
+  font-weight: bold;
+  border-left: solid rgb(255, 255, 255) 1px;
+  padding: 2px
+}
+
+td.dlheader {
+  background: #000000;
+  text-align: center;
+  font-weight: bold;
+  border-left: solid rgb(255, 255, 255) 1px;
+  border-radius: 0px;
+  padding: 2px
+}
+
+tr.dlinfo,
+td.dlinfo {
+  text-align: center;
+  border-left: solid rgb(244, 244, 244) 1px;
+  border-top: solid rgb(255, 255, 255) 1px;
+  padding: 2px
+}
+
+td.dlinfo:first-child,
+td.dlheader:first-child {
+  border-left: none;
+}
+
+td.dlheader:first-child {
+  border-radius: 5px 0 0 0;
+}
+
+td.dlheader:last-child {
+  border-radius: 0 5px 0 0;
 }
