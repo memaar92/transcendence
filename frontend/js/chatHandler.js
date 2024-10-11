@@ -183,7 +183,7 @@ class ChatHandler {
         this.displayChatRequest(content.requests);
         break;
       case 'game_invite':
-        this.displayModal(content);
+        this.displayModal(content, 'Game Invite');
         const friendItems = document.querySelectorAll('.friends-item');
         friendItems.forEach(friendItem => {
           if (friendItem.getAttribute('data-id') === content.sender_id && friendItem.classList.contains('friends')) {
@@ -352,37 +352,33 @@ class ChatHandler {
     gameInviteButton.className = 'button';
     gameInviteButton.id = 'game-invite-button';
   
-    // Track the current state (invite sent or not)
     let isInviteSent = false;
   
-    // Helper function to update the button's appearance and behavior
     const updateButtonState = () => {
-      gameInviteButton.removeEventListener('click', sendInvite);  // Remove the old event listener
-      gameInviteButton.removeEventListener('click', cancelInvite);  // Remove cancel as well
+      gameInviteButton.removeEventListener('click', sendInvite);
+      gameInviteButton.removeEventListener('click', cancelInvite);
       
       if (isInviteSent) {
         gameInviteButton.textContent = 'Cancel';
-        gameInviteButton.addEventListener('click', cancelInvite);  // Assign cancel event
+        gameInviteButton.addEventListener('click', cancelInvite);
       } else {
         gameInviteButton.textContent = 'Play';
-        gameInviteButton.addEventListener('click', sendInvite, { once: true });  // Assign send invite event, ensuring it only fires once
+        gameInviteButton.addEventListener('click', sendInvite, { once: true });
       }
     };
     
-    // Function to handle sending the game invite
     const sendInvite = () => {
-      gameInviteButton.disabled = true;  // Disable the button to prevent double clicking
+      gameInviteButton.disabled = true;
       this.ws.send(JSON.stringify({
         'type': 'game_invite',
         'sender_id': this.senderId,
         'receiver_id': friend_id
       }));
       isInviteSent = true;
-      gameInviteButton.disabled = false;  // Re-enable the button once invite is sent
+      gameInviteButton.disabled = false;
       updateButtonState();
     };
     
-    // Function to handle cancelling the game invite
     const cancelInvite = () => {
       this.ws.send(JSON.stringify({
         'type': 'game_invite_cancelled',
@@ -393,7 +389,6 @@ class ChatHandler {
       updateButtonState();
     };    
 
-    // Initialize the button depending on the state of inviter_id
     if (inviter_id === null) {
       isInviteSent = false;
       updateButtonState();
@@ -401,7 +396,7 @@ class ChatHandler {
       isInviteSent = true;
       updateButtonState();
     } else {
-      // If the invite came from someone else, show "Join"
+
       gameInviteButton.textContent = 'Join';
       gameInviteButton.onclick = () => {
         this.ws.send(JSON.stringify({
@@ -441,18 +436,22 @@ class ChatHandler {
     }
   }
 
-  displayModal(content) {
-    // Create the modal container
+  displayModal(content, msg = null) {
     const modalContainer = document.createElement('div');
     modalContainer.className = 'modal fade';
 
-    // Extract the username from the message (last word in the string)
     const usernameMatch = content.message.match(/(\b\w+\b)$/);
     const username = usernameMatch ? usernameMatch[0] : 'User';
-    const messageWithHighlightedUsername = content.message.replace(username, `<span style="color: #0083e8;">${username}</span>`);
-    const headerText = content.flag ? 'Friend Request Accepted!' : 'Friend Request Denied!';
+    var message;
+    var headerText;
+    if (content.type === 'chat_request_accepted' || content.type === 'chat_request_denied') {
+      message = content.message.replace(username, `<span style="color: #0083e8;">${username}</span>`);
+      headerText = content.flag ? 'Friend Request Accepted!' : 'Friend Request Denied!';
+    } else if (content.type === 'game_invite') {
+      message = content.message;
+      headerText = msg;
+    }
 
-    // Define the full modal structure
     modalContainer.innerHTML = `
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -461,13 +460,12 @@ class ChatHandler {
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            ${messageWithHighlightedUsername} ...
+            ${message} ...
           </div>
         </div>
       </div>
     `;
 
-    // Append the modal container to the body
     document.body.prepend(modalContainer);
 
     let modalInstance;
@@ -491,7 +489,6 @@ class ChatHandler {
 
     document.addEventListener('keydown', handleEscapeKey);
 
-    // Clean up event listeners and modal instance when the modal is hidden
     modalContainer.addEventListener('hidden.bs.modal', () => {
       modalContainer.remove();
       modalInstance.dispose();
