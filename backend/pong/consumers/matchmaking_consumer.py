@@ -26,8 +26,6 @@ from pong.schemas.matchmaking_schema import (
 
 logger = logging.getLogger("matchmaking_consumer")
 
-RATE_LIMIT_GET_REQUESTS = 0.4 # Rate limit for get requests in seconds
-
 class MatchmakingConsumer(AsyncWebsocketConsumer):
     _user_connections = {} # Keep track of user connections the active connection(browser tab) for each user
     _last_request_time = {} # Keep track of the last request time for each user
@@ -343,11 +341,6 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
 
         current_time = time.time()
         last_request_time = self._last_request_time.get(self.user_id, 0)
-
-        # Check if the user is rate limited
-        if current_time - last_request_time < RATE_LIMIT_GET_REQUESTS:
-            logger.info(f"Rate limit exceeded for user {self.user_id}")
-            return
 
         # Update the last request time
         self._last_request_time[self.user_id] = current_time

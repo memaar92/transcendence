@@ -1,5 +1,21 @@
 #game-field {
-    width: 90%;
-    height: 90%;
-    aspect-ratio: 16 / 9;
+  width: 90%;
+  height: 90%;
+  aspect-ratio: 16 / 9;
 }
+
+#countdown {
+    z-index: 101111;
+    font-size: 125px;
+    font-weight: bold;
+    transition: font-size 0.3s ease-in-out;
+  }
+  
+  .animate {
+    animation: countdownAnimation 1s forwards;
+  }
+  
+  @keyframes countdownAnimation {
+    from { transform: scale(1); }
+    to { transform: scale(1.5); }
+  }

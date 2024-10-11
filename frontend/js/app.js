@@ -18,6 +18,7 @@ const routes = [
   { path: "/game_local", templateUrl: "/routes/game_local.html" },
   { path: "/game", templateUrl: "/routes/game.html" },
   { path: "/tournament", templateUrl: "/routes/tournament.html" },
+  { path: "/tournament_review", templateUrl: "/routes/tournament_review.html" },
   { path: "/account", templateUrl: "/routes/account.html" },
   { path: "/security", templateUrl: "/routes/security.html" },
   { path: "/appearance", templateUrl: "/routes/appearance.html" },

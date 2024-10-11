@@ -51,9 +51,6 @@ function start_game(match_id) {
                   winner = jsonData.data;
                   timerValue = null;
                   console.log('Game over:', winner);
-                  
-                  if (leftPlayerScore < rightPlayerScore)
-                    localStorage.setItem("winner", )
                   router.navigate("/endscreen");
               } else if (jsonData.type === 'user_mapping') {
                   is_local_match = jsonData.is_local_match;
@@ -324,44 +321,61 @@ function calculateOffset(element, filter) {
       ctx.fill();
       ctx.closePath();
   }
-
-  // Function to draw the timer
-  function drawTimer() {
-      if (timerValue !== null) {
-          ctx.font = 'bold 96px Arial';
-          ctx.fillStyle = 'white';
-          ctx.textAlign = 'center';
-          ctx.fillText(timerValue, canvasWidth / 2, canvasHeight / 2);
-      }
-  }
-
+  
   function drawWinner(winner) {
       ctx.font = 'bold 48px Arial';
       ctx.fillStyle = 'white';
       ctx.textAlign = 'center';
       ctx.fillText('Winner: ' + winner + ' (This is the player ID, not the user ID)', canvasWidth / 2, canvasHeight / 2);
-  }
+    }
 
-  function draw() {
-      // Clear canvas
-    //   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  
+    function animateNumber(number) {
+        // Set the number
+        countdownElement.textContent = number;
+        
+        // Remove the class if it's there (in case the function is called in quick succession)
+        countdownElement.classList.remove('animate');
+        
+        // Trigger reflow
+        void countdownElement.offsetWidth;
+        
+        // Add the class to start the animation
+        countdownElement.classList.add('animate');
+        
+        // Remove the class after animation completes
+        setTimeout(() => {
+          countdownElement.classList.remove('animate');
+        }, 1000); // This should match the animation duration in CSS
+      }
+      
+    
+const countdownElement = document.getElementById('countdown');
+  function draw() {  
       // Draw ball and paddles
       moveElement('ball', 'ball-filter', ball.x, ball.y);
       moveElement('left-pad', 'left-pad-filter', leftPaddle.x, leftPaddle.y);
       moveElement('right-pad', 'right-pad-filter', rightPaddle.x, rightPaddle.y);
   
+    try {
         document.getElementById("left-score").innerHTML = leftPlayerScore;
         document.getElementById("right-score").innerHTML = rightPlayerScore;
+    } catch (error) {
         
+    }
+        
+    
     //   drawPaddle(leftPaddle);
     //   drawPaddle(rightPaddle);
     //   drawBall();
     //   drawScores(); // Draw the scores
   
-    //   if (timerValue !== null && timerValue > 0) {
-    //       drawTimer();
-    //   }
+      if (timerValue !== null && timerValue > 0) {
+        console.log('Animating number:', timerValue);
+        animateNumber(timerValue);
+      }
+      if (timerValue == 0) {
+        countdownElement.innerHTML = "";
+      }
     //   if (winner !== null) {
     //       drawWinner(winner);
     //   }

@@ -1,3 +1,5 @@
+import { router } from "./app.js"
+
 class HubSocket {
     constructor() {
         console.log("Hub: constructor called");
@@ -36,6 +38,14 @@ class HubSocket {
     #handleMessage(e) {
         const data = JSON.parse(e.data);
         console.log(data)
+
+        if (data.type == "tournament_finished"){
+            localStorage.setItem("tournament_result", JSON.stringify(data.user_scores));
+            localStorage.setItem("tournament_name", data.tournament_name);
+            router.navigate("/tournament_review");
+            return;
+        }
+        if (data.type == "tournament_")
 
         if (this.callbackFunction)
         {
