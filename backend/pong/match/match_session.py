@@ -114,7 +114,13 @@ class MatchSession:
             logger.error("Invalid end reason")
 
         if winner is not None:
-            loser = self._userID_to_playerID(self.get_opponent_user_id(self._playerID_to_userID(winner)))
+            if self._is_local_match:
+                if winner == 1:
+                    loser = 0
+                else:
+                    loser = 1
+            else:
+                loser = self._userID_to_playerID(self.get_opponent_user_id(self._playerID_to_userID(winner)))
         else:
             loser = None
 
