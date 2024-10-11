@@ -30,6 +30,7 @@ const routes = [
   { path: "/endscreen", templateUrl: "/routes/endscreen.html" },
 ];
 
+console.log("app loaded");
 export const hubSocket = new HubSocket();
 export const router = new Router(routes);
 

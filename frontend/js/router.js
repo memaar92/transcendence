@@ -1,6 +1,6 @@
-import { updateChat } from './live-chat.js';
 import { api } from "./api.js";
 import { hubSocket } from "./app.js";
+import { chat_handler } from "./chatHandler.js";
 
 class Router {
   constructor(routes) {
@@ -11,20 +11,22 @@ class Router {
     this.maxHistoryPosition = 0;
     this.excludedPaths = ['/main_menu', '/live_chat', '/live_chat/chat_room'];
     this.unregistered_urls = ["/", "/home", "/login", "/register", "/email_verification"];
+    console.log("Router: constructor called");
 
     api.get("/token/check/").then(
       async (result) => {
         const json = await result.json();
         const status = json["logged-in"];
 
+        if (status) {
+          hubSocket.connect();
+        }
+
         if (!status && !this.unregistered_urls.includes(window.location.pathname)) {
           this.navigate("/home");
           return;
         }
 
-        if (status) {
-          hubSocket.connect();
-        }
 
         if (status && this.unregistered_urls.includes(window.location.pathname)) {
           this.navigate("/main_menu");
@@ -130,7 +132,7 @@ class Router {
   }
 
   handlePostUpdate() {
-    updateChat(this, this.currentRoute.params);
+    chat_handler.updateChat(this, this.currentRoute.params);
   }
 
   insertNotification() {

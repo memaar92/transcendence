@@ -62,6 +62,7 @@ async function tableCreate() {
   document.getElementById("losses").textContent = losses;
 }
 
+await createProfileButton();
 await tableCreate();
 
 async function getUsername(id) {
@@ -102,6 +103,9 @@ async function createProfileButton() {
   const userId = localStorage.getItem("UID");
   const relationship = await getUsersRelationship();
   const profileContainer = document.getElementById("user-content");
+  const profilePhoto = document.getElementById("profile-photo");
+  profilePhoto.style.filter = "none";
+  profilePhoto.style.opacity = "1";
 
   // Remove all existing buttons inside the button container and itself
   document.getElementById("profile-button-container")?.remove();
@@ -135,6 +139,8 @@ async function createProfileButton() {
         button.addEventListener("click", () => updateUserRelationship(myId, userId, "DF"));
       }
     } else if (relationship["status"] == "BL") {
+      profilePhoto.style.filter = "grayscale(100%)";
+      profilePhoto.style.opacity = "0.5";
       if (relationship["blocker"] == myId) {
         button.textContent = "Unblock";
         button.addEventListener("click", () => updateUserRelationship(myId, userId, "BF"));
@@ -144,9 +150,6 @@ async function createProfileButton() {
         button.addEventListener("click", () => updateUserRelationship(myId, userId, "DF"));
       }
       
-      const profilePhoto = document.getElementById("profile-photo");
-      profilePhoto.style.filter = "grayscale(100%)";
-      profilePhoto.style.opacity = "0.5";
     } else {
       button.textContent = "Add Friend";
       button.addEventListener("click", () => updateUserRelationship(myId, userId, "PD", myId));
@@ -165,7 +168,6 @@ async function createProfileButton() {
   profileContainer.insertBefore(buttonContainer, profilePhotoWrapper.nextSibling);
 }
 
-await createProfileButton();
 
 async function updateUserRelationship(myId, userId, status)
 {

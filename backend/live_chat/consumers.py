@@ -169,13 +169,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
         try:
             await self.check_users_registered(user_id)
         except Exception as e:
-            await self.send(text_data=json.dumps({
-                'type': 'game_error',
-                'message': str(e)
-            }))
+            await self.send_message_to_user(self.user_id, {
+                'message': str(e),
+                'message_type': 'game_error',
+                'message_key': 'message'
+            })
             return
-        match = await MatchSessionHandler.create_match(self.user_id, user_id)
-        await self.update_inviter(self.user_id, user_id)
+        match = await MatchSessionHandler.create_match(self.user_id, str(user_id))
+        await MatchSessionHandler.send_match_ready_message(match.get_id(), self.user_id, str(user_id))
+        await self.update_inviter(self.user_id, user_id, True)
         await self.send_message_to_user(self.user_id, {
             'message_type': 'match_id',
             'message_key': 'match_id',
@@ -186,7 +188,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'message_key': 'match_id',
             'message': match.get_id(),
         })
-        await MatchSessionHandler.send_match_ready_message(match.get_id(), self.user_id, user_id)
 
     # async def upcoming_match(self, event):
     #     await self.send(text_data=json.dumps({
@@ -195,7 +196,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     #     }))
 
     async def game_invite_cancelled(self, user_id):
-        await self.update_inviter(self.user_id, user_id)
+        await self.update_inviter(self.user_id, user_id, True)
         await self.send_message_to_user(user_id, {
             'message': self.user_id,
             'message_type': 'game_invite_cancelled',
@@ -672,11 +673,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return None
 
     @database_sync_to_async 
-    def update_inviter(self, user1_id, user2_id):
+    def update_inviter(self, user1_id, user2_id, option = False):
         relationship = Relationship.objects.get(
             Q(user1_id=user1_id, user2_id=user2_id) | Q(user1_id=user2_id, user2_id=user1_id)
         ) 
-        if relationship.inviter_id:
+        if option:
             relationship.inviter_id = None
         else:
             relationship.inviter_id = user1_id

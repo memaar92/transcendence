@@ -1,5 +1,7 @@
 import { api } from './api.js';
 // import { createProfileButton } from './users.js';
+import { hubSocket } from "./app.js";
+import { router } from "./app.js";
 
 class ChatHandler {
   constructor() {
@@ -9,9 +11,58 @@ class ChatHandler {
     this.onlineUserIds = [];
     this.router = null;
     this.currentFilter = 'all';
+
+    
   }
 
+  updateChat(router, params) {
+    console.log('Initializing chat with params:', params);
+    // const chatHandler = ChatHandler.getInstance();
+    if (window.location.pathname === '/live_chat') {
+      this.init(params, router, 'home');
+    }
+    else if (window.location.pathname === '/live_chat/chat_room') {
+      // if (!params.recipient)
+      //   router.navigate('/404');
+      this.init(params, router, 'chat');
+    }
+    /* keep the chat handler alive if not in chat interface so that it can still receive messages */
+    else {
+      this.init(params, router, 'none');
+    }
+}
+
+  // static updateChat(router, params) {
+  //   console.log('Initializing chat with params:', params);
+  //   // const chatHandler = ChatHandler.getInstance();
+  //   if (window.location.pathname === '/live_chat') {
+  //     this.init(params, router, 'home');
+  //   }
+  //   else if (window.location.pathname === '/live_chat/chat_room') {
+  //     // if (!params.recipient)
+  //     //   router.navigate('/404');
+  //     this.init(params, router, 'chat');
+  //   }
+  //   /* keep the chat handler alive if not in chat interface so that it can still receive messages */
+  //   else {
+  //     this.init(params, router, 'none');
+  //   }
+  // }
+
   async init(params, router, context) {
+    hubSocket.connect()
+
+    function game_start(message) {
+        if (message.type == "remote_match_ready")
+        {
+            window.localStorage.setItem("game_id", message.match_id)
+            router.navigate("/game")
+        }
+    }
+
+    hubSocket.registerCallback(game_start);
+
+
     this.router = router;
 
     // console.log('Params:', params);
@@ -123,6 +174,7 @@ class ChatHandler {
   }
 
   handleHomeContext(content) {
+    console.log('Handling home context:', content.type);
     switch (content.type) {
       case 'user_list':
         this.displayUserList(content.users);
@@ -200,15 +252,31 @@ class ChatHandler {
             }}}
           );
         break;
-      case 'match_id':
-        if (content.match_id) {
-          window.localStorage.setItem('game_id', content.match_id);
-          this.router.navigate('/game');
+      // case 'match_id':
+      //   if (content.match_id) {
+      //     window.localStorage.setItem('game_id', content.match_id);
+      //     this.router.navigate('/game');
+      //   }
+      //   break;
+      case 'game_invite_cancelled':
+        var friendItem = document.querySelector(`.friends-item[data-id="${content.message}"]`);
+        if (friendItem) {
+            const existingButton = friendItem.querySelector('#game-invite-button');
+            
+            const newGameInviteButton = this.createGameButton(null, content.message);
+            
+            if (existingButton) {
+                friendItem.replaceChild(newGameInviteButton, existingButton);
+            } else {
+                console.warn('Existing game invite button not found');
+                friendItem.appendChild(newGameInviteButton);
+            }
+        } else {
+            console.warn('Friend item not found');
         }
         break;
-      case 'game_invite_cancelled':
-        console.log(content.message);
-        const friendItem = document.querySelector(`.friends-item[data-id="${content.message}"]`);
+      case 'game_error':
+        var friendItem = document.querySelector(`.friends-item[data-id="${content.sender_id}"]`);
         if (friendItem) {
             const existingButton = friendItem.querySelector('#game-invite-button');
             
@@ -241,12 +309,12 @@ class ChatHandler {
       case 'error':
         this.displaySystemMessage(content.message);
         break;
-      case 'match_id':
-        if (content.match_id) {
-          window.localStorage.setItem('game_id', content.match_id);
-          this.router.navigate('/game');
-        }
-        break;
+      // case 'match_id':
+      //   if (content.match_id) {
+      //     window.localStorage.setItem('game_id', content.match_id);
+      //     this.router.navigate('/game');
+      //   }
+      //   break;
       default:
         console.error('Error:', content.type);
         break;
@@ -264,12 +332,12 @@ class ChatHandler {
           this.displayIndicator();
         }
         break;
-      case 'match_id':
-        if (content.match_id) {
-          window.localStorage.setItem('game_id', content.match_id);
-          this.router.navigate('/game');
-        }
-        break;
+      // case 'match_id':
+      //   if (content.match_id) {
+      //     window.localStorage.setItem('game_id', content.match_id);
+      //     this.router.navigate('/game');
+      //   }
+      //   break;
       // case 'friends_list':
       //   if (window.location.pathname.startsWith('/users/')) {
       //     createProfileButton();
@@ -1122,13 +1190,13 @@ class ChatHandler {
   }
 }
 
+export const chat_handler = new ChatHandler();
 
-const instance = new ChatHandler();
-export default {
-  getInstance() {
-    return instance;
-  }
-};
+// export default {
+//   getInstance() {
+//     return instance;
+//   }
+// };
 
 function debounce(func, delay) {
   let timeoutId;
