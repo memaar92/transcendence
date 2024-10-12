@@ -253,12 +253,12 @@ class ChatHandler {
             }}}
           );
         break;
-        case 'match_id':
-            if (content.match_id) {
-                window.localStorage.setItem('game_id', content.match_id);
-                this.router.navigate('/game');
-            }
-            break;
+      case 'match_id':
+        if (content.match_id) {
+          window.localStorage.setItem('game_id', content.match_id);
+          this.router.navigate('/game');
+        }
+        break;
       case 'game_invite_cancelled':
         var friendItem = document.querySelector(`.friends-item[data-id="${content.message}"]`);
         if (friendItem) {
@@ -310,12 +310,12 @@ class ChatHandler {
       case 'error':
         this.displaySystemMessage(content.message);
         break;
-      // case 'match_id':
-      //   if (content.match_id) {
-      //     window.localStorage.setItem('game_id', content.match_id);
-      //     this.router.navigate('/game');
-      //   }
-      //   break;
+      case 'match_id':
+        if (content.match_id) {
+          window.localStorage.setItem('game_id', content.match_id);
+          this.router.navigate('/game');
+        }
+        break;
       default:
         console.error('Error:', content.type);
         break;

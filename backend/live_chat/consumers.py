@@ -169,6 +169,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         try:
             await self.check_users_registered(user_id)
         except Exception as e:
+            print(f"Error checking users registered: {e}")
             await self.send_message_to_user(self.user_id, {
                 'message': str(e),
                 'message_type': 'game_error',
@@ -223,9 +224,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
     # async def notify_match_ready(self, event):
 
     async def check_users_registered(self, user_id):
-        if PongUser.is_user_registered(self.user_id):
+        if PongUser.is_user_registered(int(self.user_id)):
             raise ValueError("You are already registered for a match or a tournament. Cancel your current registration to start a new one.")
-        if PongUser.is_user_registered(user_id):
+        if PongUser.is_user_registered(int(user_id)):
             raise ValueError("The other user is already registered for a match or a tournament. Please try again later.")
 
     async def connect(self):
@@ -330,12 +331,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 case 'chat_request_denied':
                     await self.chat_request_denied(data)
                 case 'game_invite':
-                    await self.update_inviter(data['sender_id'], data['receiver_id'])
-                    await self.send_message_to_user(data['receiver_id'], {
-                        'message': 'You have been invited to a game.',
-                        'message_type': 'game_invite',
-                        'message_key': 'message'
-                    })
+                    if PongUser.is_user_registered(int(data['receiver_id'])):
+                        print("User is already registered for a match or a tournament.")
+                        await self.send(text_data=json.dumps({
+                            'type': 'game_error',
+                            'message': "The other user is already registered for a match or a tournament. Please try again later."
+                        }))
+                    else:
+                        await self.update_inviter(data['sender_id'], data['receiver_id'])
+                        await self.send_message_to_user(data['receiver_id'], {
+                            'message': 'You have been invited to a game.',
+                            'message_type': 'game_invite',
+                            'message_key': 'message'
+                        })
                 case 'game_invite_accepted':
                     await self.create_match(data['sender_id'])
                 case 'game_invite_cancelled':
