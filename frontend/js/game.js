@@ -64,7 +64,7 @@ function start_game(match_id) {
           } else {
             localStorage.setItem("win", false);
           }
-          if (localStorage.getItem("tournament_name")) {
+          if (localStorage.getItem("tournament_games")) {
             router.navigate("/tournament_preview")
             return;
           }

@@ -7,6 +7,7 @@ document.getElementById("back").addEventListener("click", async (e) => {
 });
 
 const tournament_name = localStorage.getItem("tournament_name");
+localStorage.removeItem("tournament_games");
 console.log(tournament_name);
 const tournament_data = localStorage.getItem("tournament_result");
 console.log(tournament_data);

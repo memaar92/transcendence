@@ -15,6 +15,7 @@ const playerID = api.get("/profile");
 
 const tournament_name = localStorage.getItem("tournament_name");
 console.log(tournament_name);
+document.getElementById("name").innerHTML = tournament_name;
 const tournament_data = localStorage.getItem("tournament_games");
 console.log(tournament_data);
 const tournament_json = JSON.parse(tournament_data);
@@ -25,7 +26,8 @@ for (const row of tournament_json) {
     row[1] = await getUsername(row[1]);
 }
 
-createTable(tournament_json)
+if (window.location.pathname == "/tournament_preview")
+  createTable(tournament_json)
 
 async function getUsername(id) {
   const result = await api.get(`/users/${id}/`);
@@ -35,10 +37,10 @@ async function getUsername(id) {
 
 function createTable(tableData) {
     var tableBody = document.getElementById('scores');
-  
-    tableData.forEach(function(rowData) {
+    tableData.forEach(function(rowData, index) {
       var row = document.createElement('tr');
       console.log(rowData)
+      rowData.unshift(index + 1)
   
       rowData.forEach(function(cellData) {
         var cell = document.createElement('td');

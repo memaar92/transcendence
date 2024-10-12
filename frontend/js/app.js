@@ -19,6 +19,7 @@ const routes = [
   { path: "/game", templateUrl: "/routes/game.html" },
   { path: "/tournament", templateUrl: "/routes/tournament.html" },
   { path: "/tournament_review", templateUrl: "/routes/tournament_review.html" },
+  { path: "/tournament_preview", templateUrl: "/routes/tournament_preview.html" },
   { path: "/account", templateUrl: "/routes/account.html" },
   { path: "/security", templateUrl: "/routes/security.html" },
   { path: "/appearance", templateUrl: "/routes/appearance.html" },
