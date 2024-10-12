@@ -37,7 +37,11 @@ async function tableCreate() {
     row.insertCell(0).textContent = i + 1;
     row.insertCell(1).textContent = await getUsername(myId);
     if (games[i]["home_id"] == myId) {
-      row.insertCell(2).textContent = await getUsername(games[i]["visitor_id"]);
+      if (games[i]["visitor_id"] == null) {
+        row.insertCell(2).textContent = "[deleted]";
+      } else {
+        row.insertCell(2).textContent = await getUsername(games[i]["visitor_id"]);
+    }
       row.insertCell(
         3
       ).textContent = `${games[i]["home_score"]} - ${games[i]["visitor_score"]}`;
@@ -46,7 +50,11 @@ async function tableCreate() {
       else if (games[i]["home_score"] < games[i]["visitor_score"])
         losses++;
     } else {
-      row.insertCell(2).textContent = await getUsername(games[i]["home_id"]);
+        if (games[i]["home_id"] == null) {
+          row.insertCell(2).textContent = "[deleted]";
+        } else {
+          row.insertCell(2).textContent = await getUsername(games[i]["home_id"]);
+        }
       row.insertCell(
         3
       ).textContent = `${games[i]["visitor_score"]} - ${games[i]["home_score"]}`;
