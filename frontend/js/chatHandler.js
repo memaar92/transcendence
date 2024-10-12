@@ -237,21 +237,20 @@ class ChatHandler {
         break;
       case 'game_invite':
         this.displayModal(content, 'Game Invite');
-        const friendItems = document.querySelectorAll('.friends-item');
-        friendItems.forEach(friendItem => {
-          if (friendItem.getAttribute('data-id') === content.sender_id && friendItem.classList.contains('friends')) {
-            const gameInviteButton = friendItem.querySelector('#game-invite-button');
-            if (gameInviteButton) {
-              gameInviteButton.textContent = 'Join';
-              gameInviteButton.onclick = () => {
-                this.ws.send(JSON.stringify({
-                  'type': 'game_invite_accepted',
-                  'sender_id': content.sender_id,
-                  'receiver_id': this.senderId
-                }));
-              };
-            }}}
-          );
+        var friendItem = document.querySelector(`.friends-item[data-id="${content.sender_id}"]`);
+        if (friendItem) {
+          const existingButton = friendItem.querySelector('#game-invite-button');
+          const newGameInviteButton = this.createGameButton(content.sender_id, content.receiver_id);
+
+          if (existingButton) {
+            friendItem.replaceChild(newGameInviteButton, existingButton);
+          } else {
+            console.warn('Existing game invite button not found');
+            friendItem.appendChild(newGameInviteButton);
+        }
+        } else {
+            console.warn('Friend item not found');
+        }
         break;
       case 'match_id':
         if (content.match_id) {
@@ -421,18 +420,22 @@ class ChatHandler {
     gameInviteButton.className = 'button';
     gameInviteButton.id = 'game-invite-button';
   
-    let isInviteSent = false;
+    let buttonState = 0;
   
     const updateButtonState = () => {
       gameInviteButton.removeEventListener('click', sendInvite);
       gameInviteButton.removeEventListener('click', cancelInvite);
+      gameInviteButton.removeEventListener('click', sendAcceptance);
       
-      if (isInviteSent) {
+      if (buttonState === 0) {
         gameInviteButton.textContent = 'Cancel';
         gameInviteButton.addEventListener('click', cancelInvite);
-      } else {
+      } else if (buttonState === 1) {
         gameInviteButton.textContent = 'Play';
         gameInviteButton.addEventListener('click', sendInvite, { once: true });
+      } else {
+        gameInviteButton.textContent = 'Join';
+        gameInviteButton.addEventListener('click', sendAcceptance);
       }
     };
     
@@ -443,7 +446,7 @@ class ChatHandler {
         'sender_id': this.senderId,
         'receiver_id': friend_id
       }));
-      isInviteSent = true;
+      buttonState = 0;
       gameInviteButton.disabled = false;
       updateButtonState();
     };
@@ -454,26 +457,32 @@ class ChatHandler {
         'sender_id': this.senderId,
         'receiver_id': friend_id
       }));
-      isInviteSent = false;
+      buttonState = 1;
       updateButtonState();
-    };    
+    };
 
-    if (inviter_id === null) {
-      isInviteSent = false;
-      updateButtonState();
-    } else if (inviter_id === this.senderId) {
-      isInviteSent = true;
-      updateButtonState();
-    } else {
-
-      gameInviteButton.textContent = 'Join';
-      gameInviteButton.onclick = () => {
+    const sendAcceptance = () => {
         this.ws.send(JSON.stringify({
           'type': 'game_invite_accepted',
           'sender_id': inviter_id,
           'receiver_id': this.senderId
         }));
-      };
+        buttonState = 1;
+        updateButtonState();
+    };
+
+    if (inviter_id === null) {
+      buttonState = 1;
+      console.log('Inviter ID is null');
+      updateButtonState();
+    } else if (inviter_id === this.senderId) {
+      buttonState = 0;
+      console.log('Inviter ID is sender ID');
+      updateButtonState();
+    } else {
+      buttonState = 2;
+      console.log('Inviter ID is not sender ID');
+      updateButtonState();
     }
 
     return gameInviteButton;

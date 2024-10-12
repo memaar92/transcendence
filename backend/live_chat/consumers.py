@@ -341,6 +341,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         await self.update_inviter(data['sender_id'], data['receiver_id'])
                         await self.send_message_to_user(data['receiver_id'], {
                             'message': 'You have been invited to a game.',
+                            'sender_id': data['sender_id'],
+                            'receiver_id': data['receiver_id'],
                             'message_type': 'game_invite',
                             'message_key': 'message'
                         })

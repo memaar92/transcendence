@@ -119,9 +119,9 @@ SECURE_SSL_REDIRECT = True
 DEBUG = False
 
 #TODO: change to specific hosts
-ALLOWED_HOSTS = ["10.12.7.2", "localhost", "127.0.0.1"]
+ALLOWED_HOSTS = ["localhost", "localhost", "127.0.0.1"]
 
-BASE_IP = "10.12.7.2"
+BASE_IP = "localhost"
 
 # Application definition
 
