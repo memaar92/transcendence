@@ -28,7 +28,7 @@ class MatchSessionHandler:
         return match
 
     @classmethod
-    async def create_local_match(cls, user_id: str) -> None:
+    async def create_local_match(cls, user_id: int) -> None:
         '''Create a local match'''
         if MatchmakingQueue.is_user_registered(user_id):
             raise ValueError(f"registered to queue")
@@ -43,7 +43,7 @@ class MatchSessionHandler:
         logger.debug(f"Local match created: {user_id}")
 
     @classmethod
-    async def remove_match(cls, match_id: str, winner: str) -> None:
+    async def remove_match(cls, match_id: str, winner: int) -> None:
         '''Remove a match reference'''
         Matches.remove_match(match_id)
     
@@ -52,7 +52,7 @@ class MatchSessionHandler:
     ##############################
 
     @classmethod
-    async def add_to_matchmaking_queue(cls, user_id: str) -> None:
+    async def add_to_matchmaking_queue(cls, user_id: int) -> None:
         '''Add a user to the matchmaking queue'''
         if MatchmakingQueue.is_user_registered(user_id):
             raise ValueError(f"registered to queue")
@@ -84,14 +84,14 @@ class MatchSessionHandler:
                 await cls._send_remote_match_ready_message(match_id, user2, user1)
 
     @classmethod
-    def remove_from_matchmaking_queue(cls, user_id: str) -> None:
+    def remove_from_matchmaking_queue(cls, user_id: int) -> None:
         '''Remove a user from the matchmaking queue'''
         is_removed = MatchmakingQueue.remove_from_queue(user_id)
         if not is_removed:
             raise ValueError(f"not in queue")
         
     @classmethod
-    async def _send_remote_match_ready_message(cls, match_id: str, user_id: str, opponent_id: str) -> None:
+    async def _send_remote_match_ready_message(cls, match_id: str, user_id: int, opponent_id: int) -> None:
         '''Send a match ready message to a user'''
         channel_layer = get_channel_layer()
         await channel_layer.group_send(
