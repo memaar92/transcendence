@@ -1,7 +1,7 @@
 import { api } from './api.js';
 // import { createProfileButton } from './users.js';
-import { hubSocket } from "./app.js";
-import { router } from "./app.js";
+//import { hubSocket } from "./app.js";
+//import { router } from "./app.js";
 
 class ChatHandler {
   constructor() {
@@ -11,10 +11,9 @@ class ChatHandler {
     this.onlineUserIds = [];
     this.router = null;
     this.currentFilter = 'all';
-
-    
   }
 
+  /*
   updateChat(router, params) {
     console.log('Initializing chat with params:', params);
     // const chatHandler = ChatHandler.getInstance();
@@ -26,7 +25,7 @@ class ChatHandler {
       //   router.navigate('/404');
       this.init(params, router, 'chat');
     }
-    /* keep the chat handler alive if not in chat interface so that it can still receive messages */
+    // keep the chat handler alive if not in chat interface so that it can still receive messages
     else {
       this.init(params, router, 'none');
     }
@@ -43,14 +42,16 @@ class ChatHandler {
   //     //   router.navigate('/404');
   //     this.init(params, router, 'chat');
   //   }
-  //   /* keep the chat handler alive if not in chat interface so that it can still receive messages */
+  //   // keep the chat handler alive if not in chat interface so that it can still receive messages
   //   else {
   //     this.init(params, router, 'none');
   //   }
   // }
+*/
+
 
   async init(params, router, context) {
-    hubSocket.connect()
+    /*hubSocket.connect()
 
     function game_start(message) {
         if (message.type == "remote_match_ready")
@@ -61,7 +62,7 @@ class ChatHandler {
     }
 
     hubSocket.registerCallback(game_start);
-
+*/
 
     this.router = router;
 
@@ -252,12 +253,12 @@ class ChatHandler {
             }}}
           );
         break;
-      // case 'match_id':
-      //   if (content.match_id) {
-      //     window.localStorage.setItem('game_id', content.match_id);
-      //     this.router.navigate('/game');
-      //   }
-      //   break;
+        case 'match_id':
+            if (content.match_id) {
+                window.localStorage.setItem('game_id', content.match_id);
+                this.router.navigate('/game');
+            }
+            break;
       case 'game_invite_cancelled':
         var friendItem = document.querySelector(`.friends-item[data-id="${content.message}"]`);
         if (friendItem) {
@@ -1190,13 +1191,13 @@ class ChatHandler {
   }
 }
 
-export const chat_handler = new ChatHandler();
-
-// export default {
-//   getInstance() {
-//     return instance;
-//   }
-// };
+//export const chat_handler = new ChatHandler();
+const instance = new ChatHandler();
+ export default {
+   getInstance() {
+     return instance;
+   }
+};
 
 function debounce(func, delay) {
   let timeoutId;

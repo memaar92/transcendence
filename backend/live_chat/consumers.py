@@ -175,8 +175,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'message_key': 'message'
             })
             return
-        match = await MatchSessionHandler.create_match(self.user_id, str(user_id))
-        await MatchSessionHandler.send_match_ready_message(match.get_id(), self.user_id, str(user_id))
+        #match = await MatchSessionHandler.create_match(self.user_id, str(user_id))
+        match = await MatchSessionHandler.create_match(int(self.user_id), int(user_id), MatchSessionHandler.remove_match)
+        #await MatchSessionHandler.send_match_ready_message(match.get_id(), self.user_id, str(user_id))
+        await MatchSessionHandler.send_match_ready_message(match.get_id(), int(self.user_id), int(user_id))
         await self.update_inviter(self.user_id, user_id, True)
         await self.send_message_to_user(self.user_id, {
             'message_type': 'match_id',
