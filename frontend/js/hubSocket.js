@@ -37,7 +37,7 @@ class HubSocket {
 
     #handleMessage(e) {
         const data = JSON.parse(e.data);
-        console.log(data)
+        console.log("HUB: ", data)
 
         if (data.type == "tournament_finished"){
             localStorage.setItem("tournament_result", JSON.stringify(data.user_scores));
