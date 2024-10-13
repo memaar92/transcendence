@@ -101,6 +101,9 @@ class ChatHandler {
         this.initScrollHandling();
         this.initFiltering();
         this.initTabHandling();
+        document.getElementById("back").addEventListener("click", async (e) => {
+            history.back();
+        });
     }
   }
 
