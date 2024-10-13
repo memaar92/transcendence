@@ -279,11 +279,15 @@ class ChatHandler {
         }
         break;
       case 'game_error':
-        var friendItem = document.querySelector(`.friends-item[data-id="${content.sender_id}"]`);
+        this.displayModal(content, 'Freddy says:');
+        var friendItem = document.querySelector(`.friends-item[data-id="${content.misc}"]`);
         if (friendItem) {
             const existingButton = friendItem.querySelector('#game-invite-button');
             
-            const newGameInviteButton = this.createGameButton(null, content.message);
+            var newGameInviteButton = this.createGameButton(null, content.misc);
+            if (content.flag === true) {
+                newGameInviteButton = this.createGameButton(content.misc, content.sender_id);
+            }
             
             if (existingButton) {
                 friendItem.replaceChild(newGameInviteButton, existingButton);
@@ -531,7 +535,7 @@ class ChatHandler {
     if (content.type === 'request_status') {
       message = content.message.replace(username, `<span style="color: #0083e8;">${username}</span>`);
       headerText = content.flag ? 'Friend Request Accepted!' : 'Friend Request Denied!';
-    } else if (content.type === 'game_invite') {
+    } else if (content.type === 'game_invite' || content.type === 'game_error') {
       message = content.message;
       headerText = msg;
     }
