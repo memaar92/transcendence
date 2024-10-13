@@ -525,7 +525,7 @@ class ChatHandler {
     console.log('Content.type:', content.type);
     var message;
     var headerText;
-    if (content.type === 'request_status') {
+    if (content.type === 'chat_request_status') {
       message = content.message.replace(username, `<span style="color: #0083e8;">${username}</span>`);
       headerText = content.flag ? 'Friend Request Accepted!' : 'Friend Request Denied!';
     } else if (content.type === 'game_invite') {

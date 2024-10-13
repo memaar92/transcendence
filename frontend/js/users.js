@@ -121,7 +121,7 @@ async function createProfileButton() {
   const buttonContainer = document.createElement("div");
   buttonContainer.id = "profile-button-container";
   var button = document.createElement("button");
-  button.classList.add("button", "profile-button");
+  button.classList.add("button", "profile-button"); 
   button.id = "profile-button";
 
   if (relationship && relationship["status"]) {
@@ -129,8 +129,9 @@ async function createProfileButton() {
       button.textContent = "Unfriend";
       button.addEventListener("click", () => updateUserRelationship(myId, userId, "DF"));
       buttonContainer.appendChild(button);
+      button.style.marginRight = "1rem";
       button = document.createElement("button");
-      button.classList.add("button", "profile-button"); // Ensure the new button gets the same class
+      button.classList.add("button", "reject");
       button.textContent = "Block";
       button.addEventListener("click", () => updateUserRelationship(myId, userId, "BL"));
     } else if (relationship["status"] == "PD") {
@@ -141,8 +142,9 @@ async function createProfileButton() {
         button.textContent = "Accept Request";
         button.addEventListener("click", () => updateUserRelationship(myId, userId, "BF"));
         buttonContainer.appendChild(button);
+        button.style.marginRight = "1rem";
         button = document.createElement("button");
-        button.classList.add("confirm-button", "profile-button");
+        button.classList.add("button", "reject");
         button.textContent = "Decline Request";
         button.addEventListener("click", () => updateUserRelationship(myId, userId, "DF"));
       }
