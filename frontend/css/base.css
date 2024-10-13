@@ -9,6 +9,42 @@ body {
   bottom: 0;
 }
 
+#crt-filter {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999999; /* Ensure it's on top */
+  pointer-events: none; /* Allow interaction with underlying content */
+  /* background: url(https://c8.alamy.com/comp/2RX4A74/pixelated-radial-gradient-texture-black-and-white-bitmap-dither-central-background-abstract-fade-glitchy-pattern-video-game-screen-wallpaper-retro-pixel-art-vector-halftone-wide-border-2RX4A74.jpg); */
+  opacity: 0.9; /* Adjust to control visibility of the overlay */
+  backdrop-filter: contrast(1.15) brightness(1.05); /* Subtle adjustments */
+}
+
+#crt-filter::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 99999999;
+  pointer-events: none;
+  opacity: 0.5; /* Adjust to control visibility of RGB stripes */
+  animation: crt-flicker 0.05s infinite; /* Simulate slight flicker */
+}
+
+/* Simulating screen flicker */
+@keyframes crt-flicker {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
 :root {
   --color-text: #fff;
   --color-background: #202021;

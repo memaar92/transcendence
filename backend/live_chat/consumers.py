@@ -227,6 +227,38 @@ class ChatConsumer(AsyncWebsocketConsumer):
             raise ValueError("You are already registered for a match or a tournament. Cancel your current registration to start a new one.")
         if PongUser.is_user_registered(user_id):
             raise ValueError("The other user is already registered for a match or a tournament. Please try again later.")
+        
+    async def is_valid_invite(self, user1_id, user2_id):
+        print (f"User1 ID: {user1_id}, User2 ID: {user2_id}")
+        if user1_id != self.user_id:
+            await self.send(text_data=json.dumps({
+                'type': 'game_error',
+                'message': "You are not authorized to accept this invitation."
+            }))
+            return False
+        try:
+            relationship = await database_sync_to_async(Relationship.objects.get)(
+                Q(user1_id=user1_id, user2_id=user2_id) | Q(user1_id=user2_id, user2_id=user1_id)
+            )
+        except Relationship.DoesNotExist:
+            await self.send(text_data=json.dumps({
+                'type': 'game_error',
+                'message': "No such relationship exists."
+            }))
+            return False
+        if relationship.inviter_id is None:
+            await self.send(text_data=json.dumps({
+                'type': 'game_error',
+                'message': "You were not invited to this game."
+            }))
+            return False
+        if relationship.inviter_id == self.user_id:
+            await self.send(text_data=json.dumps({
+                'type': 'game_error',
+                'message': "You cannot accept your own invitation."
+            }))
+            return False
+        return True
 
     async def connect(self):
         if self.scope['user'] and not isinstance(self.scope['user'], AnonymousUser):
@@ -337,7 +369,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         'message_key': 'message'
                     })
                 case 'game_invite_accepted':
-                    await self.create_match(data['sender_id'])
+                    if (await self.is_valid_invite(data['sender_id'], data['receiver_id'])):
+                        await self.create_match(data['sender_id'])
                 case 'game_invite_cancelled':
                     await self.game_invite_cancelled(data['receiver_id'])
                 case _:

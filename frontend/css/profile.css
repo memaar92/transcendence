@@ -101,11 +101,18 @@
   position: absolute;
 }
 
+#profile-photo-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+
 #profile-photo {
   height: 16rem;
   width: 16rem;
   border: 3px solid #7A35EC;
   border-radius: 1rem;
+
 }
 
 #user-content {
