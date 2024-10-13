@@ -1,7 +1,4 @@
 import { api } from './api.js';
-// import { createProfileButton } from './users.js';
-//import { hubSocket } from "./app.js";
-//import { router } from "./app.js";
 
 class ChatHandler {
   constructor() {
@@ -13,56 +10,8 @@ class ChatHandler {
     this.currentFilter = 'all';
   }
 
-  /*
-  updateChat(router, params) {
-    console.log('Initializing chat with params:', params);
-    // const chatHandler = ChatHandler.getInstance();
-    if (window.location.pathname === '/live_chat') {
-      this.init(params, router, 'home');
-    }
-    else if (window.location.pathname === '/live_chat/chat_room') {
-      // if (!params.recipient)
-      //   router.navigate('/404');
-      this.init(params, router, 'chat');
-    }
-    // keep the chat handler alive if not in chat interface so that it can still receive messages
-    else {
-      this.init(params, router, 'none');
-    }
-}
-
-  // static updateChat(router, params) {
-  //   console.log('Initializing chat with params:', params);
-  //   // const chatHandler = ChatHandler.getInstance();
-  //   if (window.location.pathname === '/live_chat') {
-  //     this.init(params, router, 'home');
-  //   }
-  //   else if (window.location.pathname === '/live_chat/chat_room') {
-  //     // if (!params.recipient)
-  //     //   router.navigate('/404');
-  //     this.init(params, router, 'chat');
-  //   }
-  //   // keep the chat handler alive if not in chat interface so that it can still receive messages
-  //   else {
-  //     this.init(params, router, 'none');
-  //   }
-  // }
-*/
-
 
   async init(params, router, context) {
-    /*hubSocket.connect()
-
-    function game_start(message) {
-        if (message.type == "remote_match_ready")
-        {
-            window.localStorage.setItem("game_id", message.match_id)
-            router.navigate("/game")
-        }
-    }
-
-    hubSocket.registerCallback(game_start);
-*/
 
     this.router = router;
 

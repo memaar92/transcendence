@@ -155,17 +155,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
     #         })
     
     # when game invitation message is received from the frontend register the inviter to the match before creating the match because the invitee also has to accept the invitation
-    async def wait_for_match(self, user_id):
-        if await self.get_status(self.user_id, user_id) != RelationshipStatus.BEFRIENDED:
-            return
-        if PongUser.is_user_registered(user_id):
-            await self.send(text_data=json.dumps({
-                'type': 'game_error',
-                'message': "The other user is already registered for a match or a tournament. Please try again later."
-            }))
-            return
-        else :
-            await PongUser.assign_to_game(user_id, "match", None)
+    #async def wait_for_match(self, user_id):
+    #    if await self.get_status(self.user_id, user_id) != RelationshipStatus.BEFRIENDED:
+    #        return
+    #    if PongUser.is_user_registered(user_id):
+    #        await self.send(text_data=json.dumps({
+    #            'type': 'game_error',
+    #            'message': "The other user is already registered for a match or a tournament. Please try again later."
+    #        }))
+    #        return
+    #    else :
+    #        await PongUser.assign_to_game(user_id, "match", None)
 
     async def create_match(self, user_id):
         if await self.get_status(self.user_id, user_id) != RelationshipStatus.BEFRIENDED:
@@ -180,9 +180,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'misc': user_id
             }, value = True)
             return
-        #match = await MatchSessionHandler.create_match(self.user_id, str(user_id))
         match = await MatchSessionHandler.create_match(int(self.user_id), int(user_id), MatchSessionHandler.remove_match)
-        #await MatchSessionHandler.send_match_ready_message(match.get_id(), self.user_id, str(user_id))
         await MatchSessionHandler.send_match_ready_message(match.get_id(), int(self.user_id), int(user_id))
         await self.update_inviter(self.user_id, user_id, True)
         await self.send_message_to_user(self.user_id, {
@@ -345,15 +343,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                             'misc': data['receiver_id']
                         })
                         return
-                    
-                    #if PongUser.is_user_registered(int(data['receiver_id'])):
-                    #    await self.send_message_to_user(data['sender_id'], {
-                    #        'message': "The other user is already registered for a match or a tournament. Please try again later.",
-                    #        'message_type': 'game_error',
-                    #        'message_key': 'message',
-                    #        'misc': data['receiver_id']
-                    #    })
-                    #else:
                     await self.update_inviter(data['sender_id'], data['receiver_id'])
                     await self.send_message_to_user(data['receiver_id'], {
                         'message': 'You have been invited to a game.',
