@@ -519,10 +519,13 @@ class ChatHandler {
     modalContainer.className = 'modal fade';
 
     const usernameMatch = content.message.match(/(\b\w+\b)$/);
+    console.log('usernameMatch:', usernameMatch);
     const username = usernameMatch ? usernameMatch[0] : 'User';
+    console.log('Username:', username);
+    console.log('Content.type:', content.type);
     var message;
     var headerText;
-    if (content.type === 'chat_request_accepted' || content.type === 'chat_request_denied') {
+    if (content.type === 'request_status') {
       message = content.message.replace(username, `<span style="color: #0083e8;">${username}</span>`);
       headerText = content.flag ? 'Friend Request Accepted!' : 'Friend Request Denied!';
     } else if (content.type === 'game_invite') {
