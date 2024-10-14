@@ -89,18 +89,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def broadcast_user_list(self):
         users_info = await self.get_user_list()
-
+    
         all_blocked_users = {}
-        for user_id in ChatConsumer.online_users:
+        for user_id in list(ChatConsumer.online_users):
             friends_list = await self.get_friends_list(user_id)
             blocked_users = [friend['id'] for friend in friends_list if friend['status'] == RelationshipStatus.BLOCKED]
             all_blocked_users[user_id] = blocked_users
-
-        for user_id in ChatConsumer.online_users:
+    
+        for user_id in list(ChatConsumer.online_users):
             blocked_users = all_blocked_users.get(user_id, [])
-
+    
             blocked_by_users = {blocker for blocker, blocked in all_blocked_users.items() if user_id in blocked}
-
+    
             modified_users_info = [
                 {
                     'id': user['id'],
@@ -111,7 +111,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 for user in users_info 
                 if user['id'] != user_id and user['id'] not in blocked_users and user['id'] not in blocked_by_users
             ]
-
+    
             user_list_message = json.dumps({
                 'type': 'user_list',
                 'users': modified_users_info

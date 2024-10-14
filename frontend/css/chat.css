@@ -300,7 +300,7 @@
   white-space: nowrap; /* Prevent text from wrapping */
   max-width: 100%; /* Ensure it fits within the container */
   justify-content: center;
-  align-items: center; */
+  align-items: center;
 }
 
 .friends-item img {
@@ -527,7 +527,7 @@
 }
 
 .nav-tabs .nav-link:focus {
-  border-color: #7A35EC #7A35EC #7A35EC;
+  border-color: #7A35EC #7a35ec #7A35EC;
   isolation: isolate;
 }
 
@@ -539,7 +539,6 @@
   display: block;
 }
 
-/* From Uiverse.io by boryanakrasteva */ 
 .input-wrapper {
   display: flex;
   align-items: center;
@@ -550,33 +549,38 @@
 
 .search-input {
   border-style: none;
-  height: 50px;
-  width: 50px;
-  padding: 10px;
+  height: 3rem;
+  width: 2rem;
+  padding: 0;
   outline: none;
+  border: white 2px solid;
   border-radius: 50%;
-  transition: .5s ease-in-out;
-  background-color: #7e4fd4;
-  box-shadow: 0px 0px 3px #f3f3f3;
+  transition: width 0.5s cubic-bezier(0, 0.110, 0.35, 2), border-radius 0.5s cubic-bezier(0, 0.110, 0.35, 2), background-color 0.5s cubic-bezier(0, 0.110, 0.35, 2);
+  background: linear-gradient(135deg, #7A35EC, #921e92);
+  box-shadow: 0px 0px 3px #ffffff;
   padding-right: 40px;
   color: #fff;
+  margin-top: 5rem;
+  margin-right: 1rem;
+  position: absolute;
 }
 
 .search-input::placeholder,
 .search-input {
-  font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
-  font-size: 17px;
+  font-size: 1rem;
+  font-family: inherit;
+  padding-left: 5px;
 }
 
 .search-input::placeholder {
-  color: #8f8f8f;
+  color: #b0b0b0;
+  padding-left: 5px;
 }
 
 .icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  position: absolute;
   right: 0px;
   cursor: pointer;
   width: 50px;
@@ -593,10 +597,33 @@
 .search-input:focus {
   box-shadow: none;
   width: 250px;
-  border-radius: 0px;
+  border-radius: 5px;
   background-color: transparent;
-  border-bottom: 3px solid #7e4fd4;
-  transition: all 500ms cubic-bezier(0, 0.110, 0.35, 2);
+  border: 2px solid #ffffff;
+}
+
+.search-icon {
+  position: absolute;
+  top: 17px;
+  right: 17.5px;
+  pointer-events: none;
+  fill: #000; /* Change this to the desired color */
+  opacity: 0; /* Initially hidden */
+  transition: opacity var(--opacity-transition-duration, 0.2s) ease-in-out; /* Transition for fading with variable duration */
+}
+
+.search-input:hover {
+  cursor: pointer;
+}
+
+.search-input:focus + .search-icon {
+  --opacity-transition-duration: 0s; /* Immediate transition when focusing */
+  opacity: 0; /* Fade in when input is focused */
+}
+
+.search-input:not(:focus) + .search-icon {
+  --opacity-transition-duration: 0.2s; /* Smooth transition when unfocusing */
+  opacity: 1; /* Fade out when input is not focused */
 }
 
 .no-chats-message, .no-friends-message {
@@ -815,18 +842,6 @@
   position: relative;
 }
 
-/* @keyframes glow {
-  0% {
-    box-shadow: 0 0 10px #7A35EC;
-  }
-  50% {
-    box-shadow: 0 0 20px #7A35EC;
-  }
-  100% {
-    box-shadow: 0 0 10px #7A35EC;
-  }
-} */
-
 .toastchat-toast {
   background-color: #ffff7e;
   border: 1px solid #333;
@@ -841,4 +856,12 @@
 
 .chat-toast-body {
   color: #333;
+}
+
+.add-friend-field {
+  display: flex;
+  align-items: center;
+  justify-content: right;
+  gap: 0.9rem;
+  position: relative;
 }

@@ -8,9 +8,11 @@ class ChatHandler {
     this.onlineUserIds = [];
     this.router = null;
     this.currentFilter = 'all';
+    this.boundSearchInputHandler = this.searchInputHandler.bind(this);
   }
 
-
+  
+  
   async init(params, router, context) {
 
     this.router = router;
@@ -26,40 +28,59 @@ class ChatHandler {
 
     console.log('Creating new WebSocket connection');
     this.ws = new WebSocket(url);
-
+    
     this.ws.onopen = () => {
-        console.log('WebSocket connection opened in context:', context);
-        this.ws.send(JSON.stringify({ "type": context, "context": 'setup' }));
-        if (context === 'chat') {
-          this.chatWindowOpened = false;
-        }
+      console.log('WebSocket connection opened in context:', context);
+      this.ws.send(JSON.stringify({ "type": context, "context": 'setup' }));
+      if (context === 'chat') {
+        this.chatWindowOpened = false;
+      }
     };
-
+    
     this.ws.onerror = (e) => {
-        // console.error('WebSocket error:', e);
+      // console.error('WebSocket error:', e);
     };
-
+    
     this.ws.onmessage = this.onMessage.bind(this);
     this.ws.onclose = (e) => this.onClose(e, context);
-
+    
     if (context === 'chat') {
       this.currentReceiverId = params.recipient;
       this.chatWindowOpened = false;
     } else {
-        this.currentReceiverId = null;
-        this.initScrollHandling();
-        this.initFiltering();
-        this.initTabHandling();
-        document.getElementById("back").addEventListener("click", async (e) => {
-            history.back();
-        });
+      this.currentReceiverId = null;
+      // this.initScrollHandling();
+      this.initFiltering();
+      this.initTabHandling();
+      document.getElementById("back").addEventListener("click", async (e) => {
+        history.back();
+      });
+      const searchInput = document.getElementById('search-input');
+      searchInput.removeEventListener('keydown', this.boundSearchInputHandler);
+      searchInput.addEventListener('keydown', this.boundSearchInputHandler);
+      }
     }
-  }
-
-  // async onClose(event) {
-  //   console.log('WebSocket connection closed:', event.code, event.reason);
-  // }
-
+    
+    // async onClose(event) {
+      //   console.log('WebSocket connection closed:', event.code, event.reason);
+      // }
+      
+    async getUserIdfromName(name) {
+      try {
+        const response = await api.get(`/users/${name}`);
+        const json = await response.json();
+        if (response.status === 200) {
+          if (json.user_id) {
+            return json.user_id;
+          }
+          throw new Error('User ID not found');
+        }
+      } catch (error) {
+        console.error('Error fetching user ID:', error);
+        return null;
+      }
+    }
+      
   async checkToken() {
     try {
       const response = await api.get('/token/check');
@@ -82,10 +103,10 @@ class ChatHandler {
       console.error('Failed to reconnect:', error);
     }
   }
-
+  
   async onClose(event, context) {
     console.log('WebSocket connection closed:', event.code, event.reason);
-  
+    
     if (event.code === 1006) {
       try {
         await this.checkToken();
@@ -94,9 +115,9 @@ class ChatHandler {
         console.error('Failed to authenticate:', error);
         this.router.navigate('/home');
       }
-    // } else {
-    //   setTimeout(() => this.reconnect(), 5000);
-    // }
+      // } else {
+        //   setTimeout(() => this.reconnect(), 5000);
+        // }
     }
   }
   
@@ -106,8 +127,8 @@ class ChatHandler {
     if (content.type === 'user_id') {
       this.senderId = Number(content.user_id);
       if (content.context === 'chat' && !this.chatWindowOpened) {
-          this.openChatWindow(this.currentReceiverId);
-          this.chatWindowOpened = true;
+        this.openChatWindow(this.currentReceiverId);
+        this.chatWindowOpened = true;
       }
       return;
     }
@@ -115,17 +136,17 @@ class ChatHandler {
       case 'home':
         this.handleHomeContext(content);
         break;
-      case 'chat':
-        this.handleChatContext(content);
+        case 'chat':
+          this.handleChatContext(content);
+          break;
+          case 'none':
+            this.handleNoneContext(content);
+            default:
+              // console.error('Unknown context:', content.context);
         break;
-      case 'none':
-        this.handleNoneContext(content);
-      default:
-        // console.error('Unknown context:', content.context);
-        break;
+      }
     }
-  }
-
+    
   handleHomeContext(content) {
     console.log('Handling home context:', content.type);
     switch (content.type) {
@@ -1073,24 +1094,24 @@ class ChatHandler {
     });
   }
 
-  initScrollHandling() {
-    const container = document.querySelector('.user-list-container');
+  // initScrollHandling() {
+  //   const container = document.querySelector('.user-list-container');
 
-    if (container) {
-      container.addEventListener('wheel', (event) => {
-        if (event.ctrlKey) {
-          return;
-        }
+  //   if (container) {
+  //     container.addEventListener('wheel', (event) => {
+  //       if (event.ctrlKey) {
+  //         return;
+  //       }
 
-        if (event.deltaY !== 0) {
-          container.scrollLeft += event.deltaY;
-          event.preventDefault();
-        }
-      });
-    } else {
-      console.warn('User list container not found');
-    }
-  }
+  //       if (event.deltaY !== 0) {
+  //         container.scrollLeft += event.deltaY;
+  //         event.preventDefault();
+  //       }
+  //     });
+  //   } else {
+  //     console.warn('User list container not found');
+  //   }
+  // }
 
   initFiltering() {
     const btnContainer = document.querySelector('.btn-group');
@@ -1143,7 +1164,19 @@ class ChatHandler {
     tabContents.forEach(tabContent => {
         tabContent.classList.remove('d-none');
     });
-}
+  }
+
+  async searchInputHandler(event) {
+    if (event.key === 'Enter') {
+      const inputValue = event.target.value;
+      if (inputValue.length > 0 && inputValue.length <= 20) {
+        const user_id = await this.getUserIdfromName(inputValue);
+        if (user_id) {
+          this.router.navigate(`/users/${user_id}`);
+        }
+      }
+    }
+  }
 
   applyFilter() {
     const items = document.getElementsByClassName("friends-item");
