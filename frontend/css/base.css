@@ -389,6 +389,13 @@ td {
   z-index: 1061;
 }
 
+#main_alert {
+  position: absolute; 
+  top: 0; 
+  right: 0; 
+  z-index: 1061;
+}
+
 .big-title {
   font-size: 5rem;
 }

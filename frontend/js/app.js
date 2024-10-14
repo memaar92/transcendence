@@ -35,3 +35,18 @@ export const router = new Router(routes);
 document.addEventListener("DOMContentLoaded", () => {
   router.init(document.getElementById("app"));
 });
+
+export function showAlert(message) {
+  const alertContainer = document.getElementById('main_alert');
+  
+  const alertElement = document.createElement('div');
+  alertElement.classList.add('alert', 'alert-danger', 'alert-dismissible', 'fade', 'show');
+  alertElement.setAttribute('role', 'alert');
+  
+  alertElement.innerHTML = `
+    ${message}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  `;
+  alertContainer.appendChild(alertElement);
+  new bootstrap.Alert(alertElement);
+}
