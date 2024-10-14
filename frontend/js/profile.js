@@ -4,7 +4,7 @@ import { hubSocket, router } from "./app.js";
 await update_userinfo()
 
 document.getElementById("back").addEventListener("click", async (e) => {
-  history.back();
+  router.navigate("/main_menu");
 });
 
 document.getElementById("upload-photo").addEventListener("change", async (e) => {

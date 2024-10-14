@@ -1,7 +1,8 @@
 import { api } from "./api.js";
+import { router } from "./app.js";
 
 document.getElementById("back").addEventListener("click", async (e) => {
-  history.back();
+  router.navigate("/main_menu");
 });
 
 const fa2 = await api.get("/profile/");
