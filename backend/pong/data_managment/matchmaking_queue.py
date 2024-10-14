@@ -7,13 +7,13 @@ class MatchmakingQueue:
     queue: Set[str] = set()
 
     @classmethod
-    def add_to_queue(cls, user_id: str) -> None:
+    def add_to_queue(cls, user_id: int) -> None:
         '''Add a user to the matchmaking queue'''
         cls.queue.add(user_id)
         logger.info(f"User {user_id} added to matchmaking queue")
 
     @classmethod
-    def remove_from_queue(cls, user_id: str) -> bool:
+    def remove_from_queue(cls, user_id: int) -> bool:
         '''Remove a user from the matchmaking queue'''
         if user_id in cls.queue:
             cls.queue.remove(user_id)
@@ -31,7 +31,7 @@ class MatchmakingQueue:
         return len(cls.queue)
     
     @classmethod
-    def is_user_registered(cls, user_id: str) -> bool:
+    def is_user_registered(cls, user_id: int) -> bool:
         '''Check if a user is registered for the matchmaking queue'''
         return user_id in cls.queue
     

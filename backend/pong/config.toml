@@ -5,7 +5,7 @@ world_size = [16.0, 9.0]                        # World size in units (X, Y)
 
     [game.paddle]
         size = [0.5, 2.0]              # X and Y size of the paddle in units
-        x_offset = 0.5                 # Distance from the paddle to the edge of the screen
+        x_offset = 0.0                 # Distance from the paddle to the edge of the screen
         speed = 6.5                  # Paddle speed in units per second
         center_of_mass = [0.75, 1.0]   # Used to calculate the ball's bounce angle. Height = Paddle's height / 2, Width = bounce angle when hitting the paddle's edge
         

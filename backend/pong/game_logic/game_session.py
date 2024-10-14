@@ -20,7 +20,7 @@ BALL_SIZE = settings.GAME_CONFIG['ball']['size']
 
 class GameSession:
     def __init__(self, on_player_scored: Callable[[str], None]) -> None:
-        self._on_player_scored = on_player_scored
+        self._on_player_scored: Callable[[int], None] = on_player_scored
         paddle_left_position = Vector2(PADDLE_X_OFFSET, WORLD_SIZE.y / 2 - PADDLE_SIZE.y / 2)
         paddle_right_position = Vector2(WORLD_SIZE.x - PADDLE_SIZE.x - PADDLE_X_OFFSET, WORLD_SIZE.y / 2 - PADDLE_SIZE.y / 2)
         self.paddle_left = Paddle(position=paddle_left_position, size=PADDLE_SIZE, speed=PADDLE_SPEED, world_size=WORLD_SIZE, center_of_mass=Vector2(PADDLE_CENTER_OF_MASS.x * -1, PADDLE_CENTER_OF_MASS.y))
@@ -38,6 +38,8 @@ class GameSession:
             self.paddle_right.direction = direction
 
     async def calculate_game_state(self, delta_time: float) -> None:
+        '''Calculate the game state for the next frame'''
+
         self.paddle_left.move(delta_time)
         self.paddle_right.move(delta_time)
         self.ball.move(delta_time)
@@ -49,15 +51,9 @@ class GameSession:
             await self._on_player_scored(0) # Call the callback function
             self.ball.reset()
 
-    def to_dict(self):
-        return {
-            "paddle_left": self.paddle_left.to_dict(),
-            "paddle_right": self.paddle_right.to_dict(),
-            "ball": self.ball.to_dict()
-        }
-    
     def to_bytearray(self):
-        # Create a byte array and pack the positions as 32-bit floats
+        '''Convert the game state to a bytearray and pack it into a struct'''
+
         left_paddle_position = self.paddle_left.get_position()
         right_paddle_position = self.paddle_right.get_position()
         ball_position = self.ball.get_position()
@@ -70,3 +66,11 @@ class GameSession:
         struct.pack_into('<f', byte_array, 20, ball_position.y)
 
         return byte_array
+
+    def to_dict(self):
+        return {
+            "paddle_left": self.paddle_left.to_dict(),
+            "paddle_right": self.paddle_right.to_dict(),
+            "ball": self.ball.to_dict()
+        }
+    

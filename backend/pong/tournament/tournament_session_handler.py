@@ -16,7 +16,7 @@ class TournamentSessionHandler:
     _channel_layer = get_channel_layer()
 
     @classmethod
-    def create_online_tournament_session(cls, owner_user_id: str, tournament_name: str, size: int) -> TournamentSession:
+    def create_online_tournament_session(cls, owner_user_id: int, tournament_name: str, size: int) -> TournamentSession:
         '''Create an online tournament session'''
         if not owner_user_id:
             raise ValueError("Owner user id is required")
@@ -41,7 +41,7 @@ class TournamentSessionHandler:
         return Tournaments.get(tournament_id)
 
     @classmethod
-    def add_user_to_tournament(cls, tournament_id: str, user_id: str) -> None:
+    def add_user_to_tournament(cls, tournament_id: str, user_id: int) -> None:
         '''Add a user to a tournament'''
         if not tournament_id:
             raise ValueError("Tournament id is required")
@@ -64,7 +64,7 @@ class TournamentSessionHandler:
         logger.debug(f"User {user_id} added to tournament {tournament_id}")
 
     @classmethod
-    async def remove_user_from_tournament(cls, tournament_id: str, user_id: str) -> None:
+    async def remove_user_from_tournament(cls, tournament_id: str, user_id: int) -> None:
         '''Remove a user from a tournament'''
         if not tournament_id:
             raise ValueError("Tournament id is required")
@@ -87,7 +87,7 @@ class TournamentSessionHandler:
         logger.debug(f"User {user_id} removed from tournament {tournament_id}")
 
     @classmethod
-    async def remove_user_from_all_inactive_tournaments(cls, user_id: str) -> None:
+    async def remove_user_from_all_inactive_tournaments(cls, user_id: int) -> None:
         '''Remove a user from all tournaments if they are not running or finished'''
         tournaments = list(Tournaments.get_all().values())
         for tournament in tournaments:
@@ -112,18 +112,19 @@ class TournamentSessionHandler:
             raise ValueError(f"tournament does not exist")
 
         if user_id == tournament.get_owner_user_id():
-            await cls._channel_layer.group_send(
-                f"mm_{user_id}",
-                {
-                    'type': 'tournament_starting',
-                }
-            )
+            for user in tournament.get_users():
+                await cls._channel_layer.group_send(
+                    f"mm_{user}",
+                    {
+                        'type': 'tournament_starting',
+                    }
+                )
             await tournament.start()
         else:
             raise ValueError(f"not the tournament owner")
 
     @classmethod
-    async def request_cancel_tournament(cls, user_id: str, tournament_id: str) -> None:
+    async def request_cancel_tournament(cls, user_id: int, tournament_id: str) -> None:
         '''Request to cancel a tournament'''
         if not user_id:
             raise ValueError("User id is required")

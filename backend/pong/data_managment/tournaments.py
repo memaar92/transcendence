@@ -9,15 +9,18 @@ class Tournaments:
 
     @classmethod
     def add(cls, tournament: TournamentSession) -> None:
+        '''Add a tournament to the registered tournaments'''
         tournament_id = tournament.get_id()
         cls.tournaments[tournament_id] = tournament
 
     @classmethod
     def get(cls, tournament_id: str) -> TournamentSession:
+        '''Get a tournament by id'''
         return cls.tournaments.get(tournament_id)
 
     @classmethod
-    def remove(cls, tournament_id) -> bool:
+    def remove(cls, tournament_id: str) -> bool:
+        '''Remove a tournament from registered tournaments'''
         if tournament_id in cls.tournaments:
             del cls.tournaments[tournament_id]
             return True
@@ -25,6 +28,7 @@ class Tournaments:
 
     @classmethod
     def get_all(cls) -> dict[str, TournamentSession]:
+        '''Get all tournaments'''
         return cls.tournaments
     
     @classmethod
@@ -37,7 +41,7 @@ class Tournaments:
         return open_tournaments
 
     @classmethod
-    def get_user_tournament_id(cls, user_id: str) -> Optional[str]:
+    def get_user_tournament_id(cls, user_id: int) -> Optional[str]:
         '''Get the tournament id of a user'''
         for tournament in cls.tournaments.values():
             if user_id in tournament.get_users():
@@ -53,7 +57,7 @@ class Tournaments:
         return set()
     
     @classmethod
-    def is_user_registered(cls, user_id: str) -> bool:
+    def is_user_registered(cls, user_id: int) -> bool:
         '''Check if a user is registered to a tournament'''
         for tournament in cls.tournaments.values():
             if tournament.has_user(user_id):
