@@ -1,6 +1,7 @@
+import { updateChat } from "./live-chat.js";
 import { api } from "./api.js";
 import { hubSocket } from "./app.js";
-import { chat_handler } from "./chatHandler.js";
+//import { chat_handler } from "./chatHandler.js";
 
 class Router {
   constructor(routes) {
@@ -132,7 +133,8 @@ class Router {
   }
 
   handlePostUpdate() {
-    chat_handler.updateChat(this, this.currentRoute.params);
+    updateChat(this, this.currentRoute.params);
+    //chat_handler.updateChat(this, this.currentRoute.params);
   }
 
   insertNotification() {

@@ -1,7 +1,4 @@
 import { api } from './api.js';
-// import { createProfileButton } from './users.js';
-import { hubSocket } from "./app.js";
-import { router } from "./app.js";
 
 class ChatHandler {
   constructor() {
@@ -11,57 +8,10 @@ class ChatHandler {
     this.onlineUserIds = [];
     this.router = null;
     this.currentFilter = 'all';
-
-    
   }
 
-  updateChat(router, params) {
-    console.log('Initializing chat with params:', params);
-    // const chatHandler = ChatHandler.getInstance();
-    if (window.location.pathname === '/live_chat') {
-      this.init(params, router, 'home');
-    }
-    else if (window.location.pathname === '/live_chat/chat_room') {
-      // if (!params.recipient)
-      //   router.navigate('/404');
-      this.init(params, router, 'chat');
-    }
-    /* keep the chat handler alive if not in chat interface so that it can still receive messages */
-    else {
-      this.init(params, router, 'none');
-    }
-}
-
-  // static updateChat(router, params) {
-  //   console.log('Initializing chat with params:', params);
-  //   // const chatHandler = ChatHandler.getInstance();
-  //   if (window.location.pathname === '/live_chat') {
-  //     this.init(params, router, 'home');
-  //   }
-  //   else if (window.location.pathname === '/live_chat/chat_room') {
-  //     // if (!params.recipient)
-  //     //   router.navigate('/404');
-  //     this.init(params, router, 'chat');
-  //   }
-  //   /* keep the chat handler alive if not in chat interface so that it can still receive messages */
-  //   else {
-  //     this.init(params, router, 'none');
-  //   }
-  // }
 
   async init(params, router, context) {
-    hubSocket.connect()
-
-    function game_start(message) {
-        if (message.type == "remote_match_ready")
-        {
-            window.localStorage.setItem("game_id", message.match_id)
-            router.navigate("/game")
-        }
-    }
-
-    hubSocket.registerCallback(game_start);
-
 
     this.router = router;
 
@@ -100,6 +50,9 @@ class ChatHandler {
         this.initScrollHandling();
         this.initFiltering();
         this.initTabHandling();
+        document.getElementById("back").addEventListener("click", async (e) => {
+            history.back();
+        });
     }
   }
 
@@ -236,28 +189,27 @@ class ChatHandler {
         break;
       case 'game_invite':
         this.displayModal(content, 'Game Invite');
-        const friendItems = document.querySelectorAll('.friends-item');
-        friendItems.forEach(friendItem => {
-          if (friendItem.getAttribute('data-id') === content.sender_id && friendItem.classList.contains('friends')) {
-            const gameInviteButton = friendItem.querySelector('#game-invite-button');
-            if (gameInviteButton) {
-              gameInviteButton.textContent = 'Join';
-              gameInviteButton.onclick = () => {
-                this.ws.send(JSON.stringify({
-                  'type': 'game_invite_accepted',
-                  'sender_id': content.sender_id,
-                  'receiver_id': this.senderId
-                }));
-              };
-            }}}
-          );
+        var friendItem = document.querySelector(`.friends-item[data-id="${content.sender_id}"]`);
+        if (friendItem) {
+          const existingButton = friendItem.querySelector('#game-invite-button');
+          const newGameInviteButton = this.createGameButton(content.sender_id, content.receiver_id);
+
+          if (existingButton) {
+            friendItem.replaceChild(newGameInviteButton, existingButton);
+          } else {
+            console.warn('Existing game invite button not found');
+            friendItem.appendChild(newGameInviteButton);
+        }
+        } else {
+            console.warn('Friend item not found');
+        }
         break;
-      // case 'match_id':
-      //   if (content.match_id) {
-      //     window.localStorage.setItem('game_id', content.match_id);
-      //     this.router.navigate('/game');
-      //   }
-      //   break;
+      case 'match_id':
+        if (content.match_id) {
+          window.localStorage.setItem('game_id', content.match_id);
+          this.router.navigate('/game');
+        }
+        break;
       case 'game_invite_cancelled':
         var friendItem = document.querySelector(`.friends-item[data-id="${content.message}"]`);
         if (friendItem) {
@@ -276,11 +228,15 @@ class ChatHandler {
         }
         break;
       case 'game_error':
-        var friendItem = document.querySelector(`.friends-item[data-id="${content.sender_id}"]`);
+        this.displayModal(content, 'Freddy says:');
+        var friendItem = document.querySelector(`.friends-item[data-id="${content.misc}"]`);
         if (friendItem) {
             const existingButton = friendItem.querySelector('#game-invite-button');
             
-            const newGameInviteButton = this.createGameButton(null, content.message);
+            var newGameInviteButton = this.createGameButton(null, content.misc);
+            if (content.flag === true) {
+                newGameInviteButton = this.createGameButton(content.misc, content.sender_id);
+            }
             
             if (existingButton) {
                 friendItem.replaceChild(newGameInviteButton, existingButton);
@@ -309,12 +265,12 @@ class ChatHandler {
       case 'error':
         this.displaySystemMessage(content.message);
         break;
-      // case 'match_id':
-      //   if (content.match_id) {
-      //     window.localStorage.setItem('game_id', content.match_id);
-      //     this.router.navigate('/game');
-      //   }
-      //   break;
+      case 'match_id':
+        if (content.match_id) {
+          window.localStorage.setItem('game_id', content.match_id);
+          this.router.navigate('/game');
+        }
+        break;
       default:
         console.error('Error:', content.type);
         break;
@@ -420,18 +376,22 @@ class ChatHandler {
     gameInviteButton.className = 'button';
     gameInviteButton.id = 'game-invite-button';
   
-    let isInviteSent = false;
+    let buttonState = 0;
   
     const updateButtonState = () => {
       gameInviteButton.removeEventListener('click', sendInvite);
       gameInviteButton.removeEventListener('click', cancelInvite);
+      gameInviteButton.removeEventListener('click', sendAcceptance);
       
-      if (isInviteSent) {
+      if (buttonState === 0) {
         gameInviteButton.textContent = 'Cancel';
         gameInviteButton.addEventListener('click', cancelInvite);
-      } else {
+      } else if (buttonState === 1) {
         gameInviteButton.textContent = 'Play';
         gameInviteButton.addEventListener('click', sendInvite, { once: true });
+      } else {
+        gameInviteButton.textContent = 'Join';
+        gameInviteButton.addEventListener('click', sendAcceptance);
       }
     };
     
@@ -442,7 +402,7 @@ class ChatHandler {
         'sender_id': this.senderId,
         'receiver_id': friend_id
       }));
-      isInviteSent = true;
+      buttonState = 0;
       gameInviteButton.disabled = false;
       updateButtonState();
     };
@@ -453,26 +413,32 @@ class ChatHandler {
         'sender_id': this.senderId,
         'receiver_id': friend_id
       }));
-      isInviteSent = false;
+      buttonState = 1;
       updateButtonState();
-    };    
+    };
 
-    if (inviter_id === null) {
-      isInviteSent = false;
-      updateButtonState();
-    } else if (inviter_id === this.senderId) {
-      isInviteSent = true;
-      updateButtonState();
-    } else {
-
-      gameInviteButton.textContent = 'Join';
-      gameInviteButton.onclick = () => {
+    const sendAcceptance = () => {
         this.ws.send(JSON.stringify({
           'type': 'game_invite_accepted',
           'sender_id': inviter_id,
           'receiver_id': this.senderId
         }));
-      };
+        buttonState = 1;
+        updateButtonState();
+    };
+
+    if (inviter_id === null) {
+      buttonState = 1;
+      console.log('Inviter ID is null');
+      updateButtonState();
+    } else if (inviter_id === this.senderId) {
+      buttonState = 0;
+      console.log('Inviter ID is sender ID');
+      updateButtonState();
+    } else {
+      buttonState = 2;
+      console.log('Inviter ID is not sender ID');
+      updateButtonState();
     }
 
     return gameInviteButton;
@@ -509,13 +475,16 @@ class ChatHandler {
     modalContainer.className = 'modal fade';
 
     const usernameMatch = content.message.match(/(\b\w+\b)$/);
+    console.log('usernameMatch:', usernameMatch);
     const username = usernameMatch ? usernameMatch[0] : 'User';
+    console.log('Username:', username);
+    console.log('Content.type:', content.type);
     var message;
     var headerText;
-    if (content.type === 'chat_request_accepted' || content.type === 'chat_request_denied') {
+    if (content.type === 'request_status') {
       message = content.message.replace(username, `<span style="color: #0083e8;">${username}</span>`);
       headerText = content.flag ? 'Friend Request Accepted!' : 'Friend Request Denied!';
-    } else if (content.type === 'game_invite') {
+    } else if (content.type === 'game_invite' || content.type === 'game_error') {
       message = content.message;
       headerText = msg;
     }
@@ -1190,13 +1159,13 @@ class ChatHandler {
   }
 }
 
-export const chat_handler = new ChatHandler();
-
-// export default {
-//   getInstance() {
-//     return instance;
-//   }
-// };
+//export const chat_handler = new ChatHandler();
+const instance = new ChatHandler();
+ export default {
+   getInstance() {
+     return instance;
+   }
+};
 
 function debounce(func, delay) {
   let timeoutId;
