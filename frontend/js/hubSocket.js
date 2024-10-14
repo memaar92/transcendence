@@ -23,6 +23,7 @@ class HubSocket {
 
     close () {
         this.socket.close();
+        this.socket = null;
     }
 
     send(message) {

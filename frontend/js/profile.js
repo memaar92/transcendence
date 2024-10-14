@@ -1,5 +1,5 @@
 import { api } from "./api.js";
-import { router } from "./app.js";
+import { hubSocket, router } from "./app.js";
 
 await update_userinfo()
 
@@ -106,6 +106,7 @@ document.getElementById("content").addEventListener('click', async function (eve
 
 document.getElementById("logout").addEventListener('click', async function (event) {
   event.preventDefault();
+  hubSocket.close();
   await api.post("/token/logout/")
   await router.navigate("/");
 });
