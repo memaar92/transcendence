@@ -1,7 +1,6 @@
 import { api } from "./api.js";
-import { hubSocket } from "./app.js";
+import { hubSocket, showAlert } from "./app.js";
 import { router } from "./app.js";
-
 
 const user_data = await api.get("/profile/");
 const json = await user_data.json();
@@ -21,7 +20,7 @@ const messages = {
 let tournaments = null;
 
 function tournamentCallback(message) {
-  console.log("tour: ", message)
+  console.log("tour: ", message);
   if (message.type == "open_tournaments_list") {
     updateTournamentList(message);
   } else if (message.type === "tournament_starting") {
@@ -35,18 +34,20 @@ function tournamentCallback(message) {
     localStorage.setItem("game_id", message.match_id);
     clearInterval(intervalId);
     router.navigate("/game");
-  }  else if (message.type == "tournament_schedule") {
-    localStorage.setItem("tournament_games", JSON.stringify(message.matches))
+  } else if (message.type == "tournament_schedule") {
+    localStorage.setItem("tournament_games", JSON.stringify(message.matches));
     localStorage.setItem("tournament_name", message.tournament_name);
     router.navigate("/tournament_preview");
     clearInterval(intervalId);
     return;
-}
+  } else if (!message.tournamentCreated && message.message) {
+    showAlert(message.message)
+  }
 }
 hubSocket.registerCallback(tournamentCallback);
 
 function updateTournamentList(message) {
-  console.log(message.tournaments , tournaments)
+  console.log(message.tournaments, tournaments);
   if (JSON.stringify(message.tournaments) == JSON.stringify(tournaments))
     return;
 
@@ -55,7 +56,6 @@ function updateTournamentList(message) {
 
   const new_tournaments = document.createElement("tbody");
   new_tournaments.id = "tournament-table";
-
 
   tournaments.forEach(async (tournament) => {
     const userCount = tournament.users.length; // Number of users registered in the tournament
@@ -87,14 +87,14 @@ function updateTournamentList(message) {
               Cancel
             </button>`;
     } else {
-      const in_tournament = tournament.users.includes(uid)
+      const in_tournament = tournament.users.includes(uid);
       actions.innerHTML = `
-                <button class="button register-button" data-id="${tournament.id}" ${
-                  in_tournament ? "disabled" : ""
-                }>Register</button>
-                <button class="button unregister-button" data-id="${tournament.id}" ${
-                  in_tournament ? "" : "disabled"
-                }>Unregister</button>
+                <button class="button register-button" data-id="${
+                  tournament.id
+                }" ${in_tournament ? "disabled" : ""}>Register</button>
+                <button class="button unregister-button" data-id="${
+                  tournament.id
+                }" ${in_tournament ? "" : "disabled"}>Unregister</button>
             `;
     }
     tournament_table.parentNode.replaceChild(new_tournaments, tournament_table);
@@ -118,24 +118,23 @@ function updateTournamentList(message) {
       });
     });
 
-    document.querySelectorAll('.start-button').forEach(button => {
-      button.addEventListener('click', (event) => {
+    document.querySelectorAll(".start-button").forEach((button) => {
+      button.addEventListener("click", (event) => {
         hubSocket.send({
           type: "tournament_start",
           tournament_id: event.target.getAttribute("data-id"),
         });
       });
-  });
+    });
 
-  document.querySelectorAll('.cancel-tournament').forEach(button => {
-      button.addEventListener('click', (event) => {
+    document.querySelectorAll(".cancel-tournament").forEach((button) => {
+      button.addEventListener("click", (event) => {
         hubSocket.send({
           type: "tournament_cancel",
           tournament_id: event.target.getAttribute("data-id"),
         });
       });
-  });
-
+    });
   });
 }
 
@@ -156,7 +155,7 @@ form.addEventListener("submit", (event) => {
 });
 
 document.getElementById("back").addEventListener("click", async (e) => {
-  clearInterval(intervalId)
+  clearInterval(intervalId);
   router.navigate("/main_menu");
 });
 
