@@ -6,6 +6,15 @@ document.getElementById("back").addEventListener("click", async (e) => {
   router.navigate("/main_menu");
 });
 
+
+function checkFlag() {
+  if(!localStorage.getItem("tournament_result")) {
+     window.setTimeout(checkFlag, 100);
+  } else {
+  }
+}
+checkFlag();
+
 const tournament_name = localStorage.getItem("tournament_name");
 localStorage.removeItem("tournament_games");
 console.log(tournament_name);

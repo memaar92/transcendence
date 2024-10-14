@@ -9,7 +9,20 @@ function game_start(message) {
         router.navigate("/game")
     }
 }
+
+document.getElementById("back").addEventListener("click", async (e) => {
+  router.navigate("/main_menu");
+});
+
 hubSocket.registerCallback(game_start);
+
+function checkFlag() {
+  if(!localStorage.getItem("tournament_games")) {
+     window.setTimeout(checkFlag, 100);
+  } else {
+  }
+}
+checkFlag();
 
 const playerID = api.get("/profile");
 
