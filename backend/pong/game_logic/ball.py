@@ -76,37 +76,41 @@ class Ball:
                 self._collided_with_list.remove(collider)
         return False
 
-    def _is_colliding_with_wall(self, position: Vector2):
+    def _is_colliding_with_wall(self, position: Vector2) -> bool:
         """Check if the ball is colliding with the top or bottom wall."""
         if position is None:
             position = self._position
         return (position.y < 0 or
                 position.y + self._size > self._canvas_size.y)
 
-    def _is_colliding_with_goal(self, position: Vector2):
+    def _is_colliding_with_goal(self, position: Vector2) -> bool:
         """Check if the ball is colliding with the left or right wall."""
         if position is None:
             position = self._position
         return (position.x < 0 or
                 position.x + self._size > self._canvas_size.x)
 
-    def _redirect_based_on_collider(self, collider):
+    def _redirect_based_on_collider(self, collider: object) -> None:
         """Redirect the ball based on the center of mass of the collider."""
         collider_center = collider.get_position() + collider.get_center_of_mass()
         ball_center = self._position + Vector2(self._size / 2, self._size / 2)
         direction_vector = ball_center - collider_center
         self._direction = direction_vector.normalized()
 
-    def get_position(self):
+    def get_position(self) -> Vector2:
+        '''Get the position of the ball'''
         return self._position
 
-    def get_size(self):
+    def get_size(self) -> int:
+        '''Get the size of the ball'''
         return self._size
 
-    def get_speed(self):
+    def get_speed(self) -> float:
+        '''Get the current speed of the ball'''
         return self._current_speed
 
-    def get_direction(self):
+    def get_direction(self) -> Vector2:
+        '''Get the direction of the ball'''
         return self._direction
 
     def to_dict(self):

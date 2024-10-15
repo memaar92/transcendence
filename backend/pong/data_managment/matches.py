@@ -14,11 +14,11 @@ class Matches:
         cls.matches[match_id] = match
 
     @classmethod
-    def get_match(cls, match_id) -> MatchSession:
+    def get_match(cls, match_id: str) -> MatchSession:
         return cls.matches.get(match_id)
 
     @classmethod
-    def remove_match(cls, match_id) -> bool:
+    def remove_match(cls, match_id: str) -> bool:
         if match_id in cls.matches:
             logger.debug(f"Removing match {match_id}")
             logger.debug(f"Match refcount: {sys.getrefcount(cls.matches[match_id])}")
@@ -32,7 +32,7 @@ class Matches:
         return cls.matches
     
     @classmethod
-    def get_user_match_id(cls, user_id: str) -> Optional[str]:
+    def get_user_match_id(cls, user_id: int) -> Optional[str]:
         '''Get the match id of a user'''
         for match in cls.matches.values():
             if match.is_user_assigned(user_id):
@@ -40,7 +40,7 @@ class Matches:
         return None
     
     @classmethod
-    def is_user_registered(cls, user_id: str) -> bool:
+    def is_user_registered(cls, user_id: int) -> bool:
         '''Check if a user is registered to a match or the matchmaking queue'''
         for match in cls.matches.values():
             if match.is_user_assigned(user_id):
@@ -53,7 +53,7 @@ class Matches:
         return match_id in cls.matches
 
     @classmethod
-    def is_user_assigned_to_match(cls, match_id: str, user_id: str) -> bool:
+    def is_user_assigned_to_match(cls, match_id: str, user_id: int) -> bool:
         '''Check if a user is assigned to a match'''
         match = cls.get_match(match_id)
         if match:

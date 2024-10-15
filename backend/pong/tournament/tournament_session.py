@@ -13,20 +13,20 @@ logger = logging.getLogger("tournament")
 TIME_BETWEEN_MATCHES = settings.TOURNAMENT_CONFIG['time_between_matches']
 
 class TournamentSession:
-    def __init__(self, owner_user_id, name: str, size: int, on_finished: Callable[[str], None]):
-        self._id = uuid4().hex
-        self._name = name
-        self._owner_user_id = owner_user_id
-        self._max_players = size
+    def __init__(self, owner_user_id: int, name: str, size: int, on_finished: Callable[[str], None]):
+        self._id: str = uuid4().hex
+        self._name: str = name
+        self._owner_user_id: int = owner_user_id
+        self._max_players: int = size
         self._assigned_users: Set[str] = set() # Users that are assigned to the tournament
         self._active_users: Set[str] = set() # Users that are still in the tournament
         self._matches: List[Tuple[str, str]] = [] # List of matches, user1 vs user2 and so on
         self._results: List[Optional[str]] = []
         self._user_wins: Dict[str, int] = {} # Number of wins for each user
         self._winner: Optional[str] = None
-        self._running = False
-        self._condition = asyncio.Condition()
-        self._on_finished = on_finished
+        self._running: bool = False
+        self._condition: asyncio.Condition = asyncio.Condition()
+        self._on_finished: Callable[[str], None] = on_finished
 
         self.add_user(owner_user_id)
         self._channel_layer = get_channel_layer()
@@ -116,7 +116,7 @@ class TournamentSession:
                 # Wait until the match is finished
                 await self._condition.wait()
 
-    async def match_finished_callback(self, match_id: str, winner: str) -> None:
+    async def match_finished_callback(self, match_id: str, winner: int) -> None:
         self._results.append(winner)
         if winner is not None:
             winner = str(winner)  # Ensure winner is a string
@@ -128,7 +128,7 @@ class TournamentSession:
         async with self._condition:
             self._condition.notify_all()
 
-    async def _create_match(self, user1: str, user2: str) -> None:
+    async def _create_match(self, user1: int, user2: int) -> None:
         '''Create a match between two users'''
         
         match_session = MatchSession(user1, user2, self.match_finished_callback)
@@ -154,7 +154,7 @@ class TournamentSession:
             await self._send_remote_match_ready_message(match_id, user1, user2)
             await self._send_remote_match_ready_message(match_id, user2, user1)
 
-    async def _send_remote_match_ready_message(cls, match_id: str, user_id: str, opponent_id: str) -> None:
+    async def _send_remote_match_ready_message(cls, match_id: str, user_id: int, opponent_id: str) -> None:
         '''Send a match ready message to a user'''
         channel_layer = get_channel_layer()
         await channel_layer.group_send(
@@ -166,7 +166,7 @@ class TournamentSession:
             }
         )
 
-    async def _send_drop_out_message(self, user_id: str) -> None:
+    async def _send_drop_out_message(self, user_id: int) -> None:
         '''Send a drop out message to the user'''
         await self._channel_layer.group_send(
             f"mm_{user_id}",
@@ -188,7 +188,7 @@ class TournamentSession:
                 }
             )
 
-    async def _send_upcoming_match_message(self, user_id: str) -> None:
+    async def _send_upcoming_match_message(self, user_id: int) -> None:
         '''Send a notification message to a user about an upcoming match'''
         channel_layer = get_channel_layer()
         await channel_layer.group_send(
@@ -199,12 +199,12 @@ class TournamentSession:
             }
         )
 
-    def add_user(self, user_id: str):
+    def add_user(self, user_id: int) -> None:
         '''Add a user to the tournament set'''
         self._assigned_users.add(user_id)
         self._user_wins[str(user_id)] = 0  # Initialize the user's wins to zero
     
-    def remove_user(self, user_id: str):
+    def remove_user(self, user_id: int) -> None:
         self._assigned_users.remove(user_id)
         self._user_wins.pop(str(user_id), None)  # Remove the user from the wins dictionary
 
@@ -250,7 +250,7 @@ class TournamentSession:
     def is_finished(self) -> bool:
         return self._winner is not None
     
-    def has_user(self, user_id: str) -> bool:
+    def has_user(self, user_id: int) -> bool:
         return user_id in self._assigned_users
 
     def __str__(self) -> str:

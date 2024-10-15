@@ -1,3 +1,5 @@
+import { router } from "./app";
+
 document.getElementById("back").addEventListener("click", async (e) => {
-    history.back();
+    router.navigate("/main_menu");
   });

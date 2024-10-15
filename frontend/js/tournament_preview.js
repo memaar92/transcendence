@@ -1,42 +1,46 @@
 import { api } from "./api.js";
 import { router } from "./app.js";
+import { hubSocket } from "./app.js";
 
-const playerID = api.get("/profile");
+function game_start(message) {
+    if (message.type == "remote_match_ready")
+    {
+        window.localStorage.setItem("game_id", message.match_id)
+        router.navigate("/game")
+    }
+}
+
 document.getElementById("back").addEventListener("click", async (e) => {
   router.navigate("/main_menu");
 });
 
+hubSocket.registerCallback(game_start);
 
 function checkFlag() {
-  if(!localStorage.getItem("tournament_result")) {
+  if(!localStorage.getItem("tournament_games")) {
      window.setTimeout(checkFlag, 100);
   } else {
   }
 }
 checkFlag();
 
+const playerID = api.get("/profile");
+
 const tournament_name = localStorage.getItem("tournament_name");
-localStorage.removeItem("tournament_games");
 console.log(tournament_name);
-const tournament_data = localStorage.getItem("tournament_result");
+document.getElementById("name").innerHTML = tournament_name;
+const tournament_data = localStorage.getItem("tournament_games");
 console.log(tournament_data);
 const tournament_json = JSON.parse(tournament_data);
 console.log(tournament_json);
 
-document.getElementById("name").innerHTML = tournament_name;
-const sorted_table = Object.keys(tournament_json).map((key) => [key, tournament_json[key]]).sort((a, b) =>  b[1] - a[1]);
-
-const winnner = document.getElementById("winner");
-winner.innerHTML = await getUsername(sorted_table[0][0]);
-const looser = document.getElementById("looser");
-looser.innerHTML = await getUsername(sorted_table[sorted_table.length - 1][0]);
-
-console.log("Sorted table", sorted_table);
-for (const row of sorted_table) {
+for (const row of tournament_json) {
     row[0] = await getUsername(row[0]);
+    row[1] = await getUsername(row[1]);
 }
 
-createTable(sorted_table)
+if (window.location.pathname == "/tournament_preview")
+  createTable(tournament_json)
 
 async function getUsername(id) {
   const result = await api.get(`/users/${id}/`);
@@ -46,10 +50,10 @@ async function getUsername(id) {
 
 function createTable(tableData) {
     var tableBody = document.getElementById('scores');
-  
-    tableData.forEach(function(rowData) {
+    tableData.forEach(function(rowData, index) {
       var row = document.createElement('tr');
       console.log(rowData)
+      rowData.unshift(index + 1)
   
       rowData.forEach(function(cellData) {
         var cell = document.createElement('td');

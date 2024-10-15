@@ -27,15 +27,17 @@ from pong.schemas.matchmaking_schema import (
 logger = logging.getLogger("matchmaking_consumer")
 
 class MatchmakingConsumer(AsyncWebsocketConsumer):
-    _user_connections = {} # Keep track of user connections the active connection(browser tab) for each user
-    _last_request_time = {} # Keep track of the last request time for each user
+    _user_connections: dict = {} # Keep track of user connections the active connection(browser tab) for each user
+    _last_request_time: dict = {} # Keep track of the last request time for each user
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.user_id = None
-        self.group_name = None
+        self.user_id: int = None
+        self.group_name: str = None
 
-    async def connect(self):
+    async def connect(self) -> None:
+        '''Establish the WebSocket connection'''
+
         self.user_id = self.scope['user'].id
 
         if self.user_id is None:
@@ -65,7 +67,9 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                 'opponent': opponent
             }))
     
-    async def disconnect(self, close_code):
+    async def disconnect(self, close_code: int) -> None:
+        '''Disconnect the WebSocket connection'''
+
         if self.user_id is None:
             return
         
@@ -92,7 +96,9 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             logger.info(f"User {self.user_id} has {self._user_connections[self.user_id]} open connections")
 
 
-    async def receive(self, text_data: str):
+    async def receive(self, text_data: str) -> None:
+        '''Receive a message from the WebSocket connection'''
+
         try:
             data = json.loads(text_data)
         except json.JSONDecodeError:
@@ -183,7 +189,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
         '''Check if the current connection is the active connection (Current tab in the browser)'''
         return self._user_connections[self.user_id]["active"] == self.channel_name
 
-    async def remote_match_ready(self, event):
+    async def remote_match_ready(self, event: dict) -> None:
         '''Handle the remote_match_ready message'''
 
         # Check if the current connection is the active connection (Current tab in the browser)
@@ -197,14 +203,14 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             'match_id': match_id
         }))
 
-    async def tournament_cancelled(self, event):
+    async def tournament_cancelled(self, event: dict) -> None:
         '''Handle the tournament_cancelled message'''
         logger.debug(f"Received tournament_cancelled event: {event}")
         await self.send(text_data=json.dumps({
             'type': 'tournament_cancelled'
         }))
 
-    async def tournament_starting(self, event):
+    async def tournament_starting(self, event: dict) -> None:
         '''Handle the tournament_starting message'''
 
         # Check if the current connection is the active connection (Current tab in the browser)
@@ -216,7 +222,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             'type': 'tournament_starting'
         }))
 
-    async def tournament_canceled(self, event):
+    async def tournament_canceled(self, event: dict) -> None:
         '''Handle the tournament_canceled message'''
 
         # Check if the current connection is the active connection (Current tab in the browser)
@@ -228,7 +234,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             'type': 'tournament_canceled'
         }))
 
-    async def tournament_finished(self, event):
+    async def tournament_finished(self, event: dict) -> None:
         '''Handle the tournament_finished message'''
 
         # Check if the current connection is the active connection (Current tab in the browser)
@@ -238,7 +244,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
         logger.debug(f"Received tournament_finished event: {event}")
         await self.send(text_data=json.dumps(event))
 
-    async def tournament_schedule(self, event):
+    async def tournament_schedule(self, event: dict) -> None:
         '''Handle the tournament_schedule message'''
 
         # Check if the current connection is the active connection (Current tab in the browser)
@@ -248,7 +254,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
         logger.debug(f"Received tournament_schedule event: {event}")
         await self.send(text_data=json.dumps(event))
 
-    async def tournament_drop_out(self, event):
+    async def tournament_drop_out(self, event: dict) -> None:
         '''Handle the tournament_drop_out message'''
 
         # Check if the current connection is the active connection (Current tab in the browser)

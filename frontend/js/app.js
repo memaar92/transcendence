@@ -21,6 +21,7 @@ const routes = [
   { path: "/game", templateUrl: "/routes/game.html" },
   { path: "/tournament", templateUrl: "/routes/tournament.html" },
   { path: "/tournament_review", templateUrl: "/routes/tournament_review.html" },
+  { path: "/tournament_preview", templateUrl: "/routes/tournament_preview.html" },
   { path: "/account", templateUrl: "/routes/account.html" },
   { path: "/security", templateUrl: "/routes/security.html" },
   { path: "/appearance", templateUrl: "/routes/appearance.html" },
@@ -38,3 +39,18 @@ document.addEventListener("DOMContentLoaded", () => {
   router.init(document.getElementById("app"));
   console.log("App started");
 });
+
+export function showAlert(message) {
+  const alertContainer = document.getElementById('main_alert');
+  
+  const alertElement = document.createElement('div');
+  alertElement.classList.add('alert', 'alert-danger', 'alert-dismissible', 'fade', 'show');
+  alertElement.setAttribute('role', 'alert');
+  
+  alertElement.innerHTML = `
+    ${message}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  `;
+  alertContainer.appendChild(alertElement);
+  new bootstrap.Alert(alertElement);
+}

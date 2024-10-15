@@ -18,12 +18,14 @@ class MatchConsumer(AsyncWebsocketConsumer):
     def __init__(self):
         super().__init__()
         self._match_id: str = None
-        self._user_id: str = None
+        self._user_id: int = None
         self._group_name: str = None
         self._match_session: MatchSession = None
         self._connection_established: bool = False
 
-    async def connect(self):
+    async def connect(self) -> None:
+        '''Establish the WebSocket connection'''
+
         # Extracting the match_id from the URL route parameters
         self._match_id = self.scope['url_route']['kwargs']['match_id']
 
@@ -36,7 +38,7 @@ class MatchConsumer(AsyncWebsocketConsumer):
         # Check if the connection is valid
         if not await self.is_valid_connection(self._match_id, self._user_id):
             await self.close()
-            logger.info(f"User {self._user_id} is not allowed to connect to match {self._match_id}")
+            logger.debug(f"User {self._user_id} is not allowed to connect to match {self._match_id}")
             return
 
         # Add the connection to the channel group for this match
@@ -50,13 +52,14 @@ class MatchConsumer(AsyncWebsocketConsumer):
         await self._match_session.connect_user(self._user_id, self._match_session_is_finished_callback)
 
 
-    async def disconnect(self, close_code):
-        logger.debug(f"Disconnect called for user {self._user_id} with close code {close_code}")
+    async def disconnect(self, close_code: int) -> None:
+        '''Disconnect the WebSocket connection'''
 
+        logger.debug(f"Disconnect called for user {self._user_id} with close code {close_code}")
 
         # Run the disconnect logic only if the connection was established
         if not self._connection_established:
-            logger.info(f"Connection not established for user {self._user_id}, so not disconnecting")
+            logger.debug(f"Connection not established for user {self._user_id}, so not disconnecting")
             return
         self._connection_established = False
 
@@ -66,8 +69,8 @@ class MatchConsumer(AsyncWebsocketConsumer):
             self._match_session = None
 
 
-    async def receive(self, text_data: str): # TODO: Implement this
-
+    async def receive(self, text_data: str) -> None:
+        '''Receive a message from the WebSocket connection'''
         try:
             data = json.loads(text_data)
         except json.JSONDecodeError:
@@ -91,84 +94,92 @@ class MatchConsumer(AsyncWebsocketConsumer):
             logger.error(f"Failed to process message: {e}")
 
 
-    async def is_valid_connection(self, match_id, user_id):
+    async def is_valid_connection(self, match_id: str, user_id: int) -> bool:
+        '''Check if the connection is valid'''
 
         # User is not authenticated
         if self._user_id is None:
-            logger.info("User not authenticated")
+            logger.debug("User not authenticated")
             return False
 
         # No Match ID provided
         if self._match_id is None:
-            logger.info("Match ID not provided")
+            logger.debug("Match ID not provided")
             return False
         
         # Match ID does not exist
         if not Matches.is_match_registered(self._match_id):
-            logger.info(f"Match {self._match_id} not found")
+            logger.debug(f"Match {self._match_id} not found")
             return False
 
         # User is not part of the match
         if not Matches.is_user_assigned_to_match(self._match_id, self._user_id):
-            logger.info(f"User {self._user_id} is not part of match {self._match_id}")
+            logger.debug(f"User {self._user_id} is not part of match {self._match_id}")
             return False
 
         # User is already connected to a match or tournament
         if User.is_user_connected_to_match(self._user_id, self._match_id):
-            logger.info(f"User {self._user_id} is already connected to a match")
+            logger.debug(f"User {self._user_id} is already connected to a match")
             return False
         
         # Is the user blocked to connect to the match
         if User.is_user_blocked(self._user_id, self._match_id):
-            logger.info(f"User {self._user_id} is blocked from connecting to match {self._match_id}")
+            logger.debug(f"User {self._user_id} is blocked from connecting to match {self._match_id}")
             return False
 
         return True
     
-    async def _match_session_is_finished_callback(self, winner: str):
-        # self._connection_established = False
-        await self._send_game_over_message(winner)
+    async def _match_session_is_finished_callback(self, winner: int, loser: int) -> None:
+        '''Callback function for when the match session is finished'''
+        await self._send_game_over_message(winner, loser)
         self._match_session = None
         await self.close()
 
-    async def _send_game_over_message(self, winner: str) -> None:
+    async def _send_game_over_message(self, winner: int, loser: int) -> None:
         '''Send a game over message to the users'''
         logger.debug(f"Sending game over message to users")
         await self.send(text_data=json.dumps({
             "type": "game_over",
-            "data": winner
+            "winner": winner,
+            "loser": loser
         }))
 
 
     ### Channel Layer Callbacks ###
 
-    async def user_mapping(self, event):
+    async def user_mapping(self, event) -> None:
+        '''Send the user mapping to the user'''
         logger.info(f"User mapping: {event}")
         await self.safe_send(text_data=json.dumps(event))
 
-    async def position_update(self, event):
-        # Extract the byte array from the event
+    async def position_update(self, event) -> None:
+        '''Send the position update to the user'''
         game_state_bytes = event.get("data")
         if game_state_bytes:
             await self.safe_send(bytes_data=game_state_bytes)
 
-    async def user_connected(self, event):
-        logger.info(f"User {event} connected")
+    async def user_connected(self, event) -> None:
+        '''Send the user connected message to the user'''
+        logger.debug(f"User {event} connected")
         if event.get("user_id") != self._user_id:
             return
         await self.safe_send(text_data=json.dumps(event))
 
-    async def user_disconnected(self, event):
-        logger.info(f"User {event} disconnected")
+    async def user_disconnected(self, event) -> None:
+        '''Send the user disconnected message to the user'''
+        logger.debug(f"User {event} disconnected")
         await self.safe_send(text_data=json.dumps(event))
 
-    async def start_timer_update(self, event):
+    async def start_timer_update(self, event) -> None:
+        '''Send the start timer update to the user'''
         await self.safe_send(text_data=json.dumps(event))
 
-    async def player_scores(self, event):
+    async def player_scores(self, event) -> None:
+        '''Send the player scores to the user'''
         await self.safe_send(text_data=json.dumps(event))
 
-    async def safe_send(self, text_data: str = None, bytes_data: bytes = None):
+    async def safe_send(self, text_data: str = None, bytes_data: bytes = None) -> None:
+        '''Send a message only if the connection is established'''
         if self._connection_established:
             try:
                 if text_data is not None:

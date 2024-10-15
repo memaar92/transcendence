@@ -24,6 +24,7 @@ class HubSocket {
 
     close () {
         this.socket.close();
+        this.socket = null;
     }
 
     send(message) {
@@ -38,13 +39,17 @@ class HubSocket {
 
     #handleMessage(e) {
         const data = JSON.parse(e.data);
-        console.log(data)
+        console.log("HUB: ", data)
 
         if (data.type == "tournament_finished"){
             localStorage.setItem("tournament_result", JSON.stringify(data.user_scores));
             localStorage.setItem("tournament_name", data.tournament_name);
             router.navigate("/tournament_review");
             return;
+        }
+        if (data.type == "remote_match_ready") {
+            window.localStorage.setItem("game_id", data.match_id);
+            router.navigate("/game");
         }
 
         if (this.callbackFunction)
