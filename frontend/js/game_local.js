@@ -1,5 +1,5 @@
 import { api } from "./api.js";
-import { router } from "./app.js";
+import { hubSocket, router, showAlert } from "./app.js";
 
 const r = await api.get("/profile");
 
@@ -55,20 +55,8 @@ function start_game(match_id) {
           matchSocket.close();
           document.removeEventListener("keydown", key_down, false);
           document.removeEventListener("keyup", key_up, false);
-          
-          winner = jsonData.data;
-          timerValue = null;
-          const myID = r.id;
-          if (user_id_p1 == myID && user_id_p1 == winner) {
-            localStorage.setItem("win", true);
-          } else {
-            localStorage.setItem("win", false);
-          }
-          if (localStorage.getItem("tournament_games")) {
-            router.navigate("/tournament_preview")
-            return;
-          }
-          router.navigate("/endscreen")
+          localStorage.setItem("win", false);
+          router.navigate("/endscreen");
         } else if (jsonData.type === "user_mapping") {
           is_local_match = jsonData.is_local_match;
           user_id_p1 = jsonData.player1;
@@ -329,4 +317,14 @@ function start_game(match_id) {
   draw();
 }
 
-start_game(window.localStorage.getItem("game_id"));
+function local_match_callback(message) {
+  if (message.error_message) {
+    showAlert(message.error_message);
+    router.navigate("/main_menu")
+  } else if (message.local_match_created) {
+    console.log(message)
+  }
+}
+
+hubSocket.registerCallback(local_match_callback)
+hubSocket.send({type: "local_match_create"})

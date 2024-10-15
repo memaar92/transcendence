@@ -1,5 +1,6 @@
 import { api } from "./api.js";
 import { router } from "./app.js";
+import { showAlert } from "./app.js";
 
 if (!localStorage.getItem("email")) {
   (localStorage.getItem("email"));
@@ -22,15 +23,13 @@ document.getElementById("login-form-submit").addEventListener("click", async (e)
     email: localStorage.getItem("email"),
     password: document.getElementById("password-field").value,
   });
-  const user_info = await result.json();
-  if (result.ok) {
+  if (result && result.ok) {
+    const user_info = await result.json();
     if (user_info["2fa"])
       router.navigate("/verify_2fa")
     else
       router.navigate("/main_menu");
   } else {
-    const wrong_password = document.getElementById('wrong_password');
-    let bsAlert = new bootstrap.Toast(wrong_password);
-    bsAlert.show();
+    showAlert("Wrong Password")
   }
 });

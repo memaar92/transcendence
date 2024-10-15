@@ -7,7 +7,7 @@ const games = await result.json();
 (games);
 
 document.getElementById("back").addEventListener("click", async (e) => {
-  history.back();
+  router.navigate("/main_menu");
 });
 
 async function tableCreate() {
