@@ -46,6 +46,10 @@ class HubSocket {
             router.navigate("/tournament_review");
             return;
         }
+        if (data.type == "remote_match_ready") {
+            window.localStorage.setItem("game_id", data.match_id);
+            router.navigate("/game");
+        }
 
         if (this.callbackFunction)
         {
