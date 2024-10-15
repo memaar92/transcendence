@@ -48,11 +48,21 @@ hubSocket.registerCallback(tournamentCallback);
 
 function updateTournamentList(message) {
   console.log(message.tournaments, tournaments);
+  const tournament_table = document.getElementById("tournament-table");
+  if (message.tournaments.length == 0) {
+    tournament_table.innerHTML = `
+      <tr class="dlinfo">
+          <td class="dlinfo">&nbsp;</td>
+          <td class="dlinfo"></td>
+          <td class="dlinfo"></td>
+          <td class="dlinfo"></td>
+        </tr>
+    `;
+  }
   if (JSON.stringify(message.tournaments) == JSON.stringify(tournaments))
     return;
-
+  
   tournaments = message.tournaments;
-  const tournament_table = document.getElementById("tournament-table");
 
   const new_tournaments = document.createElement("tbody");
   new_tournaments.id = "tournament-table";
