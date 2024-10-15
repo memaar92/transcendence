@@ -8,10 +8,9 @@ document.getElementById("profile-photo").src = profile_info["profile_picture"];
 document.getElementById('displayname').innerText = profile_info["displayname"];
 
 
-const games_html = await api.get("/games/");
+const games_html = await api.get(`/users/${localStorage.getItem("UID")}/games`);
 const games = await games_html.json();
 
-(games);
 
 document.getElementById("back").addEventListener("click", async (e) => {
   history.back();
@@ -19,7 +18,7 @@ document.getElementById("back").addEventListener("click", async (e) => {
 
 async function tableCreate() {
   const table = document.getElementById("matchDataBody");
-  const myId = await getMyId();
+  const myId = localStorage.getItem("UID");
 
   if (games.length == 0) {
     let row = table.insertRow();

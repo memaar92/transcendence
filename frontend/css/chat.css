@@ -604,8 +604,8 @@
 
 .search-icon {
   position: absolute;
-  top: 17px;
-  right: 17.5px;
+  top: 25px;
+  right: 25px;
   pointer-events: none;
   fill: #000; /* Change this to the desired color */
   opacity: 0; /* Initially hidden */
