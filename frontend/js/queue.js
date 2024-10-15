@@ -11,5 +11,20 @@ function game_start(message) {
   }
 }
 
+function leave_queue() {
+  hubSocket.send(
+    {
+      type: "queue_unregister"
+    }
+  )
+}
+
 hubSocket.registerCallback(game_start);
 hubSocket.send({ type: "queue_register" });
+
+
+const leave = document.getElementById("leave-queue");
+
+if (leave) {
+  leave.addEventListener("click", leave_queue);
+}
