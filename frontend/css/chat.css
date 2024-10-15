@@ -604,8 +604,8 @@
 
 .search-icon {
   position: absolute;
-  top: 25px;
-  right: 25px;
+  top: 1.5rem;
+  right: 1.56rem;
   pointer-events: none;
   fill: #000; /* Change this to the desired color */
   opacity: 0; /* Initially hidden */
@@ -842,20 +842,18 @@
   position: relative;
 }
 
-.toastchat-toast {
-  background-color: #ffff7e;
-  border: 1px solid #333;
-  color: #333;
-  width: 100%;
+.chat-toast {
+  border: 2px solid #7A35EC;
 }
 
 .chat-toast-header {
-  background-color: #333;
-  color: #fff;
+  background-color: #a376ec;
+  color: white;
 }
 
 .chat-toast-body {
-  color: #333;
+  color: #ffffff;
+  background-color: #555;
 }
 
 .add-friend-field {

@@ -10,7 +10,7 @@ class Router {
     this.app = null;
     this.currentHistoryPosition = 0;
     this.maxHistoryPosition = 0;
-    this.excludedPaths = ['/main_menu', '/live_chat', '/live_chat/chat_room'];
+    this.excludedPaths = ['/game'];
     this.unregistered_urls = ["/", "/home", "/login", "/register", "/email_verification"];
     console.log("Router: constructor called");
 

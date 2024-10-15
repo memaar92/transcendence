@@ -194,11 +194,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'message': match.get_id(),
         })
 
-    # async def upcoming_match(self, event):
-    #     await self.send(text_data=json.dumps({
-    #         'type': 'chat_message',
-    #         'message': f"Upcoming match with!"
-    #     }))
+    async def upcoming_match(self, event):
+        await self.send_message_to_user(self.user_id, {
+            'message': 'You have an upcoming tournament match!',
+            'message_type': 'tournament',
+            'message_key': 'message'
+        })
 
     async def game_invite_cancelled(self, user_id):
         await self.update_inviter(self.user_id, user_id, True)
@@ -438,6 +439,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     #     }))
 
     async def chat_message(self, data, receiver_id):
+        print(f"Chat message from {data['sender_id']} to {receiver_id}")
         sender_id = data.get('sender_id')
         message = data.get('message')
         timestamp = data.get('timestamp')

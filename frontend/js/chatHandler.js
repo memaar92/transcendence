@@ -85,13 +85,11 @@ class ChatHandler {
     try {
       const response = await api.get('/token/check');
       const json = await response.json();
-      console.log('Token refresh response:', json);
       if (json['logged-in'] === false) {
         throw new Error('User is not logged in');
       }
       return true;
     } catch (error) {
-      console.error('Error refreshing token:', error);
       throw error;
     }
   }
@@ -136,13 +134,14 @@ class ChatHandler {
       case 'home':
         this.handleHomeContext(content);
         break;
-        case 'chat':
-          this.handleChatContext(content);
-          break;
-          case 'none':
-            this.handleNoneContext(content);
-            default:
-              // console.error('Unknown context:', content.context);
+      case 'chat':
+        this.handleChatContext(content);
+        break;
+      case 'none':
+        this.handleNoneContext(content);
+        break;
+      default:
+        // console.error('Unknown context:', content.context);
         break;
       }
     }
@@ -160,6 +159,7 @@ class ChatHandler {
         this.updateUnreadMessages(content);
         break;
       case 'chat_message':
+        this.displayNotification("You have a new message from: " + content.sender_name + "!");
         if (!document.querySelector(`.chats-item[data-id="${content.sender_id}"]`)) {
           const friendItem = document.querySelector(`.friends-item[data-id="${content.sender_id}"]`);
           if (friendItem) {
@@ -206,6 +206,8 @@ class ChatHandler {
         });
         break;
       case 'pending_requests':
+        if (content.requests.length > 0)
+          this.displayNotification("You have pending friend requests. Check your friends list!");
         this.displayChatRequest(content.requests);
         break;
       case 'game_invite':
@@ -249,7 +251,7 @@ class ChatHandler {
         }
         break;
       case 'game_error':
-        this.displayModal(content, 'Freddy says:');
+        this.displayModal(content, 'Server Message:');
         var friendItem = document.querySelector(`.friends-item[data-id="${content.misc}"]`);
         if (friendItem) {
             const existingButton = friendItem.querySelector('#game-invite-button');
@@ -269,6 +271,9 @@ class ChatHandler {
             console.warn('Friend item not found');
         }
         break;
+      case 'tournament':
+        this.displayNotification(content.message);
+        break;
       default:
         console.error('Unknown context:', content.type);
         break;
@@ -276,9 +281,21 @@ class ChatHandler {
     }
         
   handleChatContext(content) {
+    console.log('Handling chat context:', content.type);
     switch (content.type) {
       case 'chat_message':
-        this.displayChatMessage(content, 'received');
+        if (content.sender_name !== this.currentReceiverId) {
+          this.displayNotification("You have a new message from: " + content.sender_name + "!");
+        }
+        if (content.sender_id === this.senderId) {
+          this.displayChatMessage(content, 'received');
+        }
+        break;
+      case 'tournament':
+        this.displayNotification(content.message);
+        break;
+      case 'game_invite':
+        this.displayNotification("You have a new game invite from: " + content.sender_name + "!");
         break;
       case 'chat_history':
         this.displayChatHistory(content.messages);
@@ -296,25 +313,36 @@ class ChatHandler {
         console.error('Error:', content.type);
         break;
     }
+    // notifications for messages(except from current receiver), game invites, and upcoming tournaments
   }
 
   handleNoneContext(content) {
+    console.log('Handling none context:', content.type);
     switch (content.type) {
       case 'chat_message':
         this.displayIndicator();
-        this.displayNotification(content);
+        this.displayNotification("You have a new message from: " + content.sender_name + "!");
+        break;
+      case 'game_invite':
+        this.displayNotification("You have a new game invite from: " + content.sender_name + "!");
+        break;
+      case 'pending_requests':
+        this.displayNotification("You have pending friend requests. Check your friends list!");
         break;
       case 'unread_counts':
         if (Object.keys(content.unread_messages).length > 0) {
           this.displayIndicator();
         }
         break;
-      // case 'match_id':
-      //   if (content.match_id) {
-      //     window.localStorage.setItem('game_id', content.match_id);
-      //     this.router.navigate('/game');
-      //   }
-      //   break;
+      case 'match_id':
+        if (content.match_id) {
+          window.localStorage.setItem('game_id', content.match_id);
+          this.router.navigate('/game');
+        }
+        break;
+      case 'tournament':
+        this.displayNotification(content.message);
+        break;
       // case 'friends_list':
       //   if (window.location.pathname.startsWith('/users/')) {
       //     createProfileButton();
@@ -326,6 +354,8 @@ class ChatHandler {
   }
 
   displayIndicator() {
+    if (window.location.pathname !== '/main_menu')
+      return;
     const chatMenuItem = document.getElementById('chat-menu-item');
     if (!chatMenuItem) {
       console.warn('Chat menu item not found');
@@ -353,7 +383,7 @@ class ChatHandler {
     3000);
   }
 
-  displayNotification(content) {
+  displayNotification(message) {
     const container = document.getElementById('notifications');
     if (!container) {
       return;
@@ -373,7 +403,7 @@ class ChatHandler {
         <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
       </div>
       <div class="toast-body chat-toast-body">
-        New message from ${content.sender_name}
+        ${message}
       </div>
     `;
 
@@ -470,14 +500,12 @@ class ChatHandler {
       document.querySelector('.no-chats-message').remove();
     }
     const chatItem = document.querySelector(`.chats-item[data-id="${friendId}"]`);
-    console.log(friendId);
     if (chatItem) {
       const messagePreview = chatItem.querySelector('.message-preview');
       if (messagePreview && message) {
         if (message.length > 30) {
           message = message.slice(0, 30) + '...';
         }
-        console.log(this.senderId, senderId);
         if (senderId === this.senderId) {
           messagePreview.textContent = `You: ${message}`;
         } else {
@@ -486,8 +514,6 @@ class ChatHandler {
       } else {
         console.log('preview not found');
       }
-    } else {
-      console.warn('Friend item not found (latest message):', friendId);
     }
   }
 
@@ -496,10 +522,7 @@ class ChatHandler {
     modalContainer.className = 'modal fade';
 
     const usernameMatch = content.message.match(/(\b\w+\b)$/);
-    console.log('usernameMatch:', usernameMatch);
     const username = usernameMatch ? usernameMatch[0] : 'User';
-    console.log('Username:', username);
-    console.log('Content.type:', content.type);
     var message;
     var headerText;
     if (content.type === 'request_status') {
@@ -558,7 +581,6 @@ class ChatHandler {
     const messageInput = document.getElementById('message-input');
     const message = messageInput.value.trim();
     if (this.ws && message && receiverId && receiverId !== this.senderId) {
-      console.log('Sending message to:', receiverId);
       const newMessage = {
         'type': 'chat_message',
         'message': message,
@@ -591,7 +613,6 @@ class ChatHandler {
                 chatItem.appendChild(unreadIndicator);
             }
         } else {
-            console.log('Removing unread indicator');
             if (chatItem.contains(unreadIndicator)) {
                 unreadIndicator.remove();
             }
@@ -723,7 +744,6 @@ class ChatHandler {
   }
 
   displayUserList(data) {
-    console.log('Displaying user list');
     const parsedData = JSON.parse(data);
     const users = parsedData.users;
     const userListContainer = document.getElementById('user-list-container');
@@ -880,7 +900,6 @@ class ChatHandler {
           buttons = this.createBlockedFilterButtons(friend);
         } else
           friendItem.className = 'friends-item friends';
-        console.log(buttons);
       }
       friendItem.setAttribute('data-id', friend.id);
       friendItem.setAttribute('data-name', friend.name);
@@ -921,7 +940,6 @@ class ChatHandler {
   }
 
   createFriendsFilterButtons(friend) {
-    console.log('Friend:', friend);
     const chatButton = document.createElement('button');
     chatButton.id = 'chat-button';
     chatButton.onclick = () => {
@@ -951,7 +969,6 @@ class ChatHandler {
     blockButton.onclick = () => {
       this.blockFriend(this.senderId, friend.id);
     };
-    console.log(friend.inviter_id, friend.id);
     const gameButton = this.createGameButton(friend.inviter_id, friend.id);
 
     return [gameButton, chatButton, blockButton];
@@ -991,15 +1008,12 @@ class ChatHandler {
     messageInput.value = '';
     this.currentReceiverId = friendId;
     
-    console.log('Requesting chat history for:', friendId, this.senderId);
     this.sendChatHistoryRequest(this.senderId, friendId);
 
     sendButton.addEventListener('click', () => {
-      console.log('Send button clicked');
       this.sendMessage(this.currentReceiverId);
     });
     closeButton.addEventListener('click', () => {
-      console.log('Close button clicked');
       if (this.router) {
         this.router.navigate('/live_chat');
       }
@@ -1117,7 +1131,8 @@ class ChatHandler {
     const btnContainer = document.querySelector('.btn-group');
     const btns = btnContainer.querySelectorAll('.btn-check');
   
-    console.log('Filter buttons:', btns);
+    if (btns === null)
+      return;
   
     btns.forEach(btn => {
       btn.addEventListener("click", () => {
