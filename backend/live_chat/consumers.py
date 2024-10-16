@@ -68,24 +68,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def send_websocket_message(self, event):
         message_data = json.loads(event['text'])
-        message_id = message_data.get('message_id')
+        message_data['context'] = self.context
+        await self.send(text_data=json.dumps(message_data))
 
-        redis_conn = get_redis_connection("default")
-        redis_key = f"msg:{message_id}:{self.user_id}"
-
-        try:
-            print(f"Setting Redis key: {redis_key} with value 1")
-            if redis_conn.setnx(redis_key, "1"):
-                print(f"Key {redis_key} set successfully and expiration set to 300 seconds.")
-                message_data['context'] = self.context
-                await self.send(text_data=json.dumps(message_data))
-                redis_conn.delete(redis_key)
-            else:
-                print(f"Duplicate message {message_id} for user {self.user_id}. Key {redis_key} already exists.")
-        except Exception as e:
-            print(f"Redis error: {str(e)}. Sending message anyway.")
-            message_data['context'] = self.context
-            await self.send(text_data=json.dumps(message_data))
 
     async def broadcast_user_list(self):
         users_info = await self.get_user_list()
@@ -143,29 +128,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'message_type': 'pending_requests',
             'message_key': 'requests'
         })
-    
-    # async def send_current_game_registration(self, user_id):
-    #     game_type = PongUser.get_registered_game_type(user_id)
-    #     # if the user is registered but not for a queue then send a notification
-    #     if game_type and game_type != "queue":
-    #         await self.send_message_to_user(user_id, {
-    #             'message': game_type,
-    #             'message_type': 'current_game_registration',
-    #             'message_key': 'game_type'
-    #         })
-    
-    # when game invitation message is received from the frontend register the inviter to the match before creating the match because the invitee also has to accept the invitation
-    #async def wait_for_match(self, user_id):
-    #    if await self.get_status(self.user_id, user_id) != RelationshipStatus.BEFRIENDED:
-    #        return
-    #    if PongUser.is_user_registered(user_id):
-    #        await self.send(text_data=json.dumps({
-    #            'type': 'game_error',
-    #            'message': "The other user is already registered for a match or a tournament. Please try again later."
-    #        }))
-    #        return
-    #    else :
-    #        await PongUser.assign_to_game(user_id, "match", None)
 
     async def create_match(self, user_id):
         if await self.get_status(self.user_id, user_id) != RelationshipStatus.BEFRIENDED:
@@ -208,23 +170,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'message_type': 'game_invite_cancelled',
             'message_key': 'message'
         })
-
-    # async def send_pending_game_notifications(self):
-    #     pending_games = await self.get_pending_game_invitations(self.user_id)
-    #     game_invitations_list = []
-    #     for game in pending_games:
-    #         game_invitations_list.append({
-    #             'inviter_id': game.inviter_id,
-    #             'invitee_id': game.user1_id if game.user2_id == game.inviter_id else game.user2_id
-    #         })
-    #     await self.send_message_to_user(self.user_id, {
-    #         'message': game_invitations_list,
-    #         'message_type': 'pending_games',
-    #         'message_key': 'games'
-    #     })
-        
-
-    # async def notify_match_ready(self, event):
 
     async def check_users_registered(self, user_id):
         if PongUser.is_user_registered(int(self.user_id)):
@@ -304,7 +249,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         await self.send_friends_info(self.user_id)
                         await self.send_unread_messages_count(self.user_id)
                         await self.send_pending_chat_notifications(self.user_id)
-                        # await self.send_pending_game_notifications()
                     if self.context == 'none':
                         await self.send_unread_messages_count(self.user_id)
                     await self.broadcast_user_list()
@@ -391,26 +335,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             error_message = f"Error handling message in chat context: {str(e)}"
             error_traceback = traceback.format_exc()
             print(f"{error_message}\n{error_traceback} for user {self.user_id}")
-            
-    # async def chat_request(self, data):
-    #     receiver_id = data['receiver_id']
-    #     sender_id = data['sender_id']
-    #     print (f"Chat request from {sender_id} to {receiver_id}")
-    #     if sender_id == receiver_id:
-    #         return
-    #     if receiver_id in ChatConsumer.user_id_to_channel_name:
-    #         receiver_channel_name = ChatConsumer.user_id_to_channel_name[receiver_id]
-    #         await self.update_status(sender_id, receiver_id, RelationshipStatus.PENDING)
-    #         await self.channel_layer.send(
-    #             receiver_channel_name,
-    #             {
-    #                 'type': 'chat_request_notification',
-    #                 'context': self.context,
-    #                 'sender_id': sender_id,
-    #                 'sender_name': self.scope['user'].displayname,
-    #                 'receiver_id': receiver_id
-    #             }
-    #         )
 
     async def send_latest_message(self):
         friends = await self.get_friends_list(self.user_id)
@@ -426,17 +350,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'message_type': 'message_preview',
             'message_key': 'latest_messages'
         })
-
-
-    # async def chat_request_notification(self, event):
-    #     await self.update_status(event['sender_id'], event['receiver_id'], RelationshipStatus.PENDING)
-    #     await self.send(text_data=json.dumps({
-    #         'type': 'chat_request_notification',
-    #         'context': self.context,
-    #         'sender_id': event['sender_id'],
-    #         'receiver_id': event['receiver_id'],
-    #         'sender_name': event['sender_name']
-    #     }))
 
     async def chat_message(self, data, receiver_id):
         print(f"Chat message from {data['sender_id']} to {receiver_id}")
@@ -466,7 +379,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'message_type': 'chat_message',
                 'message_key': 'message'})
 
-            await self.save_message(sender_id, receiver_id, message)
+            await self.save_message(sender_id, receiver_id, message, timestamp)
         except Exception as e:
             error_message = f"Error sending message: {str(e)}"
             error_traceback = traceback.format_exc()
@@ -543,16 +456,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'sender_id': msg.sender_id,
                 'receiver_id': msg.receiver_id,
                 'message': msg.content,
-                'timestamp': msg.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+                'timestamp': msg.timestamp.isoformat(),
                 'sender_name': msg.sender.displayname
             } for msg in messages
         ]
 
     @database_sync_to_async
-    def save_message(self, sender_id, receiver_id, message):
+    def save_message(self, sender_id, receiver_id, message, timestamp):
         sender = get_user_model().objects.get(id=sender_id)
         receiver = get_user_model().objects.get(id=receiver_id)
-        msg = Message.objects.create(sender=sender, receiver=receiver, content=message, timestamp=timezone.now())
+        msg = Message.objects.create(sender=sender, receiver=receiver, content=message, timestamp=timestamp)
         return msg
 
     @database_sync_to_async
@@ -579,7 +492,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def get_pending_requests(self, user_id):
         pending_requests = Relationship.objects.filter(
-            #filter all relationship objects where the user is either user1 or user2 and the status is pending and the user is not the requester
             (Q(user1_id=user_id) | Q(user2_id=user_id)) & Q(status=RelationshipStatus.PENDING) & ~Q(requester_id=user_id)
         )
         return list(pending_requests)
@@ -646,7 +558,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'sender_id': latest_message.sender_id,
                 'receiver_id': latest_message.receiver_id,
                 'message': latest_message.content,
-                'timestamp': latest_message.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+                'timestamp': latest_message.timestamp.isoformat(),
                 'sender_name': latest_message.sender.displayname
             }
         return None
@@ -700,10 +612,3 @@ class ChatConsumer(AsyncWebsocketConsumer):
             relationship.inviter_id = user1_id
         relationship.save()
         print ("Inviter ID: ", relationship.inviter_id)
-
-    # @database_sync_to_async
-    # def get_pending_game_invitations(self, user_id):
-    #     pending_invitations = Relationship.objects.filter(
-    #         Q(user1_id=user_id) | Q(user2_id=user_id) & ~Q(inviter_id=None)
-    #     )
-    #     return list(pending_invitations)

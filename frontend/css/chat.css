@@ -715,14 +715,19 @@
 #chat-button {
   background-color: transparent;
   box-sizing: content-box;
-  width: 70px;
-  height: 70px;
+  width: 4.375rem;
+  height: 4.375rem;
   border: none;
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   /* box-shadow: 0 4px 0px 0px #8d8d8d; */
+}
+
+#chat-button svg {
+  width: inherit;
+  height: inherit;
 }
 
 #chat-button:hover .bubble {

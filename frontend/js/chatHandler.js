@@ -287,7 +287,7 @@ class ChatHandler {
         if (content.sender_name !== this.currentReceiverId) {
           this.displayNotification("You have a new message from: " + content.sender_name + "!");
         }
-        if (content.sender_id === this.senderId) {
+        if (content.sender_name === this.currentReceiverId) {
           this.displayChatMessage(content, 'received');
         }
         break;
@@ -638,10 +638,6 @@ class ChatHandler {
     }
   }
 
-  // showMessageNotification(content) {
-  //   this.updateUnreadMessageIndicator(content.sender_id);
-  // }
-
   /* add request items to the friends-scroll-container and requests filter */
   displayChatRequest(requests) {
     const requestsListElement = document.querySelector('.friends-scroll-container');
@@ -952,16 +948,16 @@ class ChatHandler {
         <path class="border" d="M25 20a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h5l2 2 2-2h11z"
               fill="none" stroke="#1f7112" stroke-width="2"
               transform="translate(0, 1)"/>
-  
+    
         <!-- Chat bubble -->
         <path class="bubble" d="M25 20a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h5l2 2 2-2h11z"/>
-  
+    
         <!-- Chat bubble text -->
         <text class="bubble" x="15" y="12.5" font-size="8" text-anchor="middle" fill="white" stroke="none" font-weight="600" dy=".3em">Chat</text>
       </svg>
     `;
-  
-    chatButton.innerHTML = svgContent;
+    
+  chatButton.innerHTML = svgContent;
   
     const blockButton = document.createElement('button');
     blockButton.className = 'button reject';
@@ -1037,7 +1033,7 @@ class ChatHandler {
   
       const messageTimestamp = document.createElement('span');
       messageTimestamp.className = 'message-timestamp';
-      messageTimestamp.textContent = ` (${new Date(message.timestamp).toLocaleTimeString()})`;
+      messageTimestamp.textContent = ` (${new Date(message.timestamp).toLocaleString()})`;
   
       messageItem.appendChild(messageText);
       messageItem.appendChild(messageTimestamp);
@@ -1095,7 +1091,7 @@ class ChatHandler {
           'type': 'chat_history',
           'sender_id': senderId,
           'receiver_id': receiverId,
-          'request_id': requestId
+          'user_timezone': 'Australia/Sydney',
         }));
   
         setTimeout(() => {

@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from django.http import JsonResponse
 from rest_framework.views import APIView
 from django.db.models import Q
@@ -10,9 +9,6 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
 User = get_user_model()
-
-def live_chat(request):
-    return render(request, 'live_chat.html')
 
 class RelationshipStatusView(APIView):
     def get(self, request, user_id_1, user_id_2):

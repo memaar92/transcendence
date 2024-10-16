@@ -193,7 +193,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
         '''Handle the remote_match_ready message'''
 
         # Check if the current connection is the active connection (Current tab in the browser)
-        print (f"Event: {event}")
+        logger.debug(f"Received remote_match_ready event: {event}")
         if not self._is_active_connection():
             return
 
