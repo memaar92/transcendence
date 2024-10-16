@@ -53,7 +53,7 @@ class ChatHandler {
       this.initFiltering();
       this.initTabHandling();
       document.getElementById("back").addEventListener("click", async (e) => {
-        history.back();
+        router.navigate("/main_menu");
       });
       const searchInput = document.getElementById('search-input');
       searchInput.removeEventListener('keydown', this.boundSearchInputHandler);
