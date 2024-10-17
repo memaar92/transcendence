@@ -30,6 +30,9 @@ class ChatHandler {
     }
 
     console.log('Creating new WebSocket connection');
+    console.log('Checking token');
+    await this.checkToken();
+    
     this.ws = new WebSocket(url);
     
     this.ws.onopen = () => {
@@ -82,41 +85,21 @@ class ChatHandler {
       }
     }
       
-  async checkToken() {
-      const response = await api.get('/token/check');
-      const json = await response.json();
-      if (json['logged-in'] === false) {
-        return false;
-      }
-      return true;
+  async refreshToken() {
+      const formData = new FormData();
+      formData.append("refresh", ""); // Add your refresh token or leave it as empty
+    
+      const result = await fetch(`${API_BASE_URL}/token/refresh/`, {
+        method: "POST",
+        body: formData, // Use the FormData object as the body
+      });
+      if (result.status !== 200)
+        this.router.navigate('/home');
   }
 
-  async reconnect() {
-    try {
-      this.ws = new WebSocket(`wss://${window.location.host}/ws/live_chat/`);
-    } catch (error) {
-      console.error('Failed to reconnect:', error);
-    }
-  }
   
   async onClose(event) {
     console.log('WebSocket connection closed:', event.code, event.reason);
-    
-    if (event.code === 1006) {
-        const formData = new FormData();
-        formData.append("refresh", ""); // Add your refresh token or leave it as empty
-      
-        const result = await fetch(`${API_BASE_URL}/token/refresh/`, {
-          method: "POST",
-          body: formData, // Use the FormData object as the body
-        });
-        if (result.status === 200)
-          this.init(this.currentReceiverId, this.router, this.context);
-        else {
-          console.error('Failed to authenticate:', error);
-          this.router.navigate('/home');
-        }
-      }
   }
   
   onMessage(event) {
@@ -938,6 +921,7 @@ class ChatHandler {
   createFriendsFilterButtons(friend) {
     const chatButton = document.createElement('button');
     chatButton.id = 'chat-button';
+    console.log("Opening chat with: ", friend.name);
     chatButton.onclick = () => {
       this.router.navigate(`/live_chat/chat_room?recipient=${friend.name}`);
     };
