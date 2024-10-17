@@ -2,6 +2,7 @@ import { api } from "./api.js";
 import { router } from "./app.js";
 
 const r = await api.get("/profile");
+const userdata = await r.json();
 
 function start_game(match_id) {
   let is_local_match = false;
@@ -27,7 +28,7 @@ function start_game(match_id) {
     console.error("Match WebSocket error:", e);
     router.navigate("/main_menu");
   };
-  
+
   matchSocket.binaryType = "arraybuffer";
 
   matchSocket.onmessage = function (e) {
@@ -59,13 +60,17 @@ function start_game(match_id) {
           document.removeEventListener("keydown", key_down, false);
           document.removeEventListener("keyup", key_up, false);
           
-          winner = jsonData.data;
+          console.log(jsonData)
+          winner = jsonData.winner;
           timerValue = null;
-          const myID = r.id;
-          if (user_id_p1 == myID && user_id_p1 == winner) {
+          const myID = userdata.id;
+          console.log("MyID", myID);
+          console.log("userID p1", user_id_p1);
+          console.log("winner", winner);
+          if ((user_id_p1 == myID && winner == 0) || (user_id_p2 == myID && winner)) {
             localStorage.setItem("win", true);
           } else {
-            localStorage.setItem("win", false);
+            localStorage.removeItem("win");
           }
           if (localStorage.getItem("tournament_games")) {
             router.navigate("/tournament_preview")
