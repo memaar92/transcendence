@@ -1,4 +1,5 @@
 import { api } from './api.js';
+const API_BASE_URL = `${window.location.origin}/api`;
 
 class ChatHandler {
   constructor() {
@@ -7,6 +8,7 @@ class ChatHandler {
     this.currentReceiverId = null;
     this.onlineUserIds = [];
     this.router = null;
+    this.context = null;
     this.currentFilter = 'all';
     this.boundSearchInputHandler = this.searchInputHandler.bind(this);
   }
@@ -16,6 +18,7 @@ class ChatHandler {
   async init(params, router, context) {
 
     this.router = router;
+    this.context = context;
 
     // console.log('Params:', params);
     const url = `wss://${window.location.host}/ws/live_chat/}`;
@@ -37,9 +40,7 @@ class ChatHandler {
       }
     };
     
-    this.ws.onerror = (e) => {
-      // console.error('WebSocket error:', e);
-    };
+    // this.ws.onerror = (e) => this.onError(e);
     
     this.ws.onmessage = this.onMessage.bind(this);
     this.ws.onclose = (e) => this.onClose(e, context);
@@ -82,16 +83,12 @@ class ChatHandler {
     }
       
   async checkToken() {
-    try {
       const response = await api.get('/token/check');
       const json = await response.json();
       if (json['logged-in'] === false) {
-        throw new Error('User is not logged in');
+        return false;
       }
       return true;
-    } catch (error) {
-      throw error;
-    }
   }
 
   async reconnect() {
@@ -102,21 +99,24 @@ class ChatHandler {
     }
   }
   
-  async onClose(event, context) {
+  async onClose(event) {
     console.log('WebSocket connection closed:', event.code, event.reason);
     
     if (event.code === 1006) {
-      try {
-        await this.checkToken();
-        await this.reconnect(context);
-      } catch (error) {
-        console.error('Failed to authenticate:', error);
-        this.router.navigate('/home');
+        const formData = new FormData();
+        formData.append("refresh", ""); // Add your refresh token or leave it as empty
+      
+        const result = await fetch(`${API_BASE_URL}/token/refresh/`, {
+          method: "POST",
+          body: formData, // Use the FormData object as the body
+        });
+        if (result.status === 200)
+          this.init(this.currentReceiverId, this.router, this.context);
+        else {
+          console.error('Failed to authenticate:', error);
+          this.router.navigate('/home');
+        }
       }
-      // } else {
-        //   setTimeout(() => this.reconnect(), 5000);
-        // }
-    }
   }
   
   onMessage(event) {
@@ -1091,7 +1091,6 @@ class ChatHandler {
           'type': 'chat_history',
           'sender_id': senderId,
           'receiver_id': receiverId,
-          'user_timezone': 'Australia/Sydney',
         }));
   
         setTimeout(() => {

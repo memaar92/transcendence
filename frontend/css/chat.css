@@ -136,15 +136,6 @@
   margin-bottom: 10px;
 }  
 
-#content {
-  display: flex;
-  flex-direction: column;
-  border: 2px solid white;
-  border-radius: 15px;
-  overflow: auto;
-  margin: 5rem;
-}  
-
 #chat-room-content {
     display: flex;
   flex-direction: column;  

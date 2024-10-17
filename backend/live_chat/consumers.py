@@ -222,12 +222,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     ChatConsumer.online_users.remove(self.user_id)
                     await self.broadcast_user_list()
 
-            # Clean up Redis keys
-            redis_conn = get_redis_connection("default")
-            redis_keys = redis_conn.keys(f"msg:*:{self.user_id}")
-            for key in redis_keys:
-                redis_conn.delete(key)
-
     async def receive(self, text_data):
         data = json.loads(text_data)
         print(f"Received message: {data}")

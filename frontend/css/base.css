@@ -334,6 +334,16 @@ input:disabled {
   color: #333;
 }
 
+#content {
+  overflow-x: auto;
+  grid-area: content;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+}
+
 thead {
   background-color: #430c56;
   color: #fff;
