@@ -28,6 +28,9 @@ function start_game(match_id) {
     router.navigate("/main_menu");
   };
 
+  let arrivalTimes = [];
+  const maxSamples = 100; // Number of samples to keep for averaging
+
   matchSocket.binaryType = "arraybuffer"; // Set the binary type of the WebSocket to ArrayBuffer
 
   matchSocket.onmessage = function (e) {
@@ -38,19 +41,22 @@ function start_game(match_id) {
       try {
         const jsonData = JSON.parse(data);
         // Process JSON data
-        console.log("Received JSON data:", jsonData);
 
         if (jsonData.type === "start_timer_update") {
           timerValue = jsonData.start_timer;
+          if (timerValue == 0) {
+            countdownElement.innerHTML = "";
+          } else {
+            countdownElement.textContent = timerValue;
+          }
           console.log("Received timer update:", timerValue);
         } else if (jsonData.type === "player_scores") {
           leftPlayerScore = jsonData.player1;
           rightPlayerScore = jsonData.player2;
-          console.log(
-            "Received player scores:",
-            leftPlayerScore,
-            rightPlayerScore
-          );
+          try {
+            document.getElementById("left-score").innerHTML = leftPlayerScore;
+            document.getElementById("right-score").innerHTML = rightPlayerScore;
+          } catch (error) {}      
         } else if (jsonData.type === "game_over") {
           matchSocket.close();
           document.removeEventListener("keydown", key_down, false);
@@ -83,7 +89,7 @@ function start_game(match_id) {
         console.error("Failed to parse JSON data:", error);
       }
     } else if (data instanceof ArrayBuffer) {
-      // Handle binary data
+
       const view = new DataView(data);
 
       // Read the six floats from the DataView
@@ -302,26 +308,6 @@ function start_game(match_id) {
     moveElement("left-pad", "left-pad-filter", leftPaddle.x, leftPaddle.y);
     moveElement("right-pad", "right-pad-filter", rightPaddle.x, rightPaddle.y);
 
-    try {
-      document.getElementById("left-score").innerHTML = leftPlayerScore;
-      document.getElementById("right-score").innerHTML = rightPlayerScore;
-    } catch (error) {}
-
-    //   drawPaddle(leftPaddle);
-    //   drawPaddle(rightPaddle);
-    //   drawBall();
-    //   drawScores(); // Draw the scores
-
-    if (timerValue !== null && timerValue > 0) {
-      countdownElement.textContent = timerValue;
-    } else if (timerValue == 0) {
-      countdownElement.innerHTML = "";
-    }
-    //   if (winner !== null) {
-    //       drawWinner(winner);
-    //   }
-
-    //   // Request next frame
     requestAnimationFrame(draw);
   }
 
