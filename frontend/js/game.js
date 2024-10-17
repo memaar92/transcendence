@@ -27,11 +27,8 @@ function start_game(match_id) {
     console.error("Match WebSocket error:", e);
     router.navigate("/main_menu");
   };
-
-  let arrivalTimes = [];
-  const maxSamples = 100; // Number of samples to keep for averaging
-
-  matchSocket.binaryType = "arraybuffer"; // Set the binary type of the WebSocket to ArrayBuffer
+  
+  matchSocket.binaryType = "arraybuffer";
 
   matchSocket.onmessage = function (e) {
     const data = e.data;
