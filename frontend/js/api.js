@@ -67,6 +67,7 @@ export const api = {
       },
       body: JSON.stringify(data),
     });
+    console.log(response);
     if (!response.ok && response.status != 404) {
       // Not Authorized
       if ((await handle_not_authorized(response)) == LOGGED_IN) {

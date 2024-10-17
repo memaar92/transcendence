@@ -19,6 +19,7 @@ class HubSocket {
         console.log("Hub: connecting");
         this.socket = new WebSocket('wss://' + window.location.host + '/wss/pong/matchmaking/');
         this.socket.onmessage = this.#handleMessage.bind(this);
+        
     }
 
     close () {
