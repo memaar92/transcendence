@@ -31,7 +31,7 @@ class ChatHandler {
 
     console.log('Creating new WebSocket connection');
     console.log('Checking token');
-    await this.checkToken();
+    await this.refreshToken();
     
     this.ws = new WebSocket(url);
     
@@ -64,10 +64,6 @@ class ChatHandler {
       searchInput.addEventListener('keydown', this.boundSearchInputHandler);
       }
     }
-    
-    // async onClose(event) {
-      //   console.log('WebSocket connection closed:', event.code, event.reason);
-      // }
       
     async getUserIdfromName(name) {
       try {
@@ -87,11 +83,11 @@ class ChatHandler {
       
   async refreshToken() {
       const formData = new FormData();
-      formData.append("refresh", ""); // Add your refresh token or leave it as empty
+      formData.append("refresh", "");
     
       const result = await fetch(`${API_BASE_URL}/token/refresh/`, {
         method: "POST",
-        body: formData, // Use the FormData object as the body
+        body: formData,
       });
       if (result.status !== 200)
         this.router.navigate('/home');
