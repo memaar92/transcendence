@@ -654,3 +654,12 @@ class CheckLoginView(APIView):
         else:
             return Response ({"logged-in": False}, status=status.HTTP_200_OK)
         
+class GetUserIdFromDisplayNameView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, displayname):
+        try:
+            user = CustomUser.objects.get(displayname=displayname)
+            return Response({'user_id': user.id}, status=status.HTTP_200_OK)
+        except CustomUser.DoesNotExist:
+            return Response({'detail': 'User not found'}, status=status.HTTP_200_OK)
