@@ -29,7 +29,6 @@ class ChatHandler {
         this.ws.close();
     }
 
-    await new Promise(resolve => setTimeout(resolve, 50));
     console.log('Creating new WebSocket connection');
     console.log('Checking token');
     const auth = await this.checkToken();
