@@ -29,9 +29,13 @@ class ChatHandler {
         this.ws.close();
     }
 
+    await new Promise(resolve => setTimeout(resolve, 50));
     console.log('Creating new WebSocket connection');
     console.log('Checking token');
-    await this.refreshToken();
+    const auth = await this.checkToken();
+    if (!auth) {
+        await this.refreshToken();
+    }
     
     this.ws = new WebSocket(url);
     
@@ -81,19 +85,27 @@ class ChatHandler {
       }
     }
       
-  async refreshToken() {
-      const formData = new FormData();
-      formData.append("refresh", "");
-    
-      const result = await fetch(`${API_BASE_URL}/token/refresh/`, {
-        method: "POST",
-        body: formData,
-      });
-      if (result.status !== 200)
-        this.router.navigate('/home');
-  }
+    async checkToken() {
+        const response = await api.get('/token/check/');
+        const json = await response.json();
+        if (json['logged-in'] === false) {
+          return false;
+        }
+        return true;
+    }
 
+    async refreshToken() {
+        const formData = new FormData();
+        formData.append("refresh", "");
   
+        const result = await fetch(`${API_BASE_URL}/token/refresh/`, {
+          method: "POST",
+          body: formData,
+        });
+        if (result.status !== 200)
+          this.router.navigate('/home');
+    }
+
   async onClose(event) {
     console.log('WebSocket connection closed:', event.code, event.reason);
   }

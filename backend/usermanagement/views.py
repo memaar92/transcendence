@@ -625,6 +625,7 @@ class LogoutView(APIView):
 
 class CheckLoginView(APIView):
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     @extend_schema(
         responses={
