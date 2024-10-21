@@ -97,10 +97,7 @@ class ChatHandler {
         const formData = new FormData();
         formData.append("refresh", "");
   
-        const result = await fetch(`${API_BASE_URL}/token/refresh/`, {
-          method: "POST",
-          body: formData,
-        });
+        const result = await api.get("/profile");
         if (result.status !== 200)
           this.router.navigate('/home');
     }
