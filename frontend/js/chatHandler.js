@@ -97,9 +97,7 @@ class ChatHandler {
         const formData = new FormData();
         formData.append("refresh", "");
   
-        const result = await api.get("/profile");
-        if (result.status !== 200)
-          this.router.navigate('/home');
+        const result = await api.post_multipart("/token/refresh/", formData);
     }
 
   async onClose(event) {

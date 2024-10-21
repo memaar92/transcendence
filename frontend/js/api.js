@@ -88,9 +88,6 @@ export const api = {
   post_multipart: async (endpoint, data) => {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: "POST",
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
       body: data,
     });
     console.log(response);
@@ -99,10 +96,7 @@ export const api = {
       if ((await handle_not_authorized(response)) == LOGGED_IN) {
         return await fetch(`${API_BASE_URL}${endpoint}`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(data),
+          body: data,
         });
       } else {
         return null;
