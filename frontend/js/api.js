@@ -23,7 +23,7 @@ async function handle_not_authorized(response) {
   if (json["code"] == "token_not_valid") {
     // access token expired
     const formData = new FormData();
-    formData.append("refresh", ""); // Add your refresh token or leave it as empty
+    formData.append("refresh", "");
 
     const response = await fetch(`${API_BASE_URL}/token/refresh/`, {
       method: "POST",
@@ -79,6 +79,26 @@ export const api = {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(data),
+        });
+      } else {
+        return null;
+      }
+    }
+    return response;
+  },
+
+  post_multipart: async (endpoint, data) => {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: "POST",
+      body: data,
+    });
+    console.log(response);
+    if (!response.ok && response.status != 404) {
+      // Not Authorized
+      if ((await handle_not_authorized(response)) == LOGGED_IN) {
+        return await fetch(`${API_BASE_URL}${endpoint}`, {
+          method: "POST",
+          body: data,
         });
       } else {
         return null;
