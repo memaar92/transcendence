@@ -17,8 +17,9 @@
         <script src="/js/live-chat.js" type="module"></script>
         <script src="/js/chatHandler.js" type="module"></script>
         
-        <div class="add-friend-field">
-            <input placeholder="Find User..." class="search-input" id="search-input" name="text" type="text">
+        <div class="header-container">
+          <h1 class="font-weight-light" style="margin: 1rem 0 0 1rem;">Active Users</h1>
+          <div class="add-friend-field">          <input placeholder="Find User..." class="search-input" id="search-input" name="text" type="text">
             <svg
               class="search-icon"
               width="30"
@@ -64,11 +65,10 @@
                  11.18,32.83 9.36,31.00 8.02,28.69
                  6.67,26.38 6.00,23.86 6.00,21.13 Z" />
             </svg>
+          </div>
         </div>
-
-  <div class="container-fluid py-2">
-    <h1 class="font-weight-light">Active Users</h1>
-    <div id="user-list-container" class="user-list-container">
+      <div class="container-fluid py-2">
+        <div id="user-list-container" class="user-list-container">
       <div class="user-list-wrapper">
         <!-- User items will be appended here -->
       </div>

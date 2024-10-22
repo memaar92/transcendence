@@ -31,8 +31,12 @@ class ChatHandler {
 
     console.log('Creating new WebSocket connection');
     console.log('Checking token');
-    await this.refreshToken();
-    
+    var auth = await this.checkToken();
+    console.log('Token status:', auth);
+    if (!auth) {
+      await this.refreshToken();
+    }
+
     this.ws = new WebSocket(url);
     
     this.ws.onopen = () => {
@@ -80,17 +84,24 @@ class ChatHandler {
         return null;
       }
     }
+  
+  async checkToken() {
+    const result = await api.get("/token/check/");
+    const json = await result.json();
+    const status = json["logged-in"];
+    return status ? true : false;
+  }
       
   async refreshToken() {
-      const formData = new FormData();
-      formData.append("refresh", "");
+    const formData = new FormData();
+    formData.append("refresh", "");
     
-      const result = await fetch(`${API_BASE_URL}/token/refresh/`, {
-        method: "POST",
-        body: formData,
-      });
-      if (result.status !== 200)
-        this.router.navigate('/home');
+    const result = await fetch(`${API_BASE_URL}/token/refresh/`, {
+      method: "POST",
+      body: formData,
+    });
+    if (result.status !== 200)
+      this.router.navigate('/home');
   }
 
   
@@ -1163,6 +1174,10 @@ class ChatHandler {
         const user_id = await this.getUserIdfromName(inputValue);
         if (user_id) {
           this.router.navigate(`/users/${user_id}`);
+        }
+        else {
+          // trigger jitter animation
+          event.target.classList.add('jitter');
         }
       }
     }

@@ -624,7 +624,8 @@ class LogoutView(APIView):
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
 class CheckLoginView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [AllowAny] 
+    authentication_classes = []
 
     @extend_schema(
         responses={

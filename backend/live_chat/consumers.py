@@ -12,7 +12,6 @@ from django.contrib.auth.models import AnonymousUser
 import json
 import traceback
 import uuid
-from django_redis import get_redis_connection
 from pong.data_managment.user import User as PongUser
 from pong.match.match_session_handler import MatchSessionHandler
 from pong.data_managment.matches import Matches

@@ -538,10 +538,29 @@
   position: relative;
 }
 
+@keyframes jitter {
+  0% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  50% {
+    transform: translateX(5px);
+  }
+  75% {
+    transform: translateX(-5px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
 .search-input {
   border-style: none;
   height: 3rem;
-  width: 2rem;
+  min-width: 3rem;
+  width: 3rem;
   padding: 0;
   outline: none;
   border: white 2px solid;
@@ -549,11 +568,7 @@
   transition: width 0.5s cubic-bezier(0, 0.110, 0.35, 2), border-radius 0.5s cubic-bezier(0, 0.110, 0.35, 2), background-color 0.5s cubic-bezier(0, 0.110, 0.35, 2);
   background: linear-gradient(135deg, #7A35EC, #921e92);
   box-shadow: 0px 0px 3px #ffffff;
-  padding-right: 40px;
-  color: #fff;
-  margin-top: 5rem;
-  margin-right: 1rem;
-  position: absolute;
+  color: transparent;
 }
 
 .search-input::placeholder,
@@ -564,24 +579,12 @@
 }
 
 .search-input::placeholder {
-  color: #b0b0b0;
-  padding-left: 5px;
+  color: transparent;
 }
 
-.icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  right: 0px;
-  cursor: pointer;
-  width: 50px;
-  height: 50px;
-  outline: none;
-  border-style: none;
-  border-radius: 50%;
-  pointer-events: painted;
-  background-color: transparent;
-  transition: .2s linear;
+.search-input:focus::placeholder {
+  color: #b0b0b0;
+  padding-left: 5px;
 }
 
 .icon:focus ~ .search-input,
@@ -591,15 +594,15 @@
   border-radius: 5px;
   background-color: transparent;
   border: 2px solid #ffffff;
+  color: white;
 }
 
 .search-icon {
   position: absolute;
-  top: 1.5rem;
-  right: 1.56rem;
+  top: 50%; /* Center vertically */
+  left: 50%; /* Center horizontally */
+  transform: translate(-50%, -50%); /* Adjust for exact centering */
   pointer-events: none;
-  fill: #000; /* Change this to the desired color */
-  opacity: 0; /* Initially hidden */
   transition: opacity var(--opacity-transition-duration, 0.2s) ease-in-out; /* Transition for fading with variable duration */
 }
 
@@ -852,17 +855,23 @@
   background-color: #555;
 }
 
+.header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  position: relative; /* Ensure the container is positioned relatively */
+}
+
 .add-friend-field {
   display: flex;
   align-items: center;
-  justify-content: right;
-  gap: 0.9rem;
-  position: relative;
+  position: relative; /* Ensure the container is positioned relatively */
+  /* add margin to top and right */
+  margin: 1rem 1rem 0 0;
 }
 
 .chat-content {
-  display: flex;
-  flex-direction: column;
   border: 2px solid white;
   border-radius: 15px;
   overflow: auto;

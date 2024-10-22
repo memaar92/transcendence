@@ -11,6 +11,7 @@ async function handle_not_authorized(response) {
     return "";
   }
   const json = await response.json();
+  console.log(json);
   if (json["detail"] == "Authentication credentials were not provided.") {
     // No token
     const logged_out = document.getElementById("logged_out");
@@ -31,6 +32,7 @@ async function handle_not_authorized(response) {
     const json = await response.json();
     if (json["code"] == "token_not_valid") {
       // access and refresh token expired
+      console.log("Auth token and refresh token expired");
       const logged_out = document.getElementById("logged_out");
       let bsAlert = new bootstrap.Toast(logged_out);
       bsAlert.show();
