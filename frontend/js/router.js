@@ -23,12 +23,6 @@ class Router {
           hubSocket.connect();
         }
 
-        if (!status && !this.unregistered_urls.includes(window.location.pathname)) {
-          this.navigate("/home");
-          return;
-        }
-
-
         if (status && this.unregistered_urls.includes(window.location.pathname)) {
           this.navigate("/main_menu");
         } else {

@@ -109,74 +109,71 @@ async function createProfileButton() {
   const myId = await getMyId();
   const userId = localStorage.getItem("UID");
   const relationship = await getUsersRelationship();
-  const profileContainer = document.getElementById("user-content");
+  const buttonContainer = document.getElementById("buttonContainer");
   const profilePhoto = document.getElementById("profile-photo");
+
+  // Reset profile photo styling
   profilePhoto.style.filter = "none";
   profilePhoto.style.opacity = "1";
 
-  // Remove all existing buttons inside the button container and itself
-  document.getElementById("profile-button-container")?.remove();
+  // Clear the button container before adding new buttons
+  buttonContainer.innerHTML = "";
 
-  const buttonContainer = document.createElement("div");
-  buttonContainer.id = "profile-button-container";
-  var button = document.createElement("button");
-  button.classList.add("button", "profile-button"); 
-  button.id = "profile-button";
-
-  if (relationship && relationship["status"]) {
-    if (relationship["status"] == "BF") {
-      button.textContent = "Unfriend";
-      button.addEventListener("click", () => updateUserRelationship(myId, userId, "DF"));
-      buttonContainer.appendChild(button);
-      button.style.marginRight = "1rem";
-      button = document.createElement("button");
-      button.classList.add("button", "reject");
-      button.textContent = "Block";
-      button.addEventListener("click", () => updateUserRelationship(myId, userId, "BL"));
-    } else if (relationship["status"] == "PD") {
-      if (relationship["requester"] == myId) {
-        button.textContent = "Cancel Request";
-        button.addEventListener("click", () => updateUserRelationship(myId, userId, "DF"));
-      } else {
-        button.textContent = "Accept Request";
-        button.addEventListener("click", () => updateUserRelationship(myId, userId, "BF"));
-        buttonContainer.appendChild(button);
-        button.style.marginRight = "1rem";
-        button = document.createElement("button");
-        button.classList.add("button", "reject");
-        button.textContent = "Decline Request";
-        button.addEventListener("click", () => updateUserRelationship(myId, userId, "DF"));
-      }
-    } else if (relationship["status"] == "BL") {
-      profilePhoto.style.filter = "grayscale(100%)";
-      profilePhoto.style.opacity = "0.5";
-      if (relationship["blocker"] == myId) {
-        button.textContent = "Unblock";
-        button.addEventListener("click", () => updateUserRelationship(myId, userId, "BF"));
-      }
-      else {
-        button.textContent = "Unfriend";
-        button.addEventListener("click", () => updateUserRelationship(myId, userId, "DF"));
-      }
-      
-    } else {
-      button.textContent = "Add Friend";
-      button.addEventListener("click", () => updateUserRelationship(myId, userId, "PD", myId));
-    }
-  } else {
-    button.textContent = "Add Friend";
-    button.addEventListener("click", () => updateUserRelationship(myId, userId, "PD", myId));
+  // Helper function to create buttons
+  function createButton(text, classes, action) {
+    const button = document.createElement("button");
+    button.textContent = text;
+    button.classList.add("button", ...classes);
+    button.addEventListener("click", async () => {
+      await action();
+      createProfileButton();
+    });
+    button.style.marginRight = "1rem";
+    return button;
   }
 
-  button.onclick = function() {
-    createProfileButton();
-  };
+  let button;
+
+  if (relationship && relationship["status"]) {
+    switch (relationship["status"]) {
+      case "BF":
+        button = createButton("Unfriend", ["button"], () => updateUserRelationship(myId, userId, "DF"));
+        buttonContainer.appendChild(button);
+
+        const blockButton = createButton("Block", ["dangerous-button"], () => updateUserRelationship(myId, userId, "BL"));
+        buttonContainer.appendChild(blockButton);
+        break;
+
+      case "PD":
+        if (relationship["requester"] === myId) {
+          button = createButton("Cancel Request", ["button"], () => updateUserRelationship(myId, userId, "DF"));
+        } else {
+          button = createButton("Accept Request", ["button"], () => updateUserRelationship(myId, userId, "BF"));
+          buttonContainer.appendChild(button);
+
+          const declineButton = createButton("Decline Request", ["dangerous-button"], () => updateUserRelationship(myId, userId, "DF"));
+          buttonContainer.appendChild(declineButton);
+        }
+        break;
+
+      case "BL":
+        profilePhoto.style.filter = "grayscale(100%)";
+        profilePhoto.style.opacity = "0.5";
+
+        const unblockAction = relationship["blocker"] === myId ? () => updateUserRelationship(myId, userId, "BF") : () => updateUserRelationship(myId, userId, "DF");
+        button = createButton("Unblock", ["button"], unblockAction);
+        break;
+
+      default:
+        button = createButton("Add Friend", ["button"], () => updateUserRelationship(myId, userId, "PD", myId));
+        break;
+    }
+  } else {
+    button = createButton("Add Friend", ["button"], () => updateUserRelationship(myId, userId, "PD", myId));
+  }
+
   buttonContainer.appendChild(button);
-
-  const profilePhotoWrapper = document.getElementById("profile-photo-wrapper");
-  profileContainer.insertBefore(buttonContainer, profilePhotoWrapper.nextSibling);
 }
-
 
 async function updateUserRelationship(myId, userId, status)
 {

@@ -57,10 +57,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         user_id = event['user_id']
         await self.send_pending_chat_notifications(user_id)
 
-    # for the patch method in the RelationshipStatusView
-    async def http_broadcast_user_list(self):
-        await self.broadcast_user_list()
-
     async def send_friends_info(self, user_id):
         friends_list = await self.get_friends_list(user_id)
         await self.send_message_to_user(user_id, {'message': friends_list, 'message_type': 'friends_list', 'message_key': 'friends'})

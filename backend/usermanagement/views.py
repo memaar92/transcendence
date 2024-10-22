@@ -624,8 +624,8 @@ class LogoutView(APIView):
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
 class CheckLoginView(APIView):
-    permission_classes = [AllowAny] 
-    authentication_classes = []
+    # permission_classes = [AllowAny]
+    # authentication_classes = []
 
     @extend_schema(
         responses={
@@ -639,21 +639,7 @@ class CheckLoginView(APIView):
     )
 
     def get(self, request):
-        JWT_authenticator = JWTAuthentication()
-        try:
-            response = JWT_authenticator.authenticate(request)
-        except Exception as e:
-            return Response ({"logged-in": False}, status=status.HTTP_200_OK)
-        if response is not None:
-            user , token = response
-            try:
-                token.verify()
-            except Exception as e:
-                return Response ({"logged-in": False}, status=status.HTTP_200_OK)
-            else:
-                return Response ({"logged-in": True}, status=status.HTTP_200_OK)
-        else:
-            return Response ({"logged-in": False}, status=status.HTTP_200_OK)
+        return Response ({"logged-in": True}, status=status.HTTP_200_OK)
         
 class GetUserIdFromDisplayNameView(APIView):
     permission_classes = [IsAuthenticated]
