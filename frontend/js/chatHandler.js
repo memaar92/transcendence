@@ -84,24 +84,24 @@ class ChatHandler {
       }
     }
       
-    async checkToken() {
-        const response = await api.get('/token/check/');
-        const json = await response.json();
-        if (json['logged-in'] === false) {
-          return false;
-        }
-        return true;
-    }
-
-    async refreshToken() {
-        const formData = new FormData();
-        formData.append("refresh", "");
+  async checkToken() {
+      const response = await api.get('/token/check/');
+      const json = await response.json();
+      if (json['logged-in'] === false) {
+        return false;
+      }
+      return true;
+  }
   
-        const result = await api.post_multipart("/token/refresh/", formData);
-        if (result === null) {
-            this.router.navigate('/home');
-        }
-    }
+  async refreshToken() {
+      const formData = new FormData();
+      formData.append("refresh", "");
+
+      const result = await api.post_multipart("/token/refresh/", formData);
+      if (result === null) {
+          this.router.navigate('/home');
+      }
+  }
 
   async onClose(event) {
     console.log('WebSocket connection closed:', event.code, event.reason);
