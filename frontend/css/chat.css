@@ -861,19 +861,41 @@
 }
 
 .header-container {
+  position: relative;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
   width: 100%;
-  position: relative; /* Ensure the container is positioned relatively */
+  flex-direction: column;
+}
+
+.header-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url(/mediafiles/background/chat-userlist-background.jpg) no-repeat center center;
+  background-size: cover;
+  filter: grayscale(100%);
+  z-index: -1; /* Ensure the background is behind the content */
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 1rem 0;
+  position: relative; /* Ensure content is above the background */
+  z-index: 1;
 }
 
 .add-friend-field {
   display: flex;
   align-items: center;
-  position: relative; /* Ensure the container is positioned relatively */
-  /* add margin to top and right */
+  position: relative;
   margin: 1rem 1rem 0 0;
+  z-index: 1; /* Ensure content is above the background */
 }
 
 .chat-content {
@@ -882,4 +904,4 @@
   overflow: auto;
   margin: 5rem;
   padding: 0 !important;
-}  
+}
