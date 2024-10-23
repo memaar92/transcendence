@@ -97,6 +97,14 @@ LOGGING = {
     },
 }
 
+# can this be defined somewhere else as it is also in usermanagement/utils.py
+def get_secret(secret_name):
+    try:
+        with open(f'/run/secrets/{secret_name}') as secret_file:
+            return secret_file.read().strip()
+    except IOError as e:
+            raise Exception(f'Critical error reading secret {secret_name}: {e}')
+
 # Path to the configuration files
 PONG_CONFIG_FILE_PATH = os.path.join(BASE_DIR, 'pong', 'config.toml')
 
@@ -110,16 +118,14 @@ TOURNAMENT_CONFIG = config['tournament']
      
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-g=eom8w39!m$+1xegc@p!(6&uiqzdl$9i@$v5z!f$@m#2#_!7s'
+SECRET_KEY = get_secret('secret_key')
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = True
 
-# #TODO:  SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-#TODO: change to specific hosts
-ALLOWED_HOSTS = ["localhost", "localhost", "127.0.0.1"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
 BASE_IP = "localhost"
 
@@ -182,12 +188,12 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'backend.urls'
 
-# Only for development!!! Disable template caching # TODO: Remove this in production
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')],
-        'APP_DIRS': False,  # Changed to False
+        'DIRS': [],
+        'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
@@ -195,30 +201,9 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
-            'loaders': [
-                'django.template.loaders.filesystem.Loader',
-                'django.template.loaders.app_directories.Loader',
-            ],
         },
     },
 ]
-
-# Original TEMPLATES setting
-# TEMPLATES = [
-#     {
-#         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-#         'DIRS': [],
-#         'APP_DIRS': True,
-#         'OPTIONS': {
-#             'context_processors': [
-#                 'django.template.context_processors.debug',
-#                 'django.template.context_processors.request',
-#                 'django.contrib.auth.context_processors.auth',
-#                 'django.contrib.messages.context_processors.messages',
-#             ],
-#         },
-#     },
-# ]
 
 WSGI_APPLICATION = 'backend.wsgi.application'
 
@@ -226,13 +211,6 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-# can this be defined somewhere else as it is also in usermanagement/utils.py
-def get_secret(secret_name):
-    try:
-        with open(f'/run/secrets/{secret_name}') as secret_file:
-            return secret_file.read().strip()
-    except IOError as e:
-            raise Exception(f'Critical error reading secret {secret_name}: {e}')
 
 
 DATABASES = {
@@ -280,7 +258,6 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-# For development only # To show the admin page correctly # TODO: Remove this in production
 
 STATIC_URL = "/static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
@@ -288,12 +265,12 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static")
 MEDIA_URL = "/mediafiles/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "mediafiles")
 
-CSRF_TRUSTED_ORIGINS = [
-     'https://localhost',
-     'http://localhost',
-     'http://127.0.0.1',
-     'https://127.0.0.1'
-]
+# CSRF_TRUSTED_ORIGINS = [
+#      'https://localhost',
+#      'http://localhost',
+#      'http://127.0.0.1',
+#      'https://127.0.0.1'
+# ]
 
 # Original STATIC_URL setting
 # STATIC_URL = 'static/'
@@ -303,14 +280,12 @@ CSRF_TRUSTED_ORIGINS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-#TODO: change to specific cors
-CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOWS_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWS_CREDENTIALS = False
 
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        #"rest_framework_simplejwt.authentication.JWTAuthentication",
         'rest_framework_simplejwt.authentication.JWTStatelessUserAuthentication',
     ),
     "DEFAULT_PERMISSION_CLASSES": [
