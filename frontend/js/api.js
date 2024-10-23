@@ -5,42 +5,58 @@ const LOGGED_OUT = 0;
 const LOGGED_IN = 1;
 const MFA_MISSING = 2;
 
-async function handle_not_authorized(response) {
-  if (response.status == 403) {
-    router.navigate("/verify_2fa");
-    return "";
-  }
-  const json = await response.json();
-  console.log(json);
-  if (json["detail"] == "Authentication credentials were not provided.") {
-    // No token
-    const logged_out = document.getElementById("logged_out");
-    let bsAlert = new bootstrap.Toast(logged_out);
-    bsAlert.show();
-    await router.navigate("/home");
-    return LOGGED_OUT;
-  }
-  if (json["code"] == "token_not_valid") {
-    // access token expired
-    const formData = new FormData();
-    formData.append("refresh", "");
+let isHandlingNotAuthorized = false;
 
-    const response = await fetch(`${API_BASE_URL}/token/refresh/`, {
-      method: "POST",
-      body: formData, // Use the FormData object as the body
-    });
+async function handle_not_authorized(response) {
+  if (isHandlingNotAuthorized) {
+    // If the function is already running, wait until it finishes
+    while (isHandlingNotAuthorized) {
+      await new Promise(resolve => setTimeout(resolve, 50)); // Wait for 50ms
+    }
+    return; // Exit if another instance has already handled the response
+  }
+
+  isHandlingNotAuthorized = true; // Acquire the lock
+
+  try {
+    if (response.status == 403) {
+      router.navigate("/verify_2fa");
+      return "";
+    }
     const json = await response.json();
-    if (json["code"] == "token_not_valid") {
-      // access and refresh token expired
-      console.log("Auth token and refresh token expired");
+    console.log(json);
+    if (json["detail"] == "Authentication credentials were not provided.") {
+      // No token
       const logged_out = document.getElementById("logged_out");
       let bsAlert = new bootstrap.Toast(logged_out);
       bsAlert.show();
       await router.navigate("/home");
-    } else if (response.ok) {
-      return LOGGED_IN;
+      return LOGGED_OUT;
     }
-    return LOGGED_OUT;
+    if (json["code"] == "token_not_valid") {
+      // access token expired
+      const formData = new FormData();
+      formData.append("refresh", "");
+
+      const response = await fetch(`${API_BASE_URL}/token/refresh/`, {
+        method: "POST",
+        body: formData, // Use the FormData object as the body
+      });
+      const json = await response.json();
+      if (json["code"] == "token_not_valid") {
+        // access and refresh token expired
+        console.log("Auth token and refresh token expired");
+        const logged_out = document.getElementById("logged_out");
+        let bsAlert = new bootstrap.Toast(logged_out);
+        bsAlert.show();
+        await router.navigate("/home");
+      } else if (response.ok) {
+        return LOGGED_IN;
+      }
+      return LOGGED_OUT;
+    }
+  } finally {
+    isHandlingNotAuthorized = false; // Release the lock
   }
 }
 
