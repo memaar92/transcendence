@@ -106,7 +106,6 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             return
         
         message_type = data.get("type")
-
         try:
             if message_type == await ActiveConnection.get_type():
                 ActiveConnection(**data)
@@ -194,6 +193,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
         '''Handle the remote_match_ready message'''
 
         # Check if the current connection is the active connection (Current tab in the browser)
+        logger.debug(f"Received remote_match_ready event: {event}")
         if not self._is_active_connection():
             return
 

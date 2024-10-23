@@ -32,4 +32,5 @@ urlpatterns = [
     path('pong/', include('pong.urls')),
     path('api/', include('usermanagement.urls')),
     path('api/42auth/', include('auth42.urls')),
+    path('api/chat/', include('live_chat.urls')),
 ]

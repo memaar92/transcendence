@@ -15,6 +15,8 @@ const routes = [
   { path: "/auth_failed", templateUrl: "/routes/auth_failed.html" },
   { path: "/game_menu", templateUrl: "/routes/game_menu.html" },
   { path: "/play", templateUrl: "/routes/play.html" },
+  { path: "/live_chat", templateUrl: "/routes/chat.html" },
+  { path: "/live_chat/chat_room", templateUrl: "/routes/chat_room.html" },
   { path: "/game_local", templateUrl: "/routes/game_local.html" },
   { path: "/game", templateUrl: "/routes/game.html" },
   { path: "/tournament", templateUrl: "/routes/tournament.html" },
@@ -29,11 +31,13 @@ const routes = [
   { path: "/endscreen", templateUrl: "/routes/endscreen.html" },
 ];
 
+console.log("app loaded");
 export const hubSocket = new HubSocket();
 export const router = new Router(routes);
 
 document.addEventListener("DOMContentLoaded", () => {
   router.init(document.getElementById("app"));
+  console.log("App started");
 });
 
 export function showAlert(message) {
