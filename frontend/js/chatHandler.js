@@ -99,13 +99,7 @@ class ChatHandler {
   }
   
   async refreshToken() {
-      const formData = new FormData();
-      formData.append("refresh", "");
-
-      const result = await api.post_multipart("/token/refresh/", formData);
-      if (result === null) {
-          this.router.navigate('/home');
-      }
+      const formData = await api.get("/profile")
   }
 
   async onClose(event) {
