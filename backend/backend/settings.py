@@ -14,6 +14,7 @@ from pathlib import Path
 import os
 from datetime import timedelta
 import toml
+from backend.utils import get_secret
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -98,12 +99,12 @@ LOGGING = {
 }
 
 # can this be defined somewhere else as it is also in usermanagement/utils.py
-def get_secret(secret_name):
-    try:
-        with open(f'/run/secrets/{secret_name}') as secret_file:
-            return secret_file.read().strip()
-    except IOError as e:
-            raise Exception(f'Critical error reading secret {secret_name}: {e}')
+# def get_secret(secret_name):
+#     try:
+#         with open(f'/run/secrets/{secret_name}') as secret_file:
+#             return secret_file.read().strip()
+#     except IOError as e:
+#             raise Exception(f'Critical error reading secret {secret_name}: {e}')
 
 # Path to the configuration files
 PONG_CONFIG_FILE_PATH = os.path.join(BASE_DIR, 'pong', 'config.toml')
@@ -115,9 +116,7 @@ with open(PONG_CONFIG_FILE_PATH, 'r') as config_file:
 GAME_CONFIG = config['game']
 MATCH_CONFIG = config['match']
 TOURNAMENT_CONFIG = config['tournament']
-     
 
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = get_secret('secret_key')
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -264,16 +263,6 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
 MEDIA_URL = "/mediafiles/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "mediafiles")
-
-# CSRF_TRUSTED_ORIGINS = [
-#      'https://localhost',
-#      'http://localhost',
-#      'http://127.0.0.1',
-#      'https://127.0.0.1'
-# ]
-
-# Original STATIC_URL setting
-# STATIC_URL = 'static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
