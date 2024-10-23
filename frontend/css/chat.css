@@ -541,18 +541,23 @@
 @keyframes jitter {
   0% {
     transform: translateX(0);
+    /* filter: none; */
   }
   25% {
     transform: translateX(-5px);
+    /* filter: hue-rotate(90deg) brightness(1) saturate(0.5); */
   }
   50% {
     transform: translateX(5px);
+    /* filter: hue-rotate(90deg) brightness(1) saturate(0.5); */
   }
   75% {
     transform: translateX(-5px);
+    /* filter: hue-rotate(90deg) brightness(1) saturate(0.5); */
   }
   100% {
     transform: translateX(0);
+    /* filter: none; */
   }
 }
 

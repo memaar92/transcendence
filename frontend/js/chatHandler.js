@@ -68,21 +68,26 @@ class ChatHandler {
       }
     }
       
-    async getUserIdfromName(name) {
-      try {
-        const response = await api.get(`/users/${name}`);
+  async getUserIdfromName(name) {
+    if (!name) {
+      console.error('Name parameter is required');
+      return null;
+    }
+  
+    try {
+      const response = await api.get(`/users/${name}`);
+      if (response.ok) {
         const json = await response.json();
-        if (response.status === 200) {
-          if (json.user_id) {
-            return json.user_id;
-          }
-          throw new Error('User ID not found');
-        }
-      } catch (error) {
-        console.error('Error fetching user ID:', error);
+        return json.user_id || null;
+      } else {
+        console.error(`Error fetching user ID: ${response.statusText}`);
         return null;
       }
+    } catch (error) {
+      console.error('Error fetching user ID:', error);
+      return null;
     }
+  }
   
   async checkToken() {
       const response = await api.get('/token/check/');
@@ -1175,7 +1180,10 @@ class ChatHandler {
         }
         else {
           // trigger jitter animation
-          event.target.classList.add('jitter');
+          event.target.style.animation = 'jitter 0.5s';
+          setTimeout(() => {
+            event.target.style.animation = '';
+          }, 500);
         }
       }
     }
