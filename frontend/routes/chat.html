@@ -1,4 +1,4 @@
-<div id="content" class="chat-content" style="height: 90vh">
+<div id="content" class="chat-content" style="height: 90vh; gap: 0;">
   <div class="back-button" id="back" style="position: absolute; left: 17px">
         <svg
             width="27"
@@ -18,6 +18,7 @@
         <script src="/js/chatHandler.js" type="module"></script>
         
         <div class="header-container">
+          <div class="header-top">
           <h1 class="font-weight-light" style="margin: 1rem 0 0 1rem;">Active Users</h1>
           <div class="add-friend-field">          <input placeholder="Find User..." class="search-input" id="search-input" name="text" type="text">
             <svg
@@ -67,19 +68,14 @@
             </svg>
           </div>
         </div>
-      <div class="container-fluid py-2">
-        <div id="user-list-container" class="user-list-container">
-      <div class="user-list-wrapper">
-        <!-- User items will be appended here -->
-      </div>
-    </div>
-
-    <div id="vertical-user-list-container" class="user-list-container vertical" style="display: none;">
-      <div class="user-list-wrapper">
-        <!-- User items will be appended here for vertical layout -->
-      </div>
-    </div>
-  </div>
+          <div class="container-fluid py-2">
+            <div id="user-list-container" class="user-list-container">
+              <div class="user-list-wrapper">
+                <!-- User items will be appended here -->
+              </div>
+            </div>
+          </div>
+        </div>
 
   <!-- Centered Tabs -->
   <div class="tab-list-container" style="width: 100%">
@@ -93,7 +89,7 @@
     </ul>
   </div>
 
-  <div class="tab-content flex-grow-1" style="width: 100%">
+  <div class="tab-content flex-grow-1" style="width: 100%; margin-top: 1.5rem;">
     <!-- Chats Scroll Container Tab -->
     <div class="tab-pane fade show active d-none" id="chats" role="tabpanel" aria-labelledby="chats-tab">
         <div class="main-content d-flex flex-grow-1 position-relative overflow-hidden">

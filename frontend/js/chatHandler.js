@@ -75,7 +75,7 @@ class ChatHandler {
     }
   
     try {
-      const response = await api.get(`/users/${name}`);
+      const response = await api.get(`/displayname/${name}`);
       if (response.ok) {
         const json = await response.json();
         return json.user_id || null;
