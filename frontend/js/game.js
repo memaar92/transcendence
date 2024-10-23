@@ -66,8 +66,9 @@ function start_game(match_id) {
           const myID = userdata.id;
           console.log("MyID", myID);
           console.log("userID p1", user_id_p1);
+          console.log("userID p2", user_id_p2)
           console.log("winner", winner);
-          if ((user_id_p1 == myID && winner == 0) || (user_id_p2 == myID && winner)) {
+          if ((user_id_p1 == myID && winner == 0) || (user_id_p2 == myID && winner == 1)) {
             localStorage.setItem("win", true);
           } else {
             localStorage.removeItem("win");
