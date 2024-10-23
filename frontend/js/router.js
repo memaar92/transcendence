@@ -14,6 +14,9 @@ class Router {
     this.unregistered_urls = ["/", "/home", "/login", "/register", "/email_verification"];
     console.log("Router: constructor called");
 
+    const formData = new FormData();
+    formData.append("refresh", "");
+    const r = api.post_multipart("/token/refresh/", formData).then(async (result) => {
     api.get("/token/check/").then(
       async (result) => {
         const json = await result.json();
@@ -37,6 +40,7 @@ class Router {
         }
       }
     );
+  });
   }
 
   init(app) {
