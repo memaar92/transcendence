@@ -98,14 +98,6 @@ LOGGING = {
     },
 }
 
-# can this be defined somewhere else as it is also in usermanagement/utils.py
-# def get_secret(secret_name):
-#     try:
-#         with open(f'/run/secrets/{secret_name}') as secret_file:
-#             return secret_file.read().strip()
-#     except IOError as e:
-#             raise Exception(f'Critical error reading secret {secret_name}: {e}')
-
 # Path to the configuration files
 PONG_CONFIG_FILE_PATH = os.path.join(BASE_DIR, 'pong', 'config.toml')
 
@@ -298,7 +290,6 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=5),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
-    #add additional settings, e.g. algo?
 }
 
 
@@ -307,7 +298,6 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'API for the Transcendence Pongo project',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
-    # OTHER SETTINGS
 }
 
 
