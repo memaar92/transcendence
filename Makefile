@@ -1,6 +1,13 @@
 SHELL := /bin/bash
+UNAME := $(shell uname -s)
 
-BASE_IP = 	$(shell ip -o route get to 8.8.8.8 | sed -n 's/.*src \([0-9.]\+\).*/\1/p')
+ifeq ($(UNAME), Darwin)
+	BASE_IP = $(shell ipconfig getifaddr en0)
+	SED = sed -i '' 's
+else
+	BASE_IP = $(shell ip -o route get to 8.8.8.8 | sed -n 's/.*src \([0-9.]\+\).*/\1/p')
+	SED = sed -i 's
+endif
 
 all: get_ips build
 
@@ -79,8 +86,8 @@ get_ips:
 
 set_ip:
 	echo $(BASE_IP)
-	sed -i 's|BASE_IP = .*|BASE_IP = "$(BASE_IP)"|' backend/backend/settings.py
-	sed -i 's|ALLOWED_HOSTS = .*|ALLOWED_HOSTS = ["$(BASE_IP)", "localhost", "127.0.0.1"]|' backend/backend/settings.py
+	$(SED)|BASE_IP = .*|BASE_IP = "$(BASE_IP)"|' backend/backend/settings.py
+	$(SED)|ALLOWED_HOSTS = .*|ALLOWED_HOSTS = ["$(BASE_IP)", "localhost", "127.0.0.1"]|' backend/backend/settings.py
 
 re: fclean all
 
