@@ -21,14 +21,10 @@ async function handle_not_authorized(response) {
     return LOGGED_OUT;
   }
   if (json["code"] == "token_not_valid") {
-    // access token expired
     const formData = new FormData();
     formData.append("refresh", "");
 
-    const response = await fetch(`${API_BASE_URL}/token/refresh/`, {
-      method: "POST",
-      body: formData, // Use the FormData object as the body
-    });
+    const result = await api.post_multipart("/token/refresh/", formData);
     const json = await response.json();
     if (json["code"] == "token_not_valid") {
       // access and refresh token expired
