@@ -25,7 +25,7 @@ async function handle_not_authorized(response) {
     formData.append("refresh", "");
 
     const result = await api.post_multipart("/token/refresh/", formData);
-    const json = await response.json();
+    const json = await result.json();
     if (json["code"] == "token_not_valid") {
       // access and refresh token expired
       console.log("Auth token and refresh token expired");
