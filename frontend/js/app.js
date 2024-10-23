@@ -1,5 +1,5 @@
 import Router from "./router.js";
-import HubSocket from "./hubSocket.js"
+import HubSocket from "./hubSocket.js";
 
 const routes = [
   { path: "/", templateUrl: "/routes/home.html" },
@@ -41,11 +41,17 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 export function showAlert(message) {
-  const alertContainer = document.getElementById('main_alert');
+  const alertContainer = document.getElementById("main_alert");
   
-  const alertElement = document.createElement('div');
-  alertElement.classList.add('alert', 'alert-danger', 'alert-dismissible', 'fade', 'show');
-  alertElement.setAttribute('role', 'alert');
+  const alertElement = document.createElement("div");
+  alertElement.classList.add(
+    "alert",
+    "alert-danger",
+    "alert-dismissible",
+    "fade",
+    "show"
+  );
+  alertElement.setAttribute("role", "alert");
   
   alertElement.innerHTML = `
     ${message}
