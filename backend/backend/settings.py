@@ -179,7 +179,6 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'backend.urls'
 
-
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -198,11 +197,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'backend.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
-
-
 
 DATABASES = {
     'default': {
@@ -233,7 +229,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
 
@@ -245,10 +240,8 @@ USE_I18N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
-
 
 STATIC_URL = "/static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
@@ -263,7 +256,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWS_CREDENTIALS = False
-
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -292,7 +284,6 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
 }
 
-
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Transcendence Pongo API',
     'DESCRIPTION': 'API for the Transcendence Pongo project',
@@ -300,9 +291,7 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
 }
 
-
 AUTH_USER_MODEL = 'usermanagement.CustomUser'
-
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
@@ -310,4 +299,3 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = get_secret('email_host')
 EMAIL_HOST_PASSWORD = get_secret('email_pw')
-
