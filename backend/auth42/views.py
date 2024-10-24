@@ -4,7 +4,8 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from django.conf import settings
-from utils.utils import random_filename, generateUsername, get_tokens_for_user, get_secret
+from utils.utils import random_filename, generateUsername, get_tokens_for_user
+from backend.utils import get_secret
 from utils.mixins import CookieCreationMixin
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, inline_serializer
 from drf_spectacular.types import OpenApiTypes
