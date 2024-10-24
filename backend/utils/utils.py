@@ -37,13 +37,6 @@ def get_tokens_for_user(user):
         'refresh': str(refresh),
     }
 
-def get_secret(secret_name):
-    try:
-        with open(f'/run/secrets/{secret_name}') as secret_file:
-            return secret_file.read().strip()
-    except IOError as e:
-            raise Exception(f'Critical error reading secret {secret_name}: {e}')
-
 def send_otp_email(recipient, otp):
     subject = 'Email Verification'
     html_message = render_to_string('email_template.html', {'code': otp })

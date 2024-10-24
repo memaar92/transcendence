@@ -20,6 +20,7 @@ services:
       - email_pw
       - oauth_secret
       - oauth_client_id
+      - secret_key
 
   nginx:
     container_name: nginx
@@ -84,3 +85,5 @@ secrets:
     file: ./secrets/email_host.txt
   email_pw:
     file: ./secrets/email_host_pw.txt
+  secret_key:
+    file: ./secrets/secret_key.txt
