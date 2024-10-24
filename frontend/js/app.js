@@ -24,7 +24,6 @@ const routes = [
   { path: "/tournament_preview", templateUrl: "/routes/tournament_preview.html" },
   { path: "/account", templateUrl: "/routes/account.html" },
   { path: "/security", templateUrl: "/routes/security.html" },
-  { path: "/appearance", templateUrl: "/routes/appearance.html" },
   { path: "/stats", templateUrl: "/routes/stats.html" },
   { path: "/verify_2fa", templateUrl: "/routes/verify_2fa.html" },
   { path: "/queue", templateUrl: "/routes/queue.html" },
