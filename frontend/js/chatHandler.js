@@ -1,4 +1,6 @@
 import { api } from './api.js';
+import { createProfileButton } from './utility/createProfileButton.js';
+
 const API_BASE_URL = `${window.location.origin}/api`;
 
 class ChatHandler {
@@ -12,8 +14,6 @@ class ChatHandler {
     this.currentFilter = 'all';
     this.boundSearchInputHandler = this.searchInputHandler.bind(this);
   }
-
-  
   
   async init(params, router, context) {
 
@@ -325,6 +325,9 @@ class ChatHandler {
         break;
       case 'pending_requests':
         this.displayNotification("You have pending friend requests. Check your friends list!");
+        if (window.location.pathname.startsWith('/users/')) {
+          this.updateProfileButtons();
+        }
         break;
       case 'unread_counts':
         if (Object.keys(content.unread_messages).length > 0) {
@@ -340,14 +343,18 @@ class ChatHandler {
       case 'tournament':
         this.displayNotification(content.message);
         break;
-      // case 'friends_list':
-      //   if (window.location.pathname.startsWith('/users/')) {
-      //     createProfileButton();
-      //   }
-      //   break;
+      case 'friends_list':
+        if (window.location.pathname.startsWith('/users/')) {
+          this.updateProfileButtons();
+        }
+        break;
       default:
         break;
     }
+  }
+
+  async updateProfileButtons() {
+    await createProfileButton();
   }
 
   displayIndicator() {
@@ -1180,16 +1187,14 @@ class ChatHandler {
       if (inputValue.length > 0 && inputValue.length <= 20) {
         const user_id = await this.getUserIdfromName(inputValue);
         if (user_id) {
-          this.router.navigate(`/users/${user_id}`);
-        }
-        else {
-          // trigger jitter animation
-          event.target.style.animation = 'jitter 0.5s';
-          setTimeout(() => {
-            event.target.style.animation = '';
-          }, 500);
+          await this.router.navigate(`/users/${user_id}`);
+          return;
         }
       }
+      event.target.style.animation = 'jitter 0.5s';
+      setTimeout(() => {
+        event.target.style.animation = '';
+      }, 500);
     }
   }
 
