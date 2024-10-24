@@ -1,7 +1,7 @@
 import { api } from "./api.js";
 import { router } from "./app.js";
 
-const r = await api.get("/profile");
+const r = await api.get("/profile/");
 const userdata = await r.json();
 
 function start_game(match_id) {
