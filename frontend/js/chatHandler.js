@@ -75,7 +75,7 @@ class ChatHandler {
     }
   
     try {
-      const response = await api.get(`/displayname/${name}`);
+      const response = await api.get(`/displayname/${name}/`);
       if (response.ok) {
         const json = await response.json();
         return json.user_id || null;
@@ -103,8 +103,12 @@ class ChatHandler {
       formData.append("refresh", "");
 
       const result = await api.post_multipart("/token/refresh/", formData);
-      if (result === null) {
-          this.router.navigate('/home');
+      if (result.status != 200) {
+          console.log("Auth token and refresh token expired. Caught by chat socket");
+          const logged_out = document.getElementById("logged_out");
+          let bsAlert = new bootstrap.Toast(logged_out);
+          bsAlert.show();
+          await this.router.navigate('/home');
       }
   }
 
