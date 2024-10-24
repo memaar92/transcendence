@@ -33,7 +33,8 @@ class MatchSession:
     def __init__(self, user_id_1: int, user_id_2: Optional[int], on_match_finished: Optional[Callable[[int, int], None]] = None):
         '''Initialize and start a match between two users'''
         self._match_id = str(uuid4())
-        self._assigned_users = {user_id_1, user_id_2} if user_id_2 is not None else {user_id_1}
+        self._assigned_users = [user_id_1, user_id_2] if user_id_2 is not None else [user_id_1]
+        print(" STEEEVEEEEE Assigned users: ", self._assigned_users)
         self._blocked_users = set()
         self._connected_users = set()
         self._disconnect_count = {user_id_1: 0, user_id_2: 0} if user_id_2 is not None else {user_id_1: 0}
@@ -328,6 +329,7 @@ class MatchSession:
             "type": "user_mapping",
             "is_local_match": self._is_local_match,
             "player1": user_id_1,
+            "player1": list(self._assigned_users)[0]
         }
     
         if not self._is_local_match:
