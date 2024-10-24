@@ -1,14 +1,14 @@
 import { api } from "./api.js";
 import { router } from "./app.js";
 
-const result = await api.get(`/users/${localStorage.getItem("UID")}`);
+const result = await api.get(`/users/${localStorage.getItem("UID")}/`);
 const profile_info = await result.json()
 
 document.getElementById("profile-photo").src = profile_info["profile_picture"];
 document.getElementById('displayname').innerText = profile_info["displayname"];
 
 
-const games_html = await api.get(`/users/${localStorage.getItem("UID")}/games`);
+const games_html = await api.get(`/users/${localStorage.getItem("UID")}/games/`);
 const games = await games_html.json();
 
 
