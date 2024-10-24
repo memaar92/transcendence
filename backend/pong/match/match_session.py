@@ -145,7 +145,7 @@ class MatchSession:
         logger.info(f"Match {match_id} finished, winner: {winner}")
         if write_to_db and not self._is_local_match:
             try:
-                assigned_users = list(self._assigned_users)
+                assigned_users = self._assigned_users
                 home_user = await sync_to_async(CustomUser.objects.get)(id=assigned_users[0])
                 visitor_user = await sync_to_async(CustomUser.objects.get)(id=assigned_users[1])
 
@@ -317,8 +317,8 @@ class MatchSession:
         if self._stop_requested:
             return
         try:
-            user_id_1 = list(self._assigned_users)[0]
-            user_id_2 = list(self._assigned_users)[1] if not self._is_local_match else None
+            user_id_1 = self._assigned_users[0]
+            user_id_2 = self._assigned_users[1] if not self._is_local_match else None
         except IndexError as e:
             # Handle the case where there are not enough users assigned
             logger.error(f"Error in _send_user_mapping: {e}")
@@ -328,7 +328,6 @@ class MatchSession:
             "type": "user_mapping",
             "is_local_match": self._is_local_match,
             "player1": user_id_1,
-            "player1": list(self._assigned_users)[0]
         }
     
         if not self._is_local_match:
