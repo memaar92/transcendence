@@ -34,7 +34,6 @@ class MatchSession:
         '''Initialize and start a match between two users'''
         self._match_id = str(uuid4())
         self._assigned_users = [user_id_1, user_id_2] if user_id_2 is not None else [user_id_1]
-        print(" STEEEVEEEEE Assigned users: ", self._assigned_users)
         self._blocked_users = set()
         self._connected_users = set()
         self._disconnect_count = {user_id_1: 0, user_id_2: 0} if user_id_2 is not None else {user_id_1: 0}
