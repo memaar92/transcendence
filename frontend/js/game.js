@@ -63,7 +63,7 @@ function start_game(match_id) {
           console.log(jsonData)
           winner = jsonData.winner;
           timerValue = null;
-          const myID = r.id;
+          const myID = userdata.id;
           console.log("MyID", myID);
           console.log("userID p1", user_id_p1);
           console.log("userID p2", user_id_p2)
