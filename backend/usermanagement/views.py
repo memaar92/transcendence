@@ -625,6 +625,7 @@ class LogoutView(APIView):
 
 class CheckLoginView(APIView):
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     @extend_schema(
         responses={
@@ -654,3 +655,15 @@ class CheckLoginView(APIView):
         else:
             return Response ({"logged-in": False}, status=status.HTTP_200_OK)
         
+class GetUserIdFromDisplayNameView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, displayname):
+        try:
+            user = CustomUser.objects.get(displayname=displayname)
+            # trow error if the requested user is the same as the logged in user
+            if user.id == request.user.id:
+                raise ValidationError('You cannot request your own user id')
+            return Response({'user_id': user.id}, status=status.HTTP_200_OK)
+        except CustomUser.DoesNotExist:
+            return Response({'detail': 'User not found'}, status=status.HTTP_200_OK)

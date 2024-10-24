@@ -11,8 +11,8 @@ from drf_spectacular.types import OpenApiTypes
 import requests
 import json
 
+HOST = settings.BASE_IP
 
-# as part of View class?
 def getProfilePicture(picture_url):
     image_req = requests.get(picture_url)
     if image_req.status_code != 200:
@@ -58,7 +58,12 @@ class Redirect42Auth(APIView):
     )
 
     def get(self, request):
-        target_url = 'https://api.intra.42.fr/oauth/authorize?client_id=' + get_secret('oauth_client_id') + '&redirect_uri=https%3A%2F%2F' + settings.BASE_IP + '%2Fapi%2F42auth&response_type=code'
+        global HOST
+        if request.get_host() == 'localhost':
+            HOST = 'localhost'
+        elif request.get_host() == settings.BASE_IP:
+            HOST = settings.BASE_IP
+        target_url = 'https://api.intra.42.fr/oauth/authorize?client_id=' + get_secret('oauth_client_id') + '&redirect_uri=https%3A%2F%2F' + HOST + '%2Fapi%2F42auth&response_type=code'
         return redirect(target_url)
 
 
@@ -78,12 +83,12 @@ class AuthWith42View(APIView, CookieCreationMixin):
             'grant_type': 'authorization_code',
             'client_id': get_secret('oauth_client_id'),
             'client_secret': get_secret('oauth_secret'),
-            'redirect_uri': 'https://' + settings.BASE_IP + '/api/42auth'
+            'redirect_uri': 'https://' + HOST + '/api/42auth'
         }).json()
         if (oauth_response.get('error')):
             #case: issue with 42 auth
             response = Response(status=302)
-            response['Location'] = 'https://' + settings.BASE_IP + '/auth_failed'
+            response['Location'] = 'https://' + HOST + '/auth_failed'
             return response
         user_info = requests.get('https://api.intra.42.fr/v2/me', headers={
             'Authorization': 'Bearer ' + oauth_response['access_token']
@@ -93,15 +98,15 @@ class AuthWith42View(APIView, CookieCreationMixin):
         if user.exists() and user.first()['is_42_auth'] == False:
             # case: wrong auth method
             response = Response(status=302)
-            response['Location'] = 'https://' + settings.BASE_IP + '/auth_failed'
+            response['Location'] = 'https://' + HOST + '/auth_failed'
             return response
         elif not user.exists():
             register42User(user_info['email'], user_info['image']['versions']['small'])
         token = get_tokens_for_user(CustomUser.objects.get(email=user_info['email']))
         response = Response(token, status=302)
         if user.first()['is_2fa_enabled'] == True:
-            response['Location'] = 'https://' + settings.BASE_IP + '/verify_2fa'
+            response['Location'] = 'https://' + HOST + '/verify_2fa'
         else:
-            response['Location'] = 'https://' + settings.BASE_IP + '/main_menu'
+            response['Location'] = 'https://' + HOST + '/main_menu'
         self.createCookies(response)
         return response

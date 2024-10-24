@@ -1,5 +1,7 @@
+import { updateChat } from "./live-chat.js";
 import { api } from "./api.js";
 import { hubSocket } from "./app.js";
+//import { chat_handler } from "./chatHandler.js";
 
 class Router {
   constructor(routes) {
@@ -8,28 +10,52 @@ class Router {
     this.app = null;
     this.currentHistoryPosition = 0;
     this.maxHistoryPosition = 0;
+    this.excludedPaths = ['/game'];
+    this.unregistered_urls = ["/", "/home", "/login", "/register", "/email_verification"];
+    console.log("Router: constructor called");
 
     api.get("/token/check/").then(
       async (result) => {
-        var unregistered_urls = new Set(["/", "/home", "/login", "/register", "/email_verification"]);
+        const json = await result.json();
+        var status = json["logged-in"];
 
-        const json = await result.json()
-        const status = json["logged-in"]
-        if (!status && !unregistered_urls.has(window.location.pathname))
-        {
-          this.navigate("/home");
-          return;
+        if (!status) {
+            const formData = new FormData();
+            formData.append("refresh", "");
+      
+            const result = await api.post_multipart("/token/refresh/", formData);
+            if (result.status != 200) {
+                if (this.unregistered_urls.includes(window.location.pathname)) {
+                  window.addEventListener("popstate", this.handlePopState.bind(this));
+                  this.bindLinks();
+                  this.navigate(window.location.pathname + window.location.search, false);
+                } else {
+                    console.log("Auth token and refresh token expired: caught by router.js");
+                    const logged_out = document.getElementById("logged_out");
+                    let bsAlert = new bootstrap.Toast(logged_out);
+                    bsAlert.show();
+                    this.navigate('/home');
+                }
+            } else {
+                status = true;
+            }
         }
-        if (status){
+
+        if (status) {
           hubSocket.connect();
         }
 
-        if (status && unregistered_urls.has(window.location.pathname)) {
+        //if (!status && !this.unregistered_urls.includes(window.location.pathname)) {
+        //    this.navigate("/home");
+        //    return;
+        //}
+
+        if (status && this.unregistered_urls.includes(window.location.pathname)) {
           this.navigate("/main_menu");
         } else {
           window.addEventListener("popstate", this.handlePopState.bind(this));
           this.bindLinks();
-          this.navigate(window.location.pathname);
+          this.navigate(window.location.pathname + window.location.search, false);
         }
       }
     );
@@ -43,6 +69,37 @@ class Router {
     this.routes.push({ path, templateUrl });
   }
 
+  matchRoute(path) {
+    const [pathWithoutQuery, queryString] = path.split('?');
+  
+    for (const route of this.routes) {
+      const paramNames = [];
+      const regexPath = route.path.replace(/:(\w+)/g, (_, key) => {
+        paramNames.push(key);
+        return '([^\\/]+)';
+      });
+      const regex = new RegExp(`^${regexPath}$`);
+      const match = pathWithoutQuery.match(regex);
+  
+      if (match) {
+        const params = paramNames.reduce((acc, paramName, index) => {
+          acc[paramName] = match[index + 1];
+          return acc;
+        }, {});
+  
+        if (queryString) {
+          const queryParams = new URLSearchParams(queryString);
+          queryParams.forEach((value, key) => {
+            params[key] = value;
+          });
+        }
+  
+        return { ...route, params };
+      }
+    }
+    return null;
+  }
+
   async navigate(path, pushState = true) {
     const oldPath = this.currentRoute ? this.currentRoute.path : null;
     // console.log(oldPath, this.currentRoute.path)
@@ -53,8 +110,10 @@ class Router {
   
     // Find the new route
     let route = this.routes.find((r) => r.path === path);
-  
-    // Handle special cases
+    if (!route) {
+      route = this.matchRoute(path);
+    }
+
     if (path.startsWith("/users/")) {
       route = {
         templateUrl: "/routes/users.html",
@@ -67,33 +126,22 @@ class Router {
         templateUrl: "/routes/404.html"
       };
     }
-  
-    // Update current route
+
     this.currentRoute = route;
-  
-    // Push state if needed
+
     if (pushState && oldPath !== path) {
       history.pushState({ path: path }, "", path);
     }
-  
     await this.updateView();
   }
-  
+
   handlePopState(event) {
-
-
-  
     if (event.state && event.state.path) {
-
-      // Use navigate but don't push a new state
       this.navigate(event.state.path, false);
     } else {
-      // Handle the case when there's no state (e.g., initial page load)
-
       this.navigate(window.location.pathname, false);
     }
   }
-  
 
   bindLinks() {
     document.addEventListener("click", (e) => {
@@ -103,6 +151,19 @@ class Router {
         this.navigate(path);
       }
     });
+  }
+
+  handlePostUpdate() {
+    updateChat(this, this.currentRoute.params);
+    //chat_handler.updateChat(this, this.currentRoute.params);
+  }
+
+  insertNotification() {
+    const notificationDiv = document.createElement('div');
+    notificationDiv.setAttribute('id', 'notifications');
+    notificationDiv.setAttribute('position', 'fixed');
+    notificationDiv.style.cssText = 'position:fixed;top:0;width:100%;padding:10px;text-align:center;z-index:1000;';
+    this.app.prepend(notificationDiv);
   }
 
   async updateView() {
@@ -119,6 +180,10 @@ class Router {
         .forEach((script) => script.remove());
 
       this.app.append(...doc.body.childNodes);
+
+      if (!this.excludedPaths.includes(this.currentRoute.path)) {
+        this.insertNotification();
+      }
 
       const loadScript = (scriptElement) => {
         return new Promise((resolve, reject) => {
@@ -146,6 +211,9 @@ class Router {
       }
     } catch (error) {
       this.app.innerHTML = "<p>Error loading content</p>";
+    }
+    if (!this.unregistered_urls.includes(this.currentRoute.path)) {
+      this.handlePostUpdate();
     }
   }
 }

@@ -84,6 +84,7 @@ class MatchSession:
         await asyncio.sleep(0.1)
 
         logger.debug(f"Ending match {self._match_id}")
+        winner = None
         if reason == EndReason.DISCONNECT_TIMEOUT:
             winner = self._connected_users.pop()
             self._score[self._player_mapping[winner]] = SCORE_LIMIT

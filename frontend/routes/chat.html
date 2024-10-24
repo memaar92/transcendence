@@ -1,0 +1,153 @@
+<div id="content" class="chat-content" style="height: 90vh; gap: 0;">
+  <div class="back-button" id="back" style="position: absolute; left: 17px">
+        <svg
+            width="27"
+            height="50"
+            viewBox="0 0 27 50"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            >
+            <path
+            d="M24.9865 49.9745C24.7402 49.9746 24.4963 49.9262 24.2688 49.8321C24.0412 49.7379 23.8344 49.5999 23.6602 49.4258L0.548975 26.3133C0.197467 25.9617 0 25.4848 0 24.9877C0 24.4905 0.197467 24.0136 0.548975 23.662L23.6602 0.549534C23.8343 0.375368 24.041 0.237196 24.2685 0.142907C24.496 0.048618 24.7398 5.80945e-05 24.986 5.20939e-08C25.2323 -5.79903e-05 25.4761 0.0483872 25.7037 0.142569C25.9312 0.236751 26.1379 0.374826 26.3121 0.548909C26.4863 0.722993 26.6244 0.929676 26.7187 1.15716C26.813 1.38464 26.8616 1.62847 26.8616 1.87472C26.8617 2.12097 26.8132 2.36482 26.7191 2.59234C26.6249 2.81987 26.4868 3.02662 26.3127 3.20078L4.52648 24.987L26.3127 46.7733C26.5751 47.0355 26.7538 47.3697 26.8263 47.7335C26.8987 48.0973 26.8615 48.4745 26.7196 48.8172C26.5776 49.1599 26.3371 49.4528 26.0286 49.6588C25.7201 49.8648 25.3574 49.9747 24.9865 49.9745Z"
+            fill="white"
+            />
+          </svg>
+        </div>
+        <link rel="stylesheet" href="/css/chat.css">
+        <script src="/js/live-chat.js" type="module"></script>
+        <script src="/js/chatHandler.js" type="module"></script>
+        
+        <div class="header-container">
+          <div class="header-top">
+          <h1 class="font-weight-light" style="margin: 1rem 0 0 1rem;">Active Users</h1>
+          <div class="add-friend-field">          <input placeholder="Find User..." class="search-input" id="search-input" name="text" type="text">
+            <svg
+              class="search-icon"
+              width="30"
+              height="30"
+              viewBox="0 -1 48 52"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+            <path
+            fill="white" stroke="white" stroke-width="1"
+            d="M 0.00,21.13
+               C 0.00,23.99 0.56,26.72 1.68,29.32
+                 2.80,31.92 4.29,34.16 6.14,36.06
+                 8.00,37.95 10.24,39.44 12.86,40.53
+                 15.49,41.62 18.22,42.19 21.07,42.22
+                 25.14,42.22 28.90,41.09 32.35,38.85
+                 32.35,38.85 40.32,46.84 40.32,46.84
+                 41.18,47.70 42.24,48.14 43.49,48.14
+                 44.74,48.14 45.81,47.70 46.70,46.84
+                 47.60,45.97 48.03,44.91 48.00,43.66
+                 47.97,42.41 47.54,41.33 46.70,40.44
+                 46.70,40.44 38.74,32.45 38.74,32.45
+                 40.98,28.98 42.10,25.21 42.10,21.13
+                 42.10,18.24 41.54,15.50 40.42,12.90
+                 39.30,10.30 37.81,8.07 35.95,6.21
+                 34.10,4.35 31.86,2.84 29.23,1.69
+                 26.61,0.53 23.89,-0.03 21.07,0.00
+                 18.19,0.00 15.46,0.56 12.86,1.69
+                 10.27,2.81 8.03,4.32 6.14,6.21
+                 4.26,8.10 2.77,10.33 1.68,12.90
+                 0.59,15.47 0.03,18.21 0.00,21.13 Z
+               M 6.00,21.13
+               C 6.00,18.37 6.67,15.84 8.02,13.53
+                 9.36,11.22 11.18,9.39 13.49,8.04
+                 15.79,6.69 18.30,6.02 21.02,6.02
+                 23.74,6.02 26.27,6.69 28.61,8.04
+                 30.94,9.39 32.77,11.22 34.08,13.53
+                 35.39,15.84 36.06,18.36 36.07,21.11
+                 36.09,23.85 35.42,26.38 34.08,28.69
+                 32.74,31.00 30.91,32.83 28.61,34.18
+                 26.30,35.53 23.78,36.20 21.05,36.20
+                 18.31,36.20 15.79,35.53 13.49,34.18
+                 11.18,32.83 9.36,31.00 8.02,28.69
+                 6.67,26.38 6.00,23.86 6.00,21.13 Z" />
+            </svg>
+          </div>
+        </div>
+          <div class="container-fluid py-2">
+            <div id="user-list-container" class="user-list-container">
+              <div class="user-list-wrapper">
+                <!-- User items will be appended here -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+  <!-- Centered Tabs -->
+  <div class="tab-list-container" style="width: 100%">
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+      <li class="nav-item" role="presentation">
+        <a class="nav-link active" id="chats-tab" data-bs-toggle="tab" href="#chats" role="tab" aria-controls="chats" aria-selected="true">Chats</a>
+      </li>
+      <li class="nav-item" role="presentation">
+        <a class="nav-link" id="friends-tab" data-bs-toggle="tab" href="#friends" role="tab" aria-controls="friends" aria-selected="false">Friends</a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="tab-content flex-grow-1" style="width: 100%; margin-top: 1.5rem;">
+    <!-- Chats Scroll Container Tab -->
+    <div class="tab-pane fade show active d-none" id="chats" role="tabpanel" aria-labelledby="chats-tab">
+        <div class="main-content d-flex flex-grow-1 position-relative overflow-hidden">
+            <div class="container-fluid py-2 chats-list-container transition-width" id="chats-list-container">
+                <div class="chats-scroll-container">
+                    <!-- Chats will be appended here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Friends Scroll Container Tab -->
+    <div class="tab-pane fade d-none" id="friends" role="tabpanel" aria-labelledby="friends-tab">
+      <div class="main-content d-flex flex-grow-1 position-relative overflow-hidden">
+        <!-- <div class="input-wrapper">
+          <button class="icon"> 
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" height="25px" width="25px">
+              <path stroke-linejoin="round" stroke-linecap="round" stroke-width="1.5" stroke="#fff" d="M11.5 21C16.7467 21 21 16.7467 21 11.5C21 6.25329 16.7467 2 11.5 2C6.25329 2 2 6.25329 2 11.5C2 16.7467 6.25329 21 11.5 21Z"></path>
+              <path stroke-linejoin="round" stroke-linecap="round" stroke-width="1.5" stroke="#fff" d="M22 22L20 20"></path>
+            </svg>
+          </button>
+        </div> -->
+        <div id="filter-container">
+          <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
+            <input type="radio" class="btn-check" name="btnradio" id="btnradio1" autocomplete="off" data-filter="all" checked>
+            <label class="btn btn-outline-primary" for="btnradio1">All</label>
+          
+            <input type="radio" class="btn-check" name="btnradio" id="btnradio2" autocomplete="off" data-filter="requests">
+            <label class="btn btn-outline-primary" for="btnradio2">Requests</label>
+          
+            <input type="radio" class="btn-check" name="btnradio" id="btnradio3" autocomplete="off" data-filter="friends">
+            <label class="btn btn-outline-primary" for="btnradio3">Friends</label>
+
+            <input type="radio" class="btn-check" name="btnradio" id="btnradio4" autocomplete="off" data-filter="blocked">
+            <label class="btn btn-outline-primary" for="btnradio4">Blocked</label>
+
+            <!-- <input type="radio" class="btn-check" name="btnradio" id="btnradio5" autocomplete="off" data-filter="games">
+            <label class="btn btn-outline-primary" for="btnradio5">Games</label> -->
+          </div>
+        </div>        
+        <div class="container-fluid py-2 friends-list-container transition-width" id="friends-list-container">
+          <div class="friends-scroll-container">
+            <!-- Friends will be appended here -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Offcanvas Notifications -->
+  <div class="offcanvas offcanvas-start" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="offcanvasScrolling" aria-labelledby="offcanvasScrollingLabel">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title" id="offcanvasScrollingLabel">Offcanvas with body scrolling</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+      <p>Try scrolling the rest of the page to see this option in action.</p>
+      <!-- You can add more content here if needed -->
+    </div>
+  </div>
+</div>

@@ -78,6 +78,7 @@ class MatchSessionHandler:
         '''Send a match ready message to both users'''
         match = Matches.get_match(match_id)
         if match:
+            logger.debug(f"Match ready: {user1} vs {user2}")
             if user1:
                 await cls._send_remote_match_ready_message(match_id, user1, user2)
             if user2:

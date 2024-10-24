@@ -1,7 +1,7 @@
 import { api } from "./api.js";
 import { hubSocket, router, showAlert } from "./app.js";
 
-const r = await api.get("/profile");
+const r = await api.get("/profile/");
 
 function start_game(match_id) {
   let is_local_match = false;
