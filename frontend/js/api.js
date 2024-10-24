@@ -25,19 +25,15 @@ async function handle_not_authorized(response) {
     const formData = new FormData();
     formData.append("refresh", "");
 
-    const response = await fetch(`${API_BASE_URL}/token/refresh/`, {
-      method: "POST",
-      body: formData, // Use the FormData object as the body
-    });
-    const json = await response.json();
-    if (json["code"] == "token_not_valid") {
+    const result = await api.post_multipart("/token/refresh/", formData);
+    if (result.status != 200) {
       // access and refresh token expired
       console.log("Auth token and refresh token expired");
       const logged_out = document.getElementById("logged_out");
       let bsAlert = new bootstrap.Toast(logged_out);
       bsAlert.show();
       await router.navigate("/home");
-    } else if (response.ok) {
+    } else {
       return LOGGED_IN;
     }
     return LOGGED_OUT;
@@ -92,18 +88,6 @@ export const api = {
       method: "POST",
       body: data,
     });
-    console.log(response);
-    if (!response.ok && response.status != 404) {
-      // Not Authorized
-      if ((await handle_not_authorized(response)) == LOGGED_IN) {
-        return await fetch(`${API_BASE_URL}${endpoint}`, {
-          method: "POST",
-          body: data,
-        });
-      } else {
-        return null;
-      }
-    }
     return response;
   },
 

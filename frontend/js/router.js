@@ -17,16 +17,34 @@ class Router {
     api.get("/token/check/").then(
       async (result) => {
         const json = await result.json();
-        const status = json["logged-in"];
+        var status = json["logged-in"];
+
+        if (!status) {
+            const formData = new FormData();
+            formData.append("refresh", "");
+      
+            const result = await api.post_multipart("/token/refresh/", formData);
+            if (result.status != 200) {
+                if (this.unregistered_urls.includes(window.location.pathname)) {
+                  window.addEventListener("popstate", this.handlePopState.bind(this));
+                  this.bindLinks();
+                  this.navigate(window.location.pathname + window.location.search, false);
+                } else {
+                  this.navigate('/home');
+                }
+            } else {
+                status = true;
+            }
+        }
 
         if (status) {
           hubSocket.connect();
         }
 
-        if (!status && !this.unregistered_urls.includes(window.location.pathname)) {
-            this.navigate("/home");
-            return;
-        }
+        //if (!status && !this.unregistered_urls.includes(window.location.pathname)) {
+        //    this.navigate("/home");
+        //    return;
+        //}
 
         if (status && this.unregistered_urls.includes(window.location.pathname)) {
           this.navigate("/main_menu");

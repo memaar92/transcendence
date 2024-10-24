@@ -103,8 +103,8 @@ class ChatHandler {
       formData.append("refresh", "");
 
       const result = await api.post_multipart("/token/refresh/", formData);
-      if (result === null) {
-          this.router.navigate('/home');
+      if (result.status != 200) {
+          await this.router.navigate('/home');
       }
   }
 
