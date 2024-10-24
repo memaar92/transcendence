@@ -30,7 +30,11 @@ class Router {
                   this.bindLinks();
                   this.navigate(window.location.pathname + window.location.search, false);
                 } else {
-                  this.navigate('/home');
+                    console.log("Auth token and refresh token expired: caught by router.js");
+                    const logged_out = document.getElementById("logged_out");
+                    let bsAlert = new bootstrap.Toast(logged_out);
+                    bsAlert.show();
+                    this.navigate('/home');
                 }
             } else {
                 status = true;

@@ -28,7 +28,7 @@ async function handle_not_authorized(response) {
     const result = await api.post_multipart("/token/refresh/", formData);
     if (result.status != 200) {
       // access and refresh token expired
-      console.log("Auth token and refresh token expired");
+      console.log("Auth token and refresh token expired: caught by api.js");
       const logged_out = document.getElementById("logged_out");
       let bsAlert = new bootstrap.Toast(logged_out);
       bsAlert.show();
