@@ -1,7 +1,7 @@
 import { api } from "./api.js";
 import { router } from "./app.js";
 
-const playerID = api.get("/profile/");
+const playerID = await api.get("/profile/");
 document.getElementById("back").addEventListener("click", async (e) => {
   router.navigate("/main_menu");
 });

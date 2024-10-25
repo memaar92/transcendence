@@ -16,7 +16,7 @@ function getCodeInputValues() {
   return result;
 }
 
-api.post("/email/otp/", { id: localStorage.getItem("uid") });
+await api.post("/email/otp/", { id: localStorage.getItem("uid") });
 document.getElementById("user-mail").innerText = localStorage.getItem("email");
 
 document.getElementById("verify-email").addEventListener("click", async (e) => {
