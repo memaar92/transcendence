@@ -287,14 +287,21 @@ class ChatHandler {
       case 'user_list':
         const parsedData = JSON.parse(content.users);
         const users = parsedData.users;
+        const indicator = document.getElementById('status-indicator');
+        let userFound = false;
+    
         users.forEach((user) => {
           if (user.name === this.currentReceiverId) {
-            const indicator = document.getElementById('status-indicator');
+            userFound = true;
             if (indicator) {
               indicator.classList.add('online');
             }
           }
         });
+    
+        if (!userFound && indicator) {
+          indicator.classList.remove('online');
+        }
         break;
       case 'chat_message':
         if (content.sender_name !== this.currentReceiverId) {
