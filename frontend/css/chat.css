@@ -234,6 +234,7 @@
     0 0 10px #7A35EC,
     0 0 20px #7A35EC,
     0 0 30px #7A35EC;
+    position: relative;
   }    
   
   .chat-input {
@@ -904,4 +905,20 @@
   overflow: auto;
   margin: 5rem 24vw;
   padding: 0 !important;
+}
+
+.status-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #ff3333;
+  box-shadow: #ff7272 0px 0px 10px;
+  /* transform: translateY(2px);
+  transform: translateX(20px); */
+  position: relative;
+}
+
+.status-indicator.online {
+  background-color: #00ff00;
+  box-shadow: #00ff00 0px 0px 10px;
 }

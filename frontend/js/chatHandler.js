@@ -35,21 +35,6 @@ class ChatHandler {
     this.ws.onmessage = this.onMessage.bind(this);
     this.ws.onclose = (e) => this.onClose(e, context);
     
-    // if (context === 'chat') {
-    //   this.currentReceiverId = params.recipient;
-    //   this.chatWindowOpened = false;
-    // } else {
-    //   this.currentReceiverId = null;
-    //   // this.initScrollHandling();
-    //   this.initFiltering();
-    //   this.initTabHandling();
-    //   document.getElementById("back").addEventListener("click", async (e) => {
-    //     router.navigate("/main_menu");
-    //   });
-    //   const searchInput = document.getElementById('search-input');
-    //   searchInput.removeEventListener('keydown', this.boundSearchInputHandler);
-    //   searchInput.addEventListener('keydown', this.boundSearchInputHandler);
-    //   }
     }
 
   async initContext(params, router, context) {
@@ -299,6 +284,18 @@ class ChatHandler {
   handleChatContext(content) {
     console.log('Handling chat context:', content.type);
     switch (content.type) {
+      case 'user_list':
+        const parsedData = JSON.parse(content.users);
+        const users = parsedData.users;
+        users.forEach((user) => {
+          if (user.name === this.currentReceiverId) {
+            const indicator = document.getElementById('status-indicator');
+            if (indicator) {
+              indicator.classList.add('online');
+            }
+          }
+        });
+        break;
       case 'chat_message':
         if (content.sender_name !== this.currentReceiverId) {
           this.displayNotification("You have a new message from: " + content.sender_name + "!");
@@ -329,7 +326,6 @@ class ChatHandler {
         console.error('Error:', content.type);
         break;
     }
-    // notifications for messages(except from current receiver), game invites, and upcoming tournaments
   }
 
   handleNoneContext(content) {
@@ -411,7 +407,6 @@ class ChatHandler {
     if (!container) {
       return;
     }
-    // Create a new div for the toast
     const toastEl = document.createElement('div');
     toastEl.classList.add('chat-toast', 'notification');
     toastEl.setAttribute('role', 'alert');
@@ -419,7 +414,6 @@ class ChatHandler {
     toastEl.setAttribute('aria-atomic', 'true');
     toastEl.setAttribute('data-bs-delay', '5000');
 
-    // Add the inner HTML for the toast content with custom classes
     toastEl.innerHTML = `
       <div class="toast-header chat-toast-header">
         <strong class="me-auto">Notification</strong>
@@ -430,18 +424,15 @@ class ChatHandler {
       </div>
     `;
 
-    // Append the new toast to the container
     container.appendChild(toastEl);
 
-    // Initialize the toast using Bootstrap's JS API
     const toast = new bootstrap.Toast(toastEl);
     toast.show();
 
-    // Remove the toast after it is hidden with a slight delay
     toastEl.addEventListener('hidden.bs.toast', () => {
       setTimeout(() => {
         toastEl.remove();
-      }, 300); // Adjust the delay as needed
+      }, 300);
     });
   }
 
@@ -661,7 +652,6 @@ class ChatHandler {
     }
   }
 
-  /* add request items to the friends-scroll-container and requests filter */
   displayChatRequest(requests) {
     const requestsListElement = document.querySelector('.friends-scroll-container');
     requests.forEach((request) => {
@@ -1127,25 +1117,6 @@ class ChatHandler {
     });
   }
 
-  // initScrollHandling() {
-  //   const container = document.querySelector('.user-list-container');
-
-  //   if (container) {
-  //     container.addEventListener('wheel', (event) => {
-  //       if (event.ctrlKey) {
-  //         return;
-  //       }
-
-  //       if (event.deltaY !== 0) {
-  //         container.scrollLeft += event.deltaY;
-  //         event.preventDefault();
-  //       }
-  //     });
-  //   } else {
-  //     console.warn('User list container not found');
-  //   }
-  // }
-
   initFiltering() {
     const btnContainer = document.querySelector('.btn-group');
     const btns = btnContainer.querySelectorAll('.btn-check');
@@ -1231,7 +1202,6 @@ class ChatHandler {
   }
 }
 
-//export const chat_handler = new ChatHandler();
 const instance = new ChatHandler();
  export default {
    getInstance() {
