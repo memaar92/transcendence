@@ -24,7 +24,7 @@ function checkFlag() {
 }
 checkFlag();
 
-const playerID = api.get("/profile/");
+const playerID = await api.get("/profile/");
 
 const tournament_name = localStorage.getItem("tournament_name");
 console.log(tournament_name);

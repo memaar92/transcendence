@@ -34,7 +34,8 @@ class Router {
                     const logged_out = document.getElementById("logged_out");
                     let bsAlert = new bootstrap.Toast(logged_out);
                     bsAlert.show();
-                    this.navigate('/home');
+                    await this.navigate('/home');
+                    return;
                 }
             } else {
                 status = true;
