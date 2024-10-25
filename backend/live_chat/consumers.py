@@ -221,9 +221,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
         data = json.loads(text_data)
         print(f"Received message: {data}")
 
-        if self.context is None:
-            self.context = data.get('context', None)
         try:
+            if data.get('context', None) == 'setup':
+                self.context = data.get('type', None)
+                await self.send(text_data=json.dumps({'type': 'user_id', 'user_id': self.user_id, 'context': self.context}))
+                if self.context == 'home':
+                    await self.send_friends_info(self.user_id)
+                    await self.send_unread_messages_count(self.user_id)
+                    await self.send_pending_chat_notifications(self.user_id)
+                if self.context == 'none':
+                    await self.send_unread_messages_count(self.user_id)
+                await self.broadcast_user_list()
+                return
             match self.context:
                 case 'home':
                     await self.handleHomeContext(data)
@@ -231,16 +240,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     await self.handleChatContext(data)
                 case 'none':
                     print ("Context is none")
-                case 'setup':
-                    self.context = data.get('type', None)
-                    await self.send(text_data=json.dumps({'type': 'user_id', 'user_id': self.user_id, 'context': self.context}))
-                    if self.context == 'home':
-                        await self.send_friends_info(self.user_id)
-                        await self.send_unread_messages_count(self.user_id)
-                        await self.send_pending_chat_notifications(self.user_id)
-                    if self.context == 'none':
-                        await self.send_unread_messages_count(self.user_id)
-                    await self.broadcast_user_list()
                 case _:
                     await self.send(text_data=json.dumps({
                         'type': 'error',

@@ -15,19 +15,9 @@ class ChatHandler {
     this.boundSearchInputHandler = this.searchInputHandler.bind(this);
   }
   
-  async init(params, router, context) {
+  async initChatSocket(context) {
 
-    this.router = router;
-    this.context = context;
-
-    // console.log('Params:', params);
     const url = `wss://${window.location.host}/ws/live_chat/}`;
-    // console.log('WebSocket URL:', url);
-
-    if (this.ws) {
-        console.log('Closing existing WebSocket connection');
-        this.ws.close();
-    }
 
     console.log('Creating new WebSocket connection');
     console.log('Checking token');
@@ -40,33 +30,62 @@ class ChatHandler {
     
     this.ws.onopen = () => {
       console.log('WebSocket connection opened in context:', context);
-      this.ws.send(JSON.stringify({ "type": context, "context": 'setup' }));
-      if (context === 'chat') {
-        this.chatWindowOpened = false;
-      }
     };
-    
-    // this.ws.onerror = (e) => this.onError(e);
     
     this.ws.onmessage = this.onMessage.bind(this);
     this.ws.onclose = (e) => this.onClose(e, context);
     
-    if (context === 'chat') {
-      this.currentReceiverId = params.recipient;
-      this.chatWindowOpened = false;
-    } else {
-      this.currentReceiverId = null;
-      // this.initScrollHandling();
-      this.initFiltering();
-      this.initTabHandling();
-      document.getElementById("back").addEventListener("click", async (e) => {
-        router.navigate("/main_menu");
-      });
-      const searchInput = document.getElementById('search-input');
-      searchInput.removeEventListener('keydown', this.boundSearchInputHandler);
-      searchInput.addEventListener('keydown', this.boundSearchInputHandler);
-      }
+    // if (context === 'chat') {
+    //   this.currentReceiverId = params.recipient;
+    //   this.chatWindowOpened = false;
+    // } else {
+    //   this.currentReceiverId = null;
+    //   // this.initScrollHandling();
+    //   this.initFiltering();
+    //   this.initTabHandling();
+    //   document.getElementById("back").addEventListener("click", async (e) => {
+    //     router.navigate("/main_menu");
+    //   });
+    //   const searchInput = document.getElementById('search-input');
+    //   searchInput.removeEventListener('keydown', this.boundSearchInputHandler);
+    //   searchInput.addEventListener('keydown', this.boundSearchInputHandler);
+    //   }
     }
+
+  async initContext(params, router, context) {
+    this.router = router;
+    this.context = context;
+    console.log('Initializing context:', context);
+  
+    if (this.ws.readyState === WebSocket.CONNECTING) {
+        await new Promise((resolve) => {
+            this.ws.onopen = () => resolve();
+        });
+    }
+  
+    this.ws.send(JSON.stringify({ "type": context, "context": 'setup' }));
+  
+    switch (context) {
+        case 'chat':
+            this.currentReceiverId = params.recipient;
+            this.chatWindowOpened = false;
+            break;
+        case 'home':
+            this.currentReceiverId = null;
+            this.initFiltering();
+            this.initTabHandling();
+            document.getElementById("back").addEventListener("click", async (e) => {
+                router.navigate("/main_menu");
+            });
+            const searchInput = document.getElementById('search-input');
+            searchInput.removeEventListener('keydown', this.boundSearchInputHandler);
+            searchInput.addEventListener('keydown', this.boundSearchInputHandler);
+            break;
+        default:
+            this.currentReceiverId = null;
+            break;
+    }
+  }
       
   async getUserIdfromName(name) {
     if (!name) {
