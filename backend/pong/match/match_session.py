@@ -33,7 +33,7 @@ class MatchSession:
     def __init__(self, user_id_1: int, user_id_2: Optional[int], on_match_finished: Optional[Callable[[int, int], None]] = None):
         '''Initialize and start a match between two users'''
         self._match_id = str(uuid4())
-        self._assigned_users = {user_id_1, user_id_2} if user_id_2 is not None else {user_id_1}
+        self._assigned_users = [user_id_1, user_id_2] if user_id_2 is not None else [user_id_1]
         self._blocked_users = set()
         self._connected_users = set()
         self._disconnect_count = {user_id_1: 0, user_id_2: 0} if user_id_2 is not None else {user_id_1: 0}
@@ -145,7 +145,7 @@ class MatchSession:
         logger.info(f"Match {match_id} finished, winner: {winner}")
         if write_to_db and not self._is_local_match:
             try:
-                assigned_users = list(self._assigned_users)
+                assigned_users = self._assigned_users
                 home_user = await sync_to_async(CustomUser.objects.get)(id=assigned_users[0])
                 visitor_user = await sync_to_async(CustomUser.objects.get)(id=assigned_users[1])
 
@@ -317,8 +317,8 @@ class MatchSession:
         if self._stop_requested:
             return
         try:
-            user_id_1 = list(self._assigned_users)[0]
-            user_id_2 = list(self._assigned_users)[1] if not self._is_local_match else None
+            user_id_1 = self._assigned_users[0]
+            user_id_2 = self._assigned_users[1] if not self._is_local_match else None
         except IndexError as e:
             # Handle the case where there are not enough users assigned
             logger.error(f"Error in _send_user_mapping: {e}")

@@ -18,7 +18,7 @@
     <h1 class="big-title px-4">Tournament</h1>
   </div>
   <form
-    class="border border-white rounded d-flex flex-column align-items-center"
+    class="border border-white rounded d-flex flex-column align-items-center gap-2"
     id="tournament-form" method="POST"
   >
     <h1 class="px-4">Create Tournament</h1>
@@ -31,6 +31,7 @@
     />
 
     <div>
+      <label for="max-players">Players</label>
       <select name="max-players" id="max-players" name="cars" required>
         <option value="2">2</option>
         <option value="3">3</option>
@@ -44,8 +45,8 @@
         <option value="11">11</option>
         <option value="12">12</option>
       </select>
-      <button class="button" type="submit">Create Tournament</button>
     </div>
+    <button class="button" type="submit">Create Tournament</button>
   </form>
   <table class="dltrc" style="background:none">
     <tr class="dlheader">
