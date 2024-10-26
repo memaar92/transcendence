@@ -281,6 +281,14 @@ input:disabled {
   transform: translate(-50%, -50%);
 }
 
+.player {
+    position: absolute;
+    text-align: center;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
 #codeForm {
     display: flex;
     justify-content: center;
@@ -461,4 +469,15 @@ td.dlheader:last-child {
   border-bottom: 1px solid #ffffff;
   text-decoration: none;
   color: var(--color-text);
+}
+
+input[type="file"] {
+  display: none;
+}
+
+#player-creation-photo {
+    height: 13rem;
+    width: 13rem;
+    border: 3px solid #7A35EC;
+    border-radius: 1rem;
 }

@@ -76,6 +76,8 @@ class AuthWith42View(APIView, CookieCreationMixin):
     )
 
     def get(self, request):
+        new_user = False
+
         if (code := request.GET.get('code')) is None:
             return Response({'detail': '42auth failed: no code provided'}, status=400)
         code = request.GET.get('code')
@@ -103,10 +105,13 @@ class AuthWith42View(APIView, CookieCreationMixin):
             return response
         elif not user.exists():
             register42User(user_info['email'], user_info['image']['versions']['small'])
+            new_user = True
         token = get_tokens_for_user(CustomUser.objects.get(email=user_info['email']))
         response = Response(token, status=302)
         if user.first()['is_2fa_enabled'] == True:
             response['Location'] = 'https://' + HOST + '/verify_2fa'
+        elif new_user:
+            response['Location'] = 'https://' + HOST + '/player_creation'
         else:
             response['Location'] = 'https://' + HOST + '/main_menu'
         self.createCookies(response)
