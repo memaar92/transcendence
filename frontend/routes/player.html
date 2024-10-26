@@ -1,7 +1,7 @@
 <script src="/js/player.js" type="module"></script>
 
 <div class="player">
-    <div id="content">
+    <div>
         <form id="picture">
             <h2 style="margin-bottom: 0.5rem;">Create Your Player</h2>
             <p>We've cooked up some funky defaults for you. <br>You can change these here or anytime in your profile.</p>
@@ -41,8 +41,8 @@
             </div>
         </div>
         </form>
-        <form style="margin-top: -1rem; width: 100%;">
-        <div>
+        <form style="width: 100%;">
+        <div id="player-content">
             <input
             id="displayname"
             autocomplete="username"
@@ -114,10 +114,12 @@
                 />
             </svg>
             </button>
+            </div>
+            <div>
             <button class="button" id="main_menu" style="width: 75%;">
                 Let's go!
             </button>
-        </div>
+            </div>
         </form>
     </div>
 </div>

@@ -13,12 +13,9 @@ document.getElementById("upload-photo").addEventListener("change", async (e) => 
     await update_userinfo();
 });
 
-document.getElementById("content").addEventListener('click', async function (event) {
+document.getElementById("player-content").addEventListener('click', async function (event) {
     const target = event.target;
     const form = target.closest('form');
-    
-    if (!form) return;
-    if (form.id == "picture") return;
     
     const editBtn = form.querySelector('.edit-button');
     const confirmBtn = form.querySelector('.confirm-button');
@@ -73,12 +70,12 @@ async function update_userinfo() {
     const profile_info = await result.json()
   
     const photo = document.getElementById("player-creation-photo");
-    photo.src = profile_info["profile_picture"];
-  
-    document.getElementById('displayname').value = profile_info["displayname"];  
+    if (photo != null)
+        photo.src = profile_info["profile_picture"];
+    document.getElementById('displayname').value = profile_info["displayname"] || "";
 }
 
 document.getElementById("main_menu").addEventListener("click", async (e) => {
     e.preventDefault();
-    router.navigate("/main_menu");
+    await router.navigate("/main_menu");
 });
