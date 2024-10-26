@@ -116,6 +116,27 @@ export const api = {
     return response;
   },
 
+  patch_multipart: async (endpoint, data) => {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: "PATCH",
+      body: data,
+    });
+    if (!response.ok && response.status != 404) {
+      // Not Authorized
+      if ((await handle_not_authorized(response)) == LOGGED_IN) {
+        return await fetch(`${API_BASE_URL}${endpoint}`, {
+          method: "PATCH",
+          body: data,
+        });
+      } else {
+        return null;
+      }
+    }
+    return response;
+  },
+
+
+
   delete: async (endpoint) => {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: "DELETE",
