@@ -19,8 +19,8 @@ class ChatHandler {
 
     const url = `wss://${window.location.host}/ws/live_chat/}`;
 
-    // console.log('Creating new WebSocket connection');
-    // console.log('Checking token');
+    console.log('Creating new WebSocket connection');
+    console.log('Checking token');
     const auth = await this.checkToken();
     if (!auth) {
         await this.refreshToken();
@@ -1202,6 +1202,20 @@ class ChatHandler {
       }
     });
   }
+
+  async logout() {
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+      console.log('WebSocket connection closed');
+    }
+    this.senderId = null;
+    this.currentReceiverId = null;
+    this.onlineUserIds = [];
+    this.router = null;
+    this.context = null;
+    this.currentFilter = 'all';
+  }
 }
 
 const instance = new ChatHandler();
@@ -1210,15 +1224,3 @@ const instance = new ChatHandler();
      return instance;
    }
 };
-
-function debounce(func, delay) {
-  let timeoutId;
-  return function(...args) {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
-    timeoutId = setTimeout(() => {
-      func.apply(this, args);
-    }, delay);
-  };
-}

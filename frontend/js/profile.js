@@ -1,5 +1,6 @@
 import { api } from "./api.js";
 import { hubSocket, router } from "./app.js";
+import  ChatHandler  from "./chatHandler.js";
 
 await update_userinfo()
 
@@ -107,6 +108,8 @@ document.getElementById("content").addEventListener('click', async function (eve
 document.getElementById("logout").addEventListener('click', async function (event) {
   event.preventDefault();
   hubSocket.close();
+  const chatHandler = ChatHandler.getInstance();
+  await chatHandler.logout();
   await api.post("/token/logout/")
   await router.navigate("/");
 });
