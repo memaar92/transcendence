@@ -26,7 +26,7 @@ document.getElementById("verify-email").addEventListener("click", async (e) => {
     otp: getCodeInputValues(),
   });
   if (result.ok) {
-    router.navigate("/main_menu");
+    router.navigate("/player_creation");
   } else {
     document.getElementById("codeForm").classList.add("is-invalid");
   }

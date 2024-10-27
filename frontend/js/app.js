@@ -28,6 +28,7 @@ const routes = [
   { path: "/verify_2fa", templateUrl: "/routes/verify_2fa.html" },
   { path: "/queue", templateUrl: "/routes/queue.html" },
   { path: "/endscreen", templateUrl: "/routes/endscreen.html" },
+  { path: "/player_creation", templateUrl: "/routes/player.html" },
 ];
 
 console.log("app loaded");
