@@ -41,23 +41,6 @@ def register42User(email, picture_url):
 class Redirect42Auth(APIView):
     permission_classes = [AllowAny]
 
-    @extend_schema(
-        responses={
-            (200, 'application/json'): {
-                'type': 'object',
-                'properties': {
-                    'detail': {'type': 'string', 'enum': ['Successfully authenticated with 42']}
-                },
-            },
-            (400, 'application/json'): {
-                'type': 'object',
-                'properties': {
-                    'detail': {'type': 'string', 'enum': ['42auth failed', 'Wrong authentication method']}
-                },
-            },
-        },
-    )
-
     def get(self, request):
         global HOST
         if request.get_host() == 'localhost':
@@ -79,7 +62,9 @@ class AuthWith42View(APIView, CookieCreationMixin):
         new_user = False
 
         if (code := request.GET.get('code')) is None:
-            return Response({'detail': '42auth failed: no code provided'}, status=400)
+            response = Response(status=302)
+            response['Location'] = 'https://' + HOST + '/42auth_failed?error=42api'
+            return response
         code = request.GET.get('code')
         oauth_response = requests.post('https://api.intra.42.fr/oauth/token', data={
             'code': code,
