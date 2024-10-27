@@ -20,7 +20,7 @@ class RelationshipStatusView(APIView):
             relationship_dict = json.loads(relationship_data)[0]
             return JsonResponse({"relationship": relationship_dict}, status=200)
         except Relationship.DoesNotExist:
-            return JsonResponse({"message": "Relationship does not exist"}, status=400)
+            return JsonResponse({"message": "Relationship does not exist"}, status=200)
 
     def patch(self, request, user_id_1, user_id_2):
         try:

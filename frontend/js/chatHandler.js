@@ -19,8 +19,8 @@ class ChatHandler {
 
     const url = `wss://${window.location.host}/ws/live_chat/}`;
 
-    console.log('Creating new WebSocket connection');
-    console.log('Checking token');
+    // console.log('Creating new WebSocket connection');
+    // console.log('Checking token');
     const auth = await this.checkToken();
     if (!auth) {
         await this.refreshToken();
@@ -29,7 +29,7 @@ class ChatHandler {
     this.ws = new WebSocket(url);
     
     this.ws.onopen = () => {
-      console.log('WebSocket connection opened in context:', context);
+      // console.log('WebSocket connection opened in context:', context);
     };
     
     this.ws.onmessage = this.onMessage.bind(this);
@@ -40,7 +40,7 @@ class ChatHandler {
   async initContext(params, router, context) {
     this.router = router;
     this.context = context;
-    console.log('Initializing context:', context);
+    // console.log('Initializing context:', context);
   
     if (this.ws.readyState === WebSocket.CONNECTING) {
         await new Promise((resolve) => {
@@ -74,7 +74,7 @@ class ChatHandler {
       
   async getUserIdfromName(name) {
     if (!name) {
-      console.error('Name parameter is required');
+      // console.error('Name parameter is required');
       return null;
     }
   
@@ -84,11 +84,11 @@ class ChatHandler {
         const json = await response.json();
         return json.user_id || null;
       } else {
-        console.error(`Error fetching user ID: ${response.statusText}`);
+        // console.error(`Error fetching user ID: ${response.statusText}`);
         return null;
       }
     } catch (error) {
-      console.error('Error fetching user ID:', error);
+      // console.error('Error fetching user ID:', error);
       return null;
     }
   }
@@ -108,7 +108,7 @@ class ChatHandler {
 
       const result = await api.post_multipart("/token/refresh/", formData);
       if (result.status != 200) {
-          console.log("Auth token and refresh token expired. Caught by chat socket");
+          // console.log("Auth token and refresh token expired. Caught by chat socket");
           const logged_out = document.getElementById("logged_out");
           let bsAlert = new bootstrap.Toast(logged_out);
           bsAlert.show();
@@ -117,12 +117,12 @@ class ChatHandler {
   }
 
   async onClose(event) {
-    console.log('WebSocket connection closed:', event.code, event.reason);
+    // console.log('WebSocket connection closed:', event.code, event.reason);
   }
   
   onMessage(event) {
     const content = JSON.parse(event.data);
-    console.log('Received message:', content);
+    // console.log('Received message:', content);
     if (content.type === 'user_id') {
       this.senderId = Number(content.user_id);
       if (content.context === 'chat' && !this.chatWindowOpened) {
@@ -142,13 +142,13 @@ class ChatHandler {
         this.handleNoneContext(content);
         break;
       default:
-        // console.error('Unknown context:', content.context);
+        // // console.error('Unknown context:', content.context);
         break;
       }
     }
     
   handleHomeContext(content) {
-    console.log('Handling home context:', content.type);
+    // console.log('Handling home context:', content.type);
     switch (content.type) {
       case 'user_list':
         this.displayUserList(content.users);
@@ -178,7 +178,7 @@ class ChatHandler {
               }
             }
           } else {
-            console.warn('Friend not found for sender ID:', content.sender_id);
+            // console.warn('Friend not found for sender ID:', content.sender_id);
           }
         }
         this.incrementUnreadMessageCount(content.sender_id);
@@ -198,7 +198,7 @@ class ChatHandler {
               this.showLatestMessage(latestMessage, sender_id, dataId);
             }
           } else {
-            console.log('No messages');
+            // console.log('No messages');
             const messagePreview = chatItem.querySelector('.message-preview');
             if (messagePreview) {
               messagePreview.textContent = 'No messages';
@@ -221,11 +221,11 @@ class ChatHandler {
           if (existingButton) {
             friendItem.replaceChild(newGameInviteButton, existingButton);
           } else {
-            console.warn('Existing game invite button not found');
+            // console.warn('Existing game invite button not found');
             friendItem.appendChild(newGameInviteButton);
         }
         } else {
-            console.warn('Friend item not found');
+            // console.warn('Friend item not found');
         }
         break;
       case 'match_id':
@@ -244,11 +244,11 @@ class ChatHandler {
             if (existingButton) {
                 friendItem.replaceChild(newGameInviteButton, existingButton);
             } else {
-                console.warn('Existing game invite button not found');
+                // console.warn('Existing game invite button not found');
                 friendItem.appendChild(newGameInviteButton);
             }
         } else {
-            console.warn('Friend item not found');
+            // console.warn('Friend item not found');
         }
         break;
       case 'game_error':
@@ -265,24 +265,24 @@ class ChatHandler {
             if (existingButton) {
                 friendItem.replaceChild(newGameInviteButton, existingButton);
             } else {
-                console.warn('Existing game invite button not found');
+                // console.warn('Existing game invite button not found');
                 friendItem.appendChild(newGameInviteButton);
             }
         } else {
-            console.warn('Friend item not found');
+            // console.warn('Friend item not found');
         }
         break;
       case 'tournament':
         this.displayNotification(content.message);
         break;
       default:
-        console.error('Unknown context:', content.type);
+        // console.error('Unknown context:', content.type);
         break;
       }
     }
         
   handleChatContext(content) {
-    console.log('Handling chat context:', content.type);
+    // console.log('Handling chat context:', content.type);
     switch (content.type) {
       case 'user_list':
         const parsedData = JSON.parse(content.users);
@@ -318,6 +318,10 @@ class ChatHandler {
         this.displayNotification("You have a new game invite from: " + content.sender_name + "!");
         break;
       case 'chat_history':
+        if (this.chatHistoryResolve) {
+            this.chatHistoryResolve(content.messages);
+            this.chatHistoryResolve = null;
+        }
         this.displayChatHistory(content.messages);
         break;
       case 'error':
@@ -330,13 +334,13 @@ class ChatHandler {
         }
         break;
       default:
-        console.error('Error:', content.type);
+        // console.error('Error:', content.type);
         break;
     }
   }
 
   handleNoneContext(content) {
-    console.log('Handling none context:', content.type);
+    // console.log('Handling none context:', content.type);
     switch (content.type) {
       case 'chat_message':
         this.displayIndicator();
@@ -384,13 +388,13 @@ class ChatHandler {
       return;
     const chatMenuItem = document.getElementById('chat-menu-item');
     if (!chatMenuItem) {
-      console.warn('Chat menu item not found');
+      // console.warn('Chat menu item not found');
       return;
     }
   
     const chatLink = chatMenuItem.querySelector('a');
     if (!chatLink) {
-      console.warn('Chat link not found');
+      // console.warn('Chat link not found');
       return;
     }
 
@@ -501,15 +505,15 @@ class ChatHandler {
 
     if (inviter_id === null) {
       buttonState = 1;
-      console.log('Inviter ID is null');
+      // console.log('Inviter ID is null');
       updateButtonState();
     } else if (inviter_id === this.senderId) {
       buttonState = 0;
-      console.log('Inviter ID is sender ID');
+      // console.log('Inviter ID is sender ID');
       updateButtonState();
     } else {
       buttonState = 2;
-      console.log('Inviter ID is not sender ID');
+      // console.log('Inviter ID is not sender ID');
       updateButtonState();
     }
 
@@ -533,7 +537,7 @@ class ChatHandler {
           messagePreview.textContent = message;
         }
       } else {
-        console.log('preview not found');
+        // console.log('preview not found');
       }
     }
   }
@@ -578,7 +582,7 @@ class ChatHandler {
       });
       modalInstance.show();
     } catch (error) {
-      console.error('Error initializing modal:', error);
+      // console.error('Error initializing modal:', error);
       modalContainer.remove();
       return;
     }
@@ -613,7 +617,7 @@ class ChatHandler {
       messageInput.value = '';
       this.displayChatMessage(newMessage, 'sent');
     } else {
-      console.warn('Message, receiver ID is empty, or sender and receiver are the same');
+      // console.warn('Message, receiver ID is empty, or sender and receiver are the same');
     }
   }
 
@@ -655,7 +659,7 @@ class ChatHandler {
         chatItem.appendChild(unreadIndicator);
       }
     } else {
-      console.warn('Friend item not found (unread messages):', senderId);
+      // console.warn('Friend item not found (unread messages):', senderId);
     }
   }
 
@@ -764,13 +768,13 @@ class ChatHandler {
     const users = parsedData.users;
     const userListContainer = document.getElementById('user-list-container');
     if (!userListContainer) {
-      console.warn('User list container not found');
+      // console.warn('User list container not found');
       return;
     }
     const userListWrapper = userListContainer.querySelector('.user-list-wrapper');
     
     if (!userListWrapper) {
-      console.warn('User list wrapper not found');
+      // console.warn('User list wrapper not found');
       return;
     }
     
@@ -821,7 +825,7 @@ class ChatHandler {
         friendImg.style.border = isOnline ? '4px solid #7A35EC' : '4px solid grey';
         }
       else {
-        console.warn('Image not found for chat item:', friendId);
+        // console.warn('Image not found for chat item:', friendId);
       }
     });
   
@@ -835,7 +839,7 @@ class ChatHandler {
           friendImg.style.border = isOnline ? '4px solid #7A35EC' : '4px solid grey';
         }
         else {
-          console.warn('Image not found for friend item:', friendId);
+          // console.warn('Image not found for friend item:', friendId);
         }
       }
     });
@@ -850,7 +854,7 @@ class ChatHandler {
       if (this.router) {
         this.router.navigate(`/live_chat/chat_room?recipient=${friend.name}`);
       } else {
-        console.warn('Router instance is undefined');
+        // console.warn('Router instance is undefined');
         return;
       }
     };
@@ -881,12 +885,12 @@ class ChatHandler {
   displayChatsList(friends) {
     const friendsListElement = document.querySelector('.friends-scroll-container');
     if (!friendsListElement) {
-      console.warn('Friend list container not found');
+      // console.warn('Friend list container not found');
       return;
     }
     const chatsListElement = document.querySelector('.chats-scroll-container');
     if (!chatsListElement) {
-      console.warn('Chat list container not found');
+      // console.warn('Chat list container not found');
       return;
     }
     friendsListElement.innerHTML = '';
@@ -958,7 +962,7 @@ class ChatHandler {
   createFriendsFilterButtons(friend) {
     const chatButton = document.createElement('button');
     chatButton.id = 'chat-button';
-    console.log("Opening chat with: ", friend.name);
+    // console.log("Opening chat with: ", friend.name);
     chatButton.onclick = () => {
       this.router.navigate(`/live_chat/chat_room?recipient=${friend.name}`);
     };
@@ -1017,7 +1021,7 @@ class ChatHandler {
     const sendButton = document.getElementById('send-message');
     const messageInput = document.getElementById('message-input');
   
-    console.log('Opening chat window with friend ID:', friendId);
+    // console.log('Opening chat window with friend ID:', friendId);
     chatTitle.textContent = `Chat with ${friendId}`;
     chatWindow.classList.add('open');
   
@@ -1064,7 +1068,7 @@ class ChatHandler {
       const chatMessagesWrapper = document.querySelector('.chat-messages-wrapper');
       chatMessagesWrapper.scrollTop = chatMessagesWrapper.scrollHeight;
     } else {
-      console.warn('Chat messages container not found');
+      // console.warn('Chat messages container not found');
     }
   }
   
@@ -1077,7 +1081,7 @@ class ChatHandler {
             message.sender_id === this.senderId ? this.displayChatMessage(message, 'sent') : this.displayChatMessage(message, 'received');
         });
     } else {
-        console.warn('Chat messages container not found');
+        // console.warn('Chat messages container not found');
     }
   }
 
@@ -1089,40 +1093,31 @@ class ChatHandler {
       messageItem.textContent = message;
       messages.appendChild(messageItem);
     } else {
-      console.warn('Chat window not found');
+      // console.warn('Chat window not found');
     }
   }
 
   sendChatHistoryRequest(senderId, receiverId) {
     return new Promise((resolve, reject) => {
-      if (this.ws && senderId && receiverId) {
-        const requestId = Date.now().toString();
-  
-        const messageHandler = (event) => {
-          const content = JSON.parse(event.data);
-          if (content.type === 'chat_history' && content.sender_id === senderId && content.receiver_id === receiverId) {
-            this.ws.removeEventListener('message', messageHandler);
-            resolve(content.messages);
-          }
-        };
-  
-        this.ws.addEventListener('message', messageHandler);
+      if (this.ws && this.ws.readyState === WebSocket.OPEN && senderId && receiverId) {
+        this.chatHistoryResolve = resolve;
   
         this.ws.send(JSON.stringify({
-          'type': 'chat_history',
-          'sender_id': senderId,
-          'receiver_id': receiverId,
+          type: 'chat_history',
+          sender_id: senderId,
+          receiver_id: receiverId,
         }));
   
         setTimeout(() => {
-          this.ws.removeEventListener('message', messageHandler);
           reject(new Error('Chat history request timed out'));
         }, 5000);
+  
       } else {
-        reject(new Error('Cannot request chat history, WebSocket is not initialized or IDs are missing'));
+        reject(new Error('WebSocket is not open or IDs are missing'));
       }
     });
   }
+  
 
   initFiltering() {
     const btnContainer = document.querySelector('.btn-group');
