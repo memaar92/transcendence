@@ -582,7 +582,7 @@ class ValidateEmailView(APIView, CookieCreationMixin):
         stored_otp = cache.get(otp_cache_key)
 
         if not stored_otp:
-            return Response({'detail': 'OTP expired. Please request a new one.', 'suberror code': 905}, status=401)
+            return Response({'detail': 'OTP expired. Please request a new one.', 'suberror code': 905}, status=400)
 
         if stored_otp != otp_provided:
             if cache.get(otp_attempts_key) >= MAX_OTP_ATTEMPTS:
@@ -591,7 +591,7 @@ class ValidateEmailView(APIView, CookieCreationMixin):
                 cache.set(otp_attempts_key, 0)
                 return Response({'detail': 'Exceeded maximum OTP attempts. Please try again later.'}, status=429)
             cache.incr(otp_attempts_key)
-            return Response({'detail': 'Invalid OTP', 'suberror code': 904}, status=401)
+            return Response({'detail': 'Invalid OTP', 'suberror code': 904}, status=400)
 
         if stored_otp == otp_provided:
             cache.delete(otp_cache_key)
