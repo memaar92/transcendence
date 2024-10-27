@@ -91,7 +91,7 @@ class AuthWith42View(APIView, CookieCreationMixin):
         if (oauth_response.get('error')):
             #case: issue with 42 auth
             response = Response(status=302)
-            response['Location'] = 'https://' + HOST + '/auth_failed'
+            response['Location'] = 'https://' + HOST + '/42auth_failed'
             return response
         user_info = requests.get('https://api.intra.42.fr/v2/me', headers={
             'Authorization': 'Bearer ' + oauth_response['access_token']
