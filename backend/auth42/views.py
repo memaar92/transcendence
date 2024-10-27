@@ -104,7 +104,7 @@ class AuthWith42View(APIView, CookieCreationMixin):
             response['Location'] = 'https://' + HOST + '/42auth_failed?error=42email'
             return response
         elif not user.exists():
-            register42User(user_info['email'], user_info['image']['versions']['small'])
+            register42User(user_info['email'], user_info['image']['versions']['medium'])
             new_user = True
         token = get_tokens_for_user(CustomUser.objects.get(email=user_info['email']))
         response = Response(token, status=302)
