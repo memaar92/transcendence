@@ -68,10 +68,12 @@ function start_game(match_id) {
           console.log("userID p1", user_id_p1);
           console.log("userID p2", user_id_p2)
           console.log("winner", winner);
-          if ((user_id_p1 == myID && winner == 0) || (user_id_p2 == myID && winner == 1)) {
-            localStorage.setItem("win", true);
+          if (is_local_match) {
+            localStorage.setItem("endscreen_msg", "GAME&nbspFINISHED");
+          } else if ((user_id_p1 == myID && winner == 0) || (user_id_p2 == myID && winner == 1)) {
+            localStorage.setItem("endscreen_msg", "YOU&nbspWIN");
           } else {
-            localStorage.removeItem("win");
+            localStorage.setItem("endscreen_msg", "YOU&nbspLOSE");
           }
           if (localStorage.getItem("tournament_games")) {
             router.navigate("/tournament_preview")
