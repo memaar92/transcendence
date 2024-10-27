@@ -13,8 +13,8 @@ document.getElementById("upload-photo").addEventListener("change", async (e) => 
   let formData = new FormData();
       
   formData.append("profile_picture", photo);
-  await fetch('/api/profile/', {method: "PATCH", body: formData});
-  
+  await api.patch_multipart("/profile/", formData);
+
   await update_userinfo();
 });
 

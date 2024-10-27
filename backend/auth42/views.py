@@ -41,23 +41,6 @@ def register42User(email, picture_url):
 class Redirect42Auth(APIView):
     permission_classes = [AllowAny]
 
-    @extend_schema(
-        responses={
-            (200, 'application/json'): {
-                'type': 'object',
-                'properties': {
-                    'detail': {'type': 'string', 'enum': ['Successfully authenticated with 42']}
-                },
-            },
-            (400, 'application/json'): {
-                'type': 'object',
-                'properties': {
-                    'detail': {'type': 'string', 'enum': ['42auth failed', 'Wrong authentication method']}
-                },
-            },
-        },
-    )
-
     def get(self, request):
         global HOST
         if request.get_host() == 'localhost':
@@ -76,8 +59,12 @@ class AuthWith42View(APIView, CookieCreationMixin):
     )
 
     def get(self, request):
+        new_user = False
+
         if (code := request.GET.get('code')) is None:
-            return Response({'detail': '42auth failed: no code provided'}, status=400)
+            response = Response(status=302)
+            response['Location'] = 'https://' + HOST + '/42auth_failed?error=42api'
+            return response
         code = request.GET.get('code')
         oauth_response = requests.post('https://api.intra.42.fr/oauth/token', data={
             'code': code,
@@ -89,7 +76,7 @@ class AuthWith42View(APIView, CookieCreationMixin):
         if (oauth_response.get('error')):
             #case: issue with 42 auth
             response = Response(status=302)
-            response['Location'] = 'https://' + HOST + '/auth_failed'
+            response['Location'] = 'https://' + HOST + '/42auth_failed?error=42api'
             return response
         user_info = requests.get('https://api.intra.42.fr/v2/me', headers={
             'Authorization': 'Bearer ' + oauth_response['access_token']
@@ -99,14 +86,17 @@ class AuthWith42View(APIView, CookieCreationMixin):
         if user.exists() and user.first()['is_42_auth'] == False:
             # case: wrong auth method
             response = Response(status=302)
-            response['Location'] = 'https://' + HOST + '/auth_failed'
+            response['Location'] = 'https://' + HOST + '/42auth_failed?error=42email'
             return response
         elif not user.exists():
-            register42User(user_info['email'], user_info['image']['versions']['small'])
+            register42User(user_info['email'], user_info['image']['versions']['medium'])
+            new_user = True
         token = get_tokens_for_user(CustomUser.objects.get(email=user_info['email']))
         response = Response(token, status=302)
         if user.first()['is_2fa_enabled'] == True:
             response['Location'] = 'https://' + HOST + '/verify_2fa'
+        elif new_user:
+            response['Location'] = 'https://' + HOST + '/player_creation'
         else:
             response['Location'] = 'https://' + HOST + '/main_menu'
         self.createCookies(response)

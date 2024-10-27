@@ -1,6 +1,6 @@
 import { updateChat } from "./live-chat.js";
 import { api } from "./api.js";
-import { hubSocket } from "./app.js";
+import { hubSocket, showAlert } from "./app.js";
 //import { chat_handler } from "./chatHandler.js";
 
 class Router {
@@ -26,16 +26,26 @@ class Router {
             const result = await api.post_multipart("/token/refresh/", formData);
             if (result.status != 200) {
                 if (this.unregistered_urls.includes(window.location.pathname)) {
-                  window.addEventListener("popstate", this.handlePopState.bind(this));
-                  this.bindLinks();
-                  this.navigate(window.location.pathname + window.location.search, false);
-                } else {
-                    console.log("Auth token and refresh token expired: caught by router.js");
-                    const logged_out = document.getElementById("logged_out");
-                    let bsAlert = new bootstrap.Toast(logged_out);
-                    bsAlert.show();
-                    await this.navigate('/home');
-                    return;
+                    window.addEventListener("popstate", this.handlePopState.bind(this));
+                    this.bindLinks();
+                    this.navigate(window.location.pathname + window.location.search, false);
+                  } else {
+                      console.log("Auth token and refresh token expired: caught by router.js");
+                      const params = new URLSearchParams(window.location.search);
+                      if (window.location.pathname == "/42auth_failed" && params.has("error")) {
+                          const error = params.get("error");
+                          if (error == "42email") {
+                              showAlert("This email has already been used for standard login")
+                          } else {
+                              showAlert("An error occurred when signing in with 42")
+                          }
+                      } else {
+                        const logged_out = document.getElementById("logged_out");
+                        let bsAlert = new bootstrap.Toast(logged_out);
+                        bsAlert.show();
+                      }
+                      await this.navigate('/home');
+                      return;
                 }
             } else {
                 status = true;

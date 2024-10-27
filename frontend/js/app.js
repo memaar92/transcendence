@@ -12,7 +12,7 @@ const routes = [
   { path: "/register", templateUrl: "/routes/register.html" },
   { path: "/main_menu", templateUrl: "/routes/main_menu.html" },
   { path: "/404", templateUrl: "/routes/404.html" },
-  { path: "/auth_failed", templateUrl: "/routes/auth_failed.html" },
+  { path: "/42auth_failed", templateUrl: "/routes/auth_failed.html" },
   { path: "/game_menu", templateUrl: "/routes/game_menu.html" },
   { path: "/play", templateUrl: "/routes/play.html" },
   { path: "/live_chat", templateUrl: "/routes/chat.html" },
@@ -28,6 +28,7 @@ const routes = [
   { path: "/verify_2fa", templateUrl: "/routes/verify_2fa.html" },
   { path: "/queue", templateUrl: "/routes/queue.html" },
   { path: "/endscreen", templateUrl: "/routes/endscreen.html" },
+  { path: "/player_creation", templateUrl: "/routes/player.html" },
 ];
 
 console.log("app loaded");
