@@ -11,7 +11,7 @@ class Router {
     this.currentHistoryPosition = 0;
     this.maxHistoryPosition = 0;
     this.excludedPaths = ['/game'];
-    this.unregistered_urls = ["/", "/home", "/login", "/register", "/email_verification"];
+    this.unregistered_urls = ["/", "/home", "/login", "/register", "/email_verification", "/auth_failed", "/42auth_failed"];
     console.log("Router: constructor called");
 
     api.get("/token/check/").then(
