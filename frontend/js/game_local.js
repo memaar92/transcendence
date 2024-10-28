@@ -219,14 +219,12 @@ function start_game(match_id) {
         }
         break;
       case "KeyO": // 'O' key
-        event.preventDefault(); // Prevent default behavior
         if (!move_up_player_2) {
           move_up_player_2 = true;
           stateChangedPlayer2 = true;
         }
         break;
       case "KeyL": // 'L' key
-        event.preventDefault(); // Prevent default behavior
         if (!move_down_player_2) {
           move_down_player_2 = true;
           stateChangedPlayer2 = true;
