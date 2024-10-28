@@ -172,6 +172,7 @@ document.getElementById("deleteModal").addEventListener('click', async function 
 
 
 document.addEventListener('click', async function (event) {
+  event.preventDefault();  
   if (event.target && event.target.id === 'confirmDeletion') {
     const modalContainer = document.querySelector('.modal.fade');
     if (modalContainer) {
@@ -181,9 +182,12 @@ document.addEventListener('click', async function (event) {
             modalContainer.remove();
         }
     }
-    const result = await api.delete("/profile/");
+    hubSocket.close();
+    const chatHandler = ChatHandler.getInstance();
+    await chatHandler.logout();
+    await api.delete("/profile/");
+    await api.post("/token/logout/")
     router.navigate("/home");
-    event.preventDefault();
   }
 });
 
