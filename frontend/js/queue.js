@@ -21,7 +21,15 @@ function leave_queue() {
 }
 
 hubSocket.registerCallback(game_start);
+
+if (hubSocket.socket.readyState === WebSocket.CONNECTING) {
+  await new Promise((resolve) => {
+    hubSocket.socket.onopen = () => resolve();
+  });
+}
+
 hubSocket.send({ type: "queue_register" });
+
 
 
 const leave = document.getElementById("leave-queue");
