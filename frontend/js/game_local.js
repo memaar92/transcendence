@@ -55,7 +55,7 @@ function start_game(match_id) {
           matchSocket.close();
           document.removeEventListener("keydown", key_down, false);
           document.removeEventListener("keyup", key_up, false);
-          localStorage.setItem("win", false);
+          localStorage.setItem("local", true);
           router.navigate("/endscreen");
         } else if (jsonData.type === "user_mapping") {
           is_local_match = jsonData.is_local_match;
