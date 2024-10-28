@@ -4,7 +4,7 @@ import { hubSocket, router, showAlert } from "./app.js";
 const r = await api.get("/profile/");
 
 function start_game(match_id) {
-  let is_local_match = false;
+  let is_local_match = true;
   let user_id_p1 = null;
   let user_id_p2 = null;
 
@@ -323,10 +323,12 @@ function local_match_callback(message) {
     router.navigate("/main_menu")
   } else if (message.type === "local_match_ready") {
     console.log(message)
+    console.log("Starting game with match id", message.match_id)
     start_game(message.match_id)
   }
 }
 
 hubSocket.registerCallback(local_match_callback)
+await new Promise(resolve => setTimeout(resolve, 200));
 await hubSocket.send({type: "local_match_create"})
 
