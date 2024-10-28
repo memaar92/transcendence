@@ -1,5 +1,6 @@
 import { api } from "./api.js";
 import { router } from "./app.js";
+import { showAlert } from "./app.js"
 
 await update_userinfo()
 
