@@ -39,7 +39,7 @@ document.getElementById("player-content").addEventListener('click', async functi
           await result.json()
             .then(data => {
               if (data.errors) {
-                showAlert(JSON.stringify(data.errors));
+                showAlert(data.errors.displayname);
               } else {
                 showAlert('No errors found');
               }
