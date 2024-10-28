@@ -32,7 +32,6 @@ document.getElementById("verify-email").addEventListener("click", async (e) => {
     const error_json = await result.json();
     console.log(error_json);
     showAlert(error_json.otp ? error_json.otp : error_json.detail);
-    document.getElementById("codeForm").classList.add("is-invalid");
   }
 });
 
