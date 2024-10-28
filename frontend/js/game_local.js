@@ -46,11 +46,10 @@ function start_game(match_id) {
         } else if (jsonData.type === "player_scores") {
           leftPlayerScore = jsonData.player1;
           rightPlayerScore = jsonData.player2;
-          console.log(
-            "Received player scores:",
-            leftPlayerScore,
-            rightPlayerScore
-          );
+          try {
+            document.getElementById("left-score").innerHTML = leftPlayerScore;
+            document.getElementById("right-score").innerHTML = rightPlayerScore;
+          } catch (error) {}
         } else if (jsonData.type === "game_over") {
           matchSocket.close();
           document.removeEventListener("keydown", key_down, false);
@@ -258,14 +257,12 @@ function start_game(match_id) {
         }
         break;
       case "KeyO":
-        event.preventDefault(); // Prevent default behavior
         if (move_up_player_2) {
           move_up_player_2 = false;
           stateChangedPlayer2 = true;
         }
         break;
       case "KeyL":
-        event.preventDefault(); // Prevent default behavior
         if (move_down_player_2) {
           move_down_player_2 = false;
           stateChangedPlayer2 = true;
@@ -290,10 +287,6 @@ function start_game(match_id) {
     moveElement("left-pad", "left-pad-filter", leftPaddle.x, leftPaddle.y);
     moveElement("right-pad", "right-pad-filter", rightPaddle.x, rightPaddle.y);
 
-    try {
-      document.getElementById("left-score").innerHTML = leftPlayerScore;
-      document.getElementById("right-score").innerHTML = rightPlayerScore;
-    } catch (error) {}
 
     //   drawPaddle(leftPaddle);
     //   drawPaddle(rightPaddle);
