@@ -1,2 +1,0 @@
-nginx.conf = /etc/nginx
-default.conf = /etc/nginx/http.d
