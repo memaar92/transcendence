@@ -20,8 +20,6 @@ class Check2FA(permissions.BasePermission):
                 # Decode the token
                 payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
                 # Check if '2fa' in payload is None or True
-                print("Is2fa")
-                print(payload.get('2fa'))
                 if payload.get('2fa') in [0, 2]:
                     return True
             except jwt.ExpiredSignatureError:

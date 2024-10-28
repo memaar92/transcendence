@@ -36,7 +36,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_superuser = models.BooleanField(default=False)
     is_42_auth = models.BooleanField(default=False)
     email_verified = models.BooleanField(default=False)
-    totp_secret = models.CharField(max_length=32, blank=True, null=True)
+    totp_secret = models.CharField(max_length=256, blank=True, null=True)
     is_2fa_enabled = models.BooleanField(default=False)
     #created_at = models.DateTimeField(auto_now_add=True)
 

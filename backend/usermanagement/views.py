@@ -18,7 +18,7 @@ from django.middleware import csrf
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, inline_serializer, OpenApiResponse
 from drf_spectacular.types import OpenApiTypes
 from .permissions import IsSelf, Check2FA
-from utils.utils import get_tokens_for_user, send_otp_email
+from utils.utils import get_tokens_for_user, send_otp_email, encrypt_totp_secret, decrypt_totp_secret
 from utils.mixins import CookieCreationMixin
 import pyotp
 import qrcode
@@ -259,10 +259,12 @@ class TOTPSetupView(APIView):
 
         user_profile = get_object_or_404(CustomUser, id=user_id)
         if not user_profile.totp_secret:
-            user_profile.totp_secret = pyotp.random_base32()
+            raw_totp_secret = pyotp.random_base32()
+            encrypted_totp_secret = encrypt_totp_secret(raw_totp_secret)
+            user_profile.totp_secret = encrypted_totp_secret
             user_profile.save()
 
-        totp = pyotp.TOTP(user_profile.totp_secret)
+        totp = pyotp.TOTP(decrypt_totp_secret(user_profile.totp_secret))
         uri = totp.provisioning_uri(request.user.displayname, issuer_name="Transcendence_Pongo")
         qr = qrcode.make(uri)
         buffered = BytesIO()
@@ -320,7 +322,7 @@ class TOTPVerifyView(APIView, CookieCreationMixin):
         user = get_object_or_404(CustomUser, id=user_id)
         serializer = TOTPVerifySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        totp = pyotp.TOTP(user.totp_secret)
+        totp = pyotp.TOTP(decrypt_totp_secret(user.totp_secret))
 
         if totp.verify(serializer.validated_data['code_2fa']):
             if not user.is_2fa_enabled:
