@@ -318,6 +318,9 @@ function local_match_callback(message) {
     console.log(message)
     console.log("Starting game with match id", message.match_id)
     start_game(message.match_id)
+  } else if (message.message == "registered to tournament") {
+    showAlert(message.message);
+    router.navigate("/main_menu")
   }
 }
 
