@@ -6,15 +6,14 @@ const userdata = await r.json();
 
 // Function to play sound
 function playPaddleCollisionSound() {
-    const audio = new Audio('../audio/sound2.mp3');
+    const audio = new Audio('../audio/paddle.mp3');
     audio.play();
   }
 
 function playWallCollisionSound() {
-    const audio = new Audio('../audio/sound.mp3');
+    const audio = new Audio('../audio/wall.mp3');
     audio.play();
   }
-
 
 function start_game(match_id) {
   let is_local_match = false;
