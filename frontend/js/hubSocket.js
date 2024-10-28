@@ -27,7 +27,12 @@ class HubSocket {
         this.socket = null;
     }
 
-    send(message) {
+    async send(message) {
+        if (this.socket.readyState === WebSocket.CONNECTING) {
+            await new Promise((resolve) => {
+              this.socket.onopen = () => resolve();
+            });
+          }
         this.socket.send(JSON.stringify(message));
     }
 
