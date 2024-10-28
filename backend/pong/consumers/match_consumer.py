@@ -117,10 +117,10 @@ class MatchConsumer(AsyncWebsocketConsumer):
             logger.debug(f"User {self._user_id} is not part of match {self._match_id}")
             return False
 
-        # User is already connected to a match or tournament
-        if User.is_user_connected_to_match(self._user_id, self._match_id):
-            logger.debug(f"User {self._user_id} is already connected to a match")
-            return False
+        # # User is already connected to a match or tournament
+        # if User.is_user_connected_to_match(self._user_id, self._match_id):
+        #     logger.debug(f"User {self._user_id} is already connected to a match")
+        #     return False
         
         # Is the user blocked to connect to the match
         if User.is_user_blocked(self._user_id, self._match_id):

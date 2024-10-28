@@ -4,8 +4,6 @@ import { router } from "./app.js";
 const result = await api.get("/games/");
 const games = await result.json();
 
-(games);
-
 document.getElementById("back").addEventListener("click", async (e) => {
   router.navigate("/main_menu");
 });
@@ -22,7 +20,10 @@ async function tableCreate() {
     cell.colSpan = 5;
   }
   
-  document.getElementById("games").textContent = games.length
+  const gameDisp = document.getElementById("games");
+  if (!gameDisp) return;
+  gameDisp.textContent = games.length
+
   let wins = 0;
   let losses = 0;
 
@@ -60,8 +61,13 @@ async function tableCreate() {
     let date = new Date(games[i]["created_at"]);
     row.insertCell(4).textContent = date.toLocaleString("en-US");
   }
-  document.getElementById("wins").textContent = wins;
-  document.getElementById("losses").textContent = losses;
+  const winDisp = document.getElementById("wins");
+  if (!winDisp) return;
+  winDisp.textContent = wins
+
+  const lossDisp = document.getElementById("losses");
+  if (!lossDisp) return;
+  lossDisp.textContent = losses;
 }
 
 await tableCreate();

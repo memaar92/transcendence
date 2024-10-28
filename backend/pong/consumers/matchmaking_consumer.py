@@ -203,6 +203,21 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             'match_id': match_id
         }))
 
+    async def local_match_ready(self, event: dict) -> None:
+        '''Handle the remote_match_ready message'''
+
+        # Check if the current connection is the active connection (Current tab in the browser)
+        logger.debug(f"Received local_match_ready event: {event}")
+        if not self._is_active_connection():
+            return
+
+        match_id = event['match_id']
+        await self.send(text_data=json.dumps({
+            'type': 'local_match_ready',
+            'match_id': match_id
+        }))
+
+
     async def tournament_cancelled(self, event: dict) -> None:
         '''Handle the tournament_cancelled message'''
         logger.debug(f"Received tournament_cancelled event: {event}")

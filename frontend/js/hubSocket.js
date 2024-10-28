@@ -27,7 +27,13 @@ class HubSocket {
         this.socket = null;
     }
 
-    send(message) {
+    async send(message) {
+        if (this.socket.readyState === WebSocket.CONNECTING) {
+            await new Promise((resolve) => {
+                this.socket.onopen = () => resolve();
+            });
+        }
+
         this.socket.send(JSON.stringify(message));
     }
 
@@ -51,6 +57,11 @@ class HubSocket {
             window.localStorage.setItem("game_id", data.match_id);
             router.navigate("/game");
         }
+
+        // if (data.type == "match_in_progress") {
+        //     console.log("Match in progress noted in hub");
+        //     router.navigate("/game_local")
+        // }
 
         if (this.callbackFunction)
         {

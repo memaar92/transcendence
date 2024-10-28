@@ -6,6 +6,8 @@ function game_start(message) {
     localStorage.removeItem("tournament_games");
     window.localStorage.setItem("game_id", message.match_id);
     router.navigate("/game");
+  } else if (!message.queue_registered && message.message == "registered to match") {
+    router.navigate("/game");
   } else if (!message.queue_registered && message.message) {
     showAlert(message.message);
     router.navigate("/main_menu");

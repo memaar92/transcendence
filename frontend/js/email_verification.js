@@ -1,5 +1,6 @@
 import { api } from "./api.js";
 import { router } from "./app.js";
+import { showAlert } from "./app.js";
 
 function getCodeInputValues() {
   const inputs = document.querySelectorAll(".code-input");
@@ -28,7 +29,9 @@ document.getElementById("verify-email").addEventListener("click", async (e) => {
   if (result.ok) {
     router.navigate("/player_creation");
   } else {
-    document.getElementById("codeForm").classList.add("is-invalid");
+    const error_json = await result.json();
+    console.log(error_json);
+    showAlert(error_json.otp ? error_json.otp : error_json.detail);
   }
 });
 
@@ -38,12 +41,8 @@ document.getElementById("resend").addEventListener("click", async (e) => {
     id: localStorage.getItem("uid"),
   });
   if (!result.ok) {
-    document.getElementById("tooManyRequests").classList.remove("d-none");
-    const errorResponse = await result.json();
-    document.getElementById("errorText").textContent = await errorResponse[
-      "detail"
-    ];
-    document.getElementById("resend").classList.add("is-invalid");
+    const error_json = await result.json();
+    showAlert(error_json.otp ? error_json.otp : error_json.detail);
   }
 });
 

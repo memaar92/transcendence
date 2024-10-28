@@ -4,7 +4,7 @@ import { hubSocket, router, showAlert } from "./app.js";
 const r = await api.get("/profile/");
 
 function start_game(match_id) {
-  let is_local_match = false;
+  let is_local_match = true;
   let user_id_p1 = null;
   let user_id_p2 = null;
 
@@ -46,16 +46,15 @@ function start_game(match_id) {
         } else if (jsonData.type === "player_scores") {
           leftPlayerScore = jsonData.player1;
           rightPlayerScore = jsonData.player2;
-          console.log(
-            "Received player scores:",
-            leftPlayerScore,
-            rightPlayerScore
-          );
+          try {
+            document.getElementById("left-score").innerHTML = leftPlayerScore;
+            document.getElementById("right-score").innerHTML = rightPlayerScore;
+          } catch (error) {}
         } else if (jsonData.type === "game_over") {
           matchSocket.close();
           document.removeEventListener("keydown", key_down, false);
           document.removeEventListener("keyup", key_up, false);
-          localStorage.setItem("win", false);
+          localStorage.setItem("local", true);
           router.navigate("/endscreen");
         } else if (jsonData.type === "user_mapping") {
           is_local_match = jsonData.is_local_match;
@@ -220,14 +219,12 @@ function start_game(match_id) {
         }
         break;
       case "KeyO": // 'O' key
-        event.preventDefault(); // Prevent default behavior
         if (!move_up_player_2) {
           move_up_player_2 = true;
           stateChangedPlayer2 = true;
         }
         break;
       case "KeyL": // 'L' key
-        event.preventDefault(); // Prevent default behavior
         if (!move_down_player_2) {
           move_down_player_2 = true;
           stateChangedPlayer2 = true;
@@ -258,14 +255,12 @@ function start_game(match_id) {
         }
         break;
       case "KeyO":
-        event.preventDefault(); // Prevent default behavior
         if (move_up_player_2) {
           move_up_player_2 = false;
           stateChangedPlayer2 = true;
         }
         break;
       case "KeyL":
-        event.preventDefault(); // Prevent default behavior
         if (move_down_player_2) {
           move_down_player_2 = false;
           stateChangedPlayer2 = true;
@@ -290,10 +285,6 @@ function start_game(match_id) {
     moveElement("left-pad", "left-pad-filter", leftPaddle.x, leftPaddle.y);
     moveElement("right-pad", "right-pad-filter", rightPaddle.x, rightPaddle.y);
 
-    try {
-      document.getElementById("left-score").innerHTML = leftPlayerScore;
-      document.getElementById("right-score").innerHTML = rightPlayerScore;
-    } catch (error) {}
 
     //   drawPaddle(leftPaddle);
     //   drawPaddle(rightPaddle);
@@ -321,10 +312,17 @@ function local_match_callback(message) {
   if (message.error_message) {
     showAlert(message.error_message);
     router.navigate("/main_menu")
-  } else if (message.local_match_created) {
+  } else if (message.type === "local_match_ready") {
     console.log(message)
+    console.log("Starting game with match id", message.match_id)
+    start_game(message.match_id)
+  } else if (message.message == "registered to tournament") {
+    showAlert(message.message);
+    router.navigate("/main_menu")
   }
 }
 
 hubSocket.registerCallback(local_match_callback)
-hubSocket.send({type: "local_match_create"})
+await new Promise(resolve => setTimeout(resolve, 200));
+await hubSocket.send({type: "local_match_create"})
+

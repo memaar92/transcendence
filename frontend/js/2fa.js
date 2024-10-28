@@ -8,8 +8,7 @@ document.getElementById("code-form-submit").addEventListener("click", async (e) 
     code_2fa: document.getElementById("code").value
   });
   const user_info = await result.json();
-  (user_info);
-  if (result.ok) {
+  if (result && result.ok) {
       router.navigate("/main_menu");
   } else {
     showAlert(user_info["code_2fa"] ? user_info["code_2fa"] : user_info["detail"], "alert-danger");

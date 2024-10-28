@@ -1,5 +1,6 @@
 import { api } from "./api.js";
 import { hubSocket, router } from "./app.js";
+import { showAlert } from "./app.js";
 import  ChatHandler  from "./chatHandler.js";
 
 await update_userinfo()
@@ -46,7 +47,7 @@ document.getElementById("content").addEventListener('click', async function (eve
         await result.json()
           .then(data => {
             if (data.errors) {
-              showAlert(JSON.stringify(data.errors));
+              showAlert(data.errors.displayname);
             } else {
               showAlert('No errors found');
             }
@@ -66,7 +67,7 @@ document.getElementById("content").addEventListener('click', async function (eve
           await result.json()
             .then(data => {
               if (data.errors) {
-                showAlert(JSON.stringify(data.errors));
+                showAlert(data.errors.email);
               } else {
                 showAlert('No errors found');
               }
@@ -87,7 +88,7 @@ document.getElementById("content").addEventListener('click', async function (eve
           await result.json()
             .then(data => {
               if (data.errors) {
-                showAlert(JSON.stringify(data.errors));
+                showAlert(data.errors);
               } else {
                 showAlert('No errors found');
               }
@@ -180,29 +181,14 @@ document.addEventListener('click', async function (event) {
             modalContainer.remove();
         }
     }
-    const result = await api.delete("/profile/");
+    hubSocket.close();
+    const chatHandler = ChatHandler.getInstance();
+    await chatHandler.logout();
+    await api.delete("/profile/");
+    await api.post("/token/logout/")
     router.navigate("/home");
-    event.preventDefault();
   }
 });
-
-function showAlert(message) {
-  const alertContainer = document.getElementById('alertContainer');
-  
-  const alertElement = document.createElement('div');
-  alertElement.classList.add('alert', 'alert-danger', 'alert-dismissible', 'fade', 'show');
-  alertElement.setAttribute('role', 'alert');
-  
-  alertElement.innerHTML = `
-    ${message}
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-  `;
-  
-  alertContainer.appendChild(alertElement);
-  
-  // Initialize the Bootstrap alert
-  new bootstrap.Alert(alertElement);
-}
 
 function resetButtons(form, editBtn, confirmBtn, cancelBtn) {
   form.querySelector('input').disabled = true;
