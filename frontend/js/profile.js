@@ -172,7 +172,6 @@ document.getElementById("deleteModal").addEventListener('click', async function 
 
 
 document.addEventListener('click', async function (event) {
-  event.preventDefault();  
   if (event.target && event.target.id === 'confirmDeletion') {
     const modalContainer = document.querySelector('.modal.fade');
     if (modalContainer) {
