@@ -19,6 +19,8 @@ class Ball:
         self._direction: Vector2 = direction
         self._base_speed: float = speed
         self._current_speed: float = speed
+        self._wall_collision = False
+        self._paddle_collision = False
         self._size: int = size
         self._start_pos: Vector2 = position.copy()
         self._time_alive: float = 0
@@ -32,7 +34,8 @@ class Ball:
 
     def move(self, delta_time: float) -> None:
         """Update the ball's position based on its speed and direction."""
-
+        self._wall_collision = False
+        self._paddle_collision = False
         # Update the ball's speed based on how long it has been alive
         self._current_speed = self._base_speed + self._time_alive * SPEED_MULTIPLIER
         movement_vector = self._direction * self._current_speed * delta_time
@@ -41,14 +44,17 @@ class Ball:
         if self._is_colliding_with_wall(new_position):
             movement_vector.y *= -1
             self._direction.y *= -1
+            self._wall_collision = True
         elif self._is_colliding(new_position):
             for collider in self._collided_with_list:
                 self._redirect_based_on_collider(collider)
             movement_vector = self._direction * self._current_speed * delta_time
             new_position = self._position + movement_vector
+            self._paddle_collision = True
             if self._is_colliding_with_wall(new_position):
                 movement_vector.y *= -1
                 self._direction.y *= -1
+                self._wall_collision = True
 
         self._position += movement_vector
         self._time_alive += delta_time
@@ -59,6 +65,8 @@ class Ball:
         self._direction = degree_to_vector(45) * (-1 if self._direction.x < 0 else 1)
         self._current_speed = self._base_speed
         self._time_alive = 0
+        self._wall_collision = False
+        self._paddle_collision = False
 
     def _is_colliding(self, position: Vector2) -> bool:
         """Check if the ball is colliding with a collider object."""
@@ -100,6 +108,14 @@ class Ball:
     def get_position(self) -> Vector2:
         '''Get the position of the ball'''
         return self._position
+
+    def get_wall_collision(self) -> bool:
+        '''Get the position of the ball'''
+        return self._wall_collision
+
+    def get_paddle_collision(self) -> bool:
+        '''Get the position of the ball'''
+        return self._paddle_collision
 
     def get_size(self) -> int:
         '''Get the size of the ball'''

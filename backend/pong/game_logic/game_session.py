@@ -57,14 +57,18 @@ class GameSession:
         left_paddle_position = self.paddle_left.get_position()
         right_paddle_position = self.paddle_right.get_position()
         ball_position = self.ball.get_position()
-        byte_array = bytearray(24)
+        wall_collision = self.ball.get_wall_collision()
+        paddle_collision = self.ball.get_paddle_collision()
+        byte_array = bytearray(26)
         struct.pack_into('<f', byte_array, 0, left_paddle_position.x)
         struct.pack_into('<f', byte_array, 4, left_paddle_position.y)
         struct.pack_into('<f', byte_array, 8, right_paddle_position.x)
         struct.pack_into('<f', byte_array, 12, right_paddle_position.y)
         struct.pack_into('<f', byte_array, 16, ball_position.x)
         struct.pack_into('<f', byte_array, 20, ball_position.y)
-
+# Pack the boolean values as bytes
+        struct.pack_into('<B', byte_array, 24, int(wall_collision))
+        struct.pack_into('<B', byte_array, 25, int(paddle_collision))
         return byte_array
 
     def to_dict(self):
