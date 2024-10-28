@@ -321,10 +321,12 @@ function local_match_callback(message) {
   if (message.error_message) {
     showAlert(message.error_message);
     router.navigate("/main_menu")
-  } else if (message.local_match_created) {
+  } else if (message.type === "local_match_ready") {
     console.log(message)
+    start_game(message.match_id)
   }
 }
 
 hubSocket.registerCallback(local_match_callback)
-hubSocket.send({type: "local_match_create"})
+await hubSocket.send({type: "local_match_create"})
+

@@ -38,7 +38,7 @@ class MatchSessionHandler:
             raise ValueError(f"registered to match")
         match = await cls.create_match(user_id, None, cls.remove_match)
         match_id = match.get_id()
-        await cls.send_match_ready_message(match_id, user_id, None)
+        await cls.send_local_match_ready_message(match_id, user_id)
 
         logger.debug(f"Local match created: {user_id}")
 
@@ -85,6 +85,13 @@ class MatchSessionHandler:
                 await cls._send_remote_match_ready_message(match_id, user2, user1)
 
     @classmethod
+    async def send_local_match_ready_message(cls, match_id: str, user1: str) -> None:
+        '''Send a match ready message to both users'''
+        match = Matches.get_match(match_id)
+        if match:
+            await cls._send_local_match_ready_message(match_id, user1)
+
+    @classmethod
     def remove_from_matchmaking_queue(cls, user_id: int) -> None:
         '''Remove a user from the matchmaking queue'''
         is_removed = MatchmakingQueue.remove_from_queue(user_id)
@@ -101,5 +108,17 @@ class MatchSessionHandler:
                 'type': 'remote_match_ready',
                 'match_id': match_id,
                 'opponent_id': opponent_id
+            }
+        )
+
+    @classmethod
+    async def _send_local_match_ready_message(cls, match_id: str, user_id: int) -> None:
+        '''Send a match ready message to a user'''
+        channel_layer = get_channel_layer()
+        await channel_layer.group_send(
+            f"mm_{user_id}",
+            {
+                'type': 'local_match_ready',
+                'match_id': match_id,
             }
         )
