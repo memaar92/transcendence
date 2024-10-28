@@ -3,6 +3,17 @@ import { hubSocket, router, showAlert } from "./app.js";
 
 const r = await api.get("/profile/");
 
+// Function to play sound
+function playPaddleCollisionSound() {
+    const audio = new Audio('../audio/paddle.mp3');
+    audio.play();
+  }
+
+function playWallCollisionSound() {
+    const audio = new Audio('../audio/wall.mp3');
+    audio.play();
+  }
+
 function start_game(match_id) {
   let is_local_match = true;
   let user_id_p1 = null;
@@ -81,6 +92,17 @@ function start_game(match_id) {
       const player2PosY = view.getFloat32(12, true) * 100;
       const ballPosX = view.getFloat32(16, true) * 100;
       const ballPosY = view.getFloat32(20, true) * 100;
+      const wallCollisionByte = view.getUint8(24);
+      const paddleCollisionByte = view.getUint8(25);
+
+      const wallCollision = wallCollisionByte === 1;
+      const paddleCollision = paddleCollisionByte === 1;
+
+      if (wallCollision) {
+        playWallCollisionSound();
+      } else if (paddleCollision) {
+        playPaddleCollisionSound();
+      }
 
       // Update the paddles and ball
       leftPaddle.x = player1PosX;
