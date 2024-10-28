@@ -3,7 +3,6 @@ import json
 import redis
 from django.conf import settings
 
-# add checks for token validity?
 class AuthorizationMiddleware:
     def __init__(self, get_response=None):
         self.get_response = get_response
@@ -26,7 +25,6 @@ class UserStateMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        # Example of updating user state in Redis
         if request.user.is_authenticated:
             redis_instance.set(f"user:{request.user.id}:state", "online", ex=3600)  # 1 hour expiration
 

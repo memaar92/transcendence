@@ -1,1 +1,1 @@
-#default_app_config = 'usermanagement.apps.MyAppConfig' #does not seem to be needed
+#default_app_config = 'usermanagement.apps.MyAppConfig'

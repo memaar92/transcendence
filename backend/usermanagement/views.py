@@ -35,39 +35,13 @@ OTP_LOCK_TIME = 300
 OTP_LIFETIME = 300
 
 
-#TO DO: add a cron job that regularly deletes users that have not verified their email within a certain time frame
-#TO DO: add a cron job that regularly deletes expired tokens from the blacklist
-
-
-#everywhere where access token is sent, if expired --> 401 / detail: token expired
-#out of the box:
-'''
-{
-    "detail": "Given token not valid for any token type",
-    "code": "token_not_valid",
-    "messages": [
-        {
-            "token_class": "AccessToken",
-            "token_type": "access",
-            "message": "Token is invalid or expired"
-        }
-    ]
-}
-'''
-
-
 class CreateUserView(generics.CreateAPIView):
-    # Discussion with Wayne:
-    # (maybe differentiate between email and pw error)
-    # TO DO: integrate backend library for pw checking
-
     queryset = CustomUser.objects.all()
     serializer_class = UserCreateSerializer
     permission_classes = [AllowAny]
 
 
 class EditUserView(generics.RetrieveUpdateDestroyAPIView):
-    # not discussed with Wayne yet
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated, IsSelf, Check2FA]
     http_method_names = ['patch', 'delete', 'get']
@@ -144,7 +118,6 @@ class EditUserView(generics.RetrieveUpdateDestroyAPIView):
             'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 class UserView(APIView):
-    # not discussed with Wayne yet
     permission_classes = [IsAuthenticated, Check2FA]
 
     @extend_schema(
@@ -207,7 +180,6 @@ class GameHistoryListUser(APIView):
         return Response(games_serializer.data)
 
 class ProfilePictureDeleteView(APIView):
-    # not discussed with Wayne yet
     permission_classes = [IsAuthenticated, IsSelf, Check2FA]
 
     def get_object(self):
@@ -224,9 +196,9 @@ class ProfilePictureDeleteView(APIView):
         default_picture = 'default.png'  # The default profile picture filename
         profile_pic_path = user.profile_picture.path
 
-        if user.profile_picture.name != f'profile_pics/{default_picture}':  # Check if it's not the default picture
+        if user.profile_picture.name != f'profile_pics/{default_picture}':
             if os.path.exists(profile_pic_path):
-                os.remove(profile_pic_path)  # Delete the file if it exists
+                os.remove(profile_pic_path)
 
                 # Update the profile picture to the default one
                 user.profile_picture.name = f'profile_pics/{default_picture}'
@@ -235,7 +207,6 @@ class ProfilePictureDeleteView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 class TOTPSetupView(APIView):
-    # not discussed with Wayne yet
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
@@ -250,7 +221,6 @@ class TOTPSetupView(APIView):
     )
 
     def get(self, request):
-# Get the token from the header
         auth_header = request.headers.get('Authorization')
         token = auth_header.split(' ')[1]
         # Decode the token to get the user ID
@@ -301,15 +271,11 @@ class TOTPVerifyView(APIView, CookieCreationMixin):
     )
 
     def post(self, request):
-        # Get the token from the header
         auth_header = request.headers.get('Authorization')
         token = auth_header.split(' ')[1]
         # Decode the token to get the user ID
         decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
        
-        #refresh_token = request.data['refresh']
-        #if not refresh_token:
-        #    return Response({'detail': 'Refresh token not provided'}, status=400)
         try:
             refresh_token = request.COOKIES.get("refresh_token")
             old_refresh_token = RefreshToken(refresh_token)
@@ -344,13 +310,6 @@ class TOTPVerifyView(APIView, CookieCreationMixin):
 
 class CustomTokenObtainPairView(TokenObtainPairView, CookieCreationMixin):
 
-    # discussion with Wayne: 
-    # 1. Successful login --> 200 / access and refresh tokens as cookies DONE
-    # 2. User not found --> 404 / description (user not found) Q: In what case is this even triggered?
-    # 3. Invalid credentials --> 401 / (No active account found with the given credentials) Out of the box: no differentiation between email and pw error
-    # check if email is verified? (kinda already done when frontend checks if email is verified, but still if someone manages to call the login endpoint directly...)
-
-
     @extend_schema(
         responses={
             (200, 'application/json'): {
@@ -375,9 +334,9 @@ class CustomTokenObtainPairView(TokenObtainPairView, CookieCreationMixin):
         token = serializer.validated_data
         response = Response(token, status=200)
         user = CustomUser.objects.get(email=request.data['email'])
-        user_profile = get_object_or_404(CustomUser, email=user) # in what case is this even triggered?
+        user_profile = get_object_or_404(CustomUser, email=user)
         self.createCookies(response)
-        csrf.get_token(request) #probably set by TokenObtainPairView or middleware already?
+        csrf.get_token(request)
 
         if user_profile.is_2fa_enabled:
             response.data = {'detail': 'Access and refresh tokens successfully created', '2fa': 1}
@@ -550,7 +509,6 @@ class ValidateEmailView(APIView, CookieCreationMixin):
                     'detail': {'type': 'string', 'enum': ['Successfully verified']},
                 },
             },
-            # is there a better way to represent the different error messages with drf spectatular?
             (400, 'application/json'): {
                 'type': 'object',
                 'properties': {
@@ -663,7 +621,6 @@ class GetUserIdFromDisplayNameView(APIView):
     def get(self, request, displayname):
         try:
             user = CustomUser.objects.get(displayname=displayname)
-            # trow error if the requested user is the same as the logged in user
             if user.id == request.user.id:
                 raise ValidationError('You cannot request your own user id')
             return Response({'user_id': user.id}, status=status.HTTP_200_OK)
