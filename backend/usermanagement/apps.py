@@ -5,7 +5,6 @@ class UsermanagementConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'usermanagement'
 
-    # still a bit buggy as on startup 5 process are started. So this gets ececuted 5 times
     def ready(self):
         self.adjectives = self.getWords('adjectives.txt')
         self.nouns = self.getWords('nouns.txt')
