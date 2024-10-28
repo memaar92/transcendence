@@ -89,6 +89,7 @@ class MatchSession:
             winner = self._connected_users.pop()
             self._score[self._player_mapping[winner]] = SCORE_LIMIT
             await self._match_finished(self._match_id, winner)
+            winner = self._player_mapping[winner]
             logger.debug("Match ended due to disconnect timeout")
         elif reason == EndReason.MATCH_CONNECT_TIMEOUT:
             await self._match_finished(self._match_id, None)
@@ -104,6 +105,7 @@ class MatchSession:
             winner = self._connected_users.pop()
             self._score[self._player_mapping[winner]] = SCORE_LIMIT
             await self._match_finished(self._match_id, winner)
+            winner = self._player_mapping[winner]
         elif reason == EndReason.SCORE:
             winner = max(self._score, key=self._score.get)
             await self._match_finished(self._match_id, winner)
@@ -166,7 +168,6 @@ class MatchSession:
                 winner_user_id = self._playerID_to_userID(winner)
             else:
                 winner_user_id = None
-
             if asyncio.iscoroutinefunction(self._on_match_finished):
                 await self._on_match_finished(match_id, winner_user_id)
             else:
