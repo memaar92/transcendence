@@ -26,7 +26,7 @@ console.log(tournament_json);
 document.getElementById("name").innerHTML = tournament_name;
 const sorted_table = Object.keys(tournament_json).map((key) => [key, tournament_json[key]]).sort((a, b) =>  b[1] - a[1]);
 
-const winnner = document.getElementById("winner");
+const winner = document.getElementById("winner");
 winner.innerHTML = await getUsername(sorted_table[0][0]);
 const looser = document.getElementById("looser");
 looser.innerHTML = await getUsername(sorted_table[sorted_table.length - 1][0]);
