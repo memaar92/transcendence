@@ -62,5 +62,5 @@ class RelationshipStatusView(APIView):
                 )
             return JsonResponse({"relationship": relationship_dict}, status=200)
         except Exception as e:
-            print(e)
+            #print(e)
             return JsonResponse({"error": str(e)}, status=400)

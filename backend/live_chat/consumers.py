@@ -174,11 +174,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
         if self.scope['user'] and not isinstance(self.scope['user'], AnonymousUser):
-            print(f"Client connected: {self.scope['user']}")
-            print(f"User ID: {self.scope['user'].id}")
             await self.accept()
         else:
-            print("Client not authenticated")
             await self.close()
             return
         self.user_id = str(self.scope['user'].id)
@@ -219,7 +216,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         data = json.loads(text_data)
-        print(f"Received message: {data}")
 
         try:
             if data.get('context', None) == 'setup':
@@ -296,11 +292,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
     
     async def handleChatContext(self, data):
         message_type = data.get('type', None)
-        print(f"Handling chat context message: {data}")
         try:
             receiver_id = await self.get_user_id_from_displayname(data.get('receiver_id'))
         except Exception as e:
-            print(f"Error getting receiver ID: {e}")
             await self.send(text_data=json.dumps({
                 'type': 'error',
                 'message': f'Error getting receiver ID: {str(e)}'
@@ -322,7 +316,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             error_message = f"Error handling message in chat context: {str(e)}"
             error_traceback = traceback.format_exc()
-            print(f"{error_message}\n{error_traceback} for user {self.user_id}")
 
     async def send_latest_message(self):
         friends = await self.get_friends_list(self.user_id)
@@ -340,7 +333,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         })
 
     async def chat_message(self, data, receiver_id):
-        print(f"Chat message from {data['sender_id']} to {receiver_id}")
         sender_id = data.get('sender_id')
         message = data.get('message')
         timestamp = data.get('timestamp')
@@ -360,7 +352,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 }))
                 return
             # elif receiver_id in self.online_users:
-            print(f"Sending message to {receiver_id}")
             await self.send_message_to_user(receiver_id, {
                 'message': message,
                 'timestamp': timestamp,
@@ -371,7 +362,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             error_message = f"Error sending message: {str(e)}"
             error_traceback = traceback.format_exc()
-            print(f"{error_message}\n{error_traceback} for user {self.user_id}")
             await self.send(text_data=json.dumps({
                 'type': 'error',
                 'message': error_message,
@@ -431,7 +421,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def update_messages_status(self, sender_id, receiver_id):
-        print(f"Updating messages status for {sender_id} and {receiver_id}")
         Message.objects.filter(Q(sender_id=receiver_id, receiver_id=sender_id)).update(status='read')
 
     @database_sync_to_async
@@ -510,7 +499,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             try:
                 friend_user = user_model.objects.get(id=friend_id)
             except user_model.DoesNotExist:
-                print(f"User with id {friend_id} does not exist")
                 continue
 
             friend_list.append({
@@ -558,7 +546,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             user_id = decoded_data['user_id']
             return user_id
         except (InvalidToken, TokenError) as e:
-            print(f"Error decoding token: {e}")
             return None
 
     @database_sync_to_async

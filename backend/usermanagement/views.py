@@ -110,7 +110,6 @@ class EditUserView(generics.RetrieveUpdateDestroyAPIView):
     def patch(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=True)
-        print(serializer)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -490,8 +489,8 @@ class GenerateOTPView(APIView):
         cache.incr(otp_attempts_key)
 
         #send email with otp // for testing this is disabled and the otp is printed in the console
-        #send_otp_email(user_profile.email, otp)
-        print("send email with otp", otp)
+        send_otp_email(user_profile.email, otp)
+        #print("send email with otp", otp)
 
         return Response({'detail': 'OTP generated successfully', 'id': user_profile.id, 'email': user_profile.email}, status=200)
 

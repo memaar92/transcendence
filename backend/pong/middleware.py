@@ -20,19 +20,14 @@ class JWTAuthMiddleware(BaseMiddleware):
 
         # Extract token from cookies
         for cookie in cookies.split(';'):
-            # print(f"Cookie: {cookie}")
             if 'access_token' in cookie:
-                # print(f"Found access token: {cookie}")
                 token = cookie.split('=')[-1]
-                # print(f"Token: {token}")
                 break
 
         if token:
             try:
                 # Decode the token to get user data
-                # print(f"Trying to decode token: {token}")
                 payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-                # print(f"Payload: {payload}")
                 scope['user'] = await self.get_user(payload['user_id'])
                 print(f"User: {scope['user']}")
             except jwt.ExpiredSignatureError:
