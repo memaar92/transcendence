@@ -15,7 +15,7 @@ up:
 	docker-compose up -d
 
 build: set_ip
-	docker-compose up --build
+	docker-compose up --build -d
 
 it:
 	docker-compose up
