@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pong Game</title>
+    <style>
+    </style>
+    {% load static %}
+</head>
+<style>
+        /* Overlay styles */
+.overlay {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1000; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(0,0,0,0.5); /* Black w/ opacity */
+}
+
+.overlay-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+#overlay-close-button {
+    margin-top: 10px;
+}
+</style>
+<body>
+    
+    <div id="overlay" class="overlay">
+        <div class="overlay-content">
+            <p id="overlay-message"></p>
+            <button id="overlay-close-button">Close</button>
+        </div>
+    </div>
+    <button id="create-local-match-button">Create Local Match</button>
+    <button id="join-queue-button">Join Queue</button>
+    <button id="cancel-queue-button" style="display: none;">Cancel Queue</button>
+    <button id="reconnectButton" style="display: none;">Reconnect</button>
+    <button id="connectToMatchButton" style="display: none;">Connect to Match</button>
+
+    <!-- Load matchmaking.js as a module -->
+    <script type="module" src="{% static 'matchmaking.js' %}"></script>
+
+    <!-- Load match.js as a module (if it uses ES6 imports/exports) -->
+    <script type="module" src="{% static 'match.js' %}"></script>
+</body>
+</html>

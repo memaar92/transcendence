@@ -1,0 +1,712 @@
+# WebSocket messages definition with separation of backend and frontend message types
+
+# Matchmaking socket: backend -> frontend.
+backend_matchmaking_messages_schema:
+  tournament_starting:
+    description: |
+      Sent when a tournament is started.
+      (Active connection only)"
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["tournament_starting"]
+        example: "tournament_starting"
+    required:
+      - type
+
+    frontend_processing:
+      description: |
+        Inform the user that the tournament is starting.
+
+  tournament_canceled:
+    description: |
+      Sent when a tournament is canceled.
+      (Active connection only)"
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["tournament_canceled"]
+        example: "tournament_canceled"
+      tournament_id:
+        type: string
+        example: "tournament1"
+    required:
+      - type
+      - tournament_id
+
+    frontend_processing:
+      description: |
+        Inform the user that the tournament was canceled.
+
+  remote_match_ready:
+    description: |
+      Sent when a match is ready to start.
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["remote_match_ready"]
+        example: "remote_match_ready"
+      match_id:
+        type: string
+        example: "match1"
+      opponent_id:
+        type: string
+        example: "user_id"
+    required:
+      - type
+      - match_id
+      - opponent_id # Could be used to display the opponents name
+
+    frontend_processing:
+      description: |
+        Inform the user that the match is ready to start.
+        Then, the user can choose to start the match.
+
+  match_in_progress:
+    description: |
+      Inform the user that he has a match in progress.
+      Will be sent when he is not connected to the running match.
+      (Active connection only)"
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["match_in_progress"]
+        example: "match_in_progress"
+      match_id:
+        type: string
+        example: "match1"
+      opponent_id:
+        type: string
+        example: "user_id"
+    required:
+      - type
+      - match_id
+      - opponent_id # Could be used to display the opponents name
+
+    frontend_processing:
+      description: |
+        Inform the user that he has a match in progress and
+        offer the option to reconnect to the match.
+
+  tournament_finished:
+    description: |
+      Sent when a tournament is finished.
+      (Active connection only)"
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["tournament_finished"]
+        example: "tournament_finished"
+      tournament_name:
+        type: string
+        example: "tournament1"
+      user_scores:
+        type: object
+        properties:
+          user_id:
+            type: string
+            example: "user1"
+          wins:
+            type: number
+            example: 2
+        required:
+          - user_id
+          - wins
+    required:
+      - type
+      - tournament_name
+      - user_scores
+
+    frontend_processing:
+      description: |
+        Inform the user that the tournament is finished and show the results.
+
+  tournament_drop_out:
+    description: |
+      Sent when a user drops out of a tournament.
+      (Active connection only)"
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["tournament_drop_out"]
+        example: "tournament_drop_out"
+      tournament_name:
+        type: string
+        example: "tournament1"
+    required:
+      - type
+      - tournament_name
+
+    frontend_processing:
+      description: |
+        Inform the user that he dropped out of the tournament.
+
+  tournament_schedule:
+    description: |
+      Sent for every new round in a tournament.
+      (Active connection only)
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["tournament_schedule"]
+        example: "tournament_schedule"
+      tournament_name:
+        type: string
+        example: "tournament1"
+      matches:
+        type: array
+        items:
+          type: array
+          items:
+            type: string
+            example: "user_id"
+          minItems: 2
+          maxItems: 2
+    required:
+      - type
+      - tournament_name
+      - matches
+
+    frontend_processing:
+      description: |
+        Inform the user about the schedule for the next round.
+
+# Matchmaking socket: frontend -> backend.
+frontend_matchmaking_messages_schema:
+  active_connection:
+    description: |
+      Sent to indicate which is the active tab (connection).
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["active_connection"]
+        example: "active_connection"
+    required:
+      - type
+
+  queue_register:
+    description: |
+      Sent to join the matchmaking queue.
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["queue_register"]
+        example: "queue_register"
+    required:
+      - type
+    
+    response_schema:
+      description: |
+        Expected response from the backend.
+      type: object
+      properties:
+        queue_registered:
+          type: boolean
+          example: true  # Example indicating the user is registered
+        error_message: # Will not be present if the user was registered
+          type: string
+          enum: ["registered to queue", "registered to tournament", "registered to match"]
+          example: "registered to queue"  # Example error message
+      required:
+        - queue_registered
+
+  queue_unregister:
+    description: |
+      Sent to leave the matchmaking queue.
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["queue_unregister"]
+        example: "queue_unregister"
+    required:
+      - type
+
+    response_schema:
+      description: |
+        Expected response from the backend.
+      type: object
+      properties:
+        queue_unregistered:
+          type: boolean
+          example: true  # Example indicating the user is unregistered
+        error_message: # Will not be present if the user was unregistered
+          type: string
+          enum: ["not in queue"]
+          example: "not in queue"  # Example error message
+      required:
+        - queue_unregistered
+
+  queue_is_registered:
+    description: |
+      Sent to check if the user is in the matchmaking queue.
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["queue_is_registered"]
+        example: "queue_is_registered"
+    required:
+      - type
+    
+    response_schema:
+      description: |
+        Expected response from the backend.
+      type: object
+      properties:
+        queue_registered:
+          type: boolean
+          example: true  # Example indicating the user is registered
+      required:
+        - queue_registered
+
+  local_match_create:
+    description: |
+      Sent to create a local match.
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["local_match_create"]
+        example: "local_match_create"
+    required:
+      - type
+
+    response_schema:
+      description: |
+        Expected response from the backend.
+      type: object
+      properties:
+        local_match_created:
+          type: boolean
+          example: true  # Example indicating the match was created
+        error_message: # Will not be present if the match was created
+          type: string
+          example: "Already in a match"  # Example error message
+      required:
+        - local_match_created
+
+  tournament_create:
+    description: |
+      Sent to create a tournament.
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["tournament_create"]
+        example: "tournament_create"
+      name:
+        type: string
+        example: "Tournament 1"
+      max_players:
+        type: number
+        example: 4
+    required:
+      - type
+      - name
+      - max_players
+
+    response_schema:
+      description: |
+        Expected response from the backend.
+      type: object
+      properties:
+        tournament_created:
+          type: boolean
+          example: true  # Example indicating the tournament was created
+        tournament_id: # Will not be present if an error occurred
+          type: string
+          example: "tournament1"  # Example tournament ID
+        error_message: # Will not be present if the tournament was created
+          type: string
+          enum: ["tournament with name exists", "registered to queue", "registered to tournament", "registered to match", "tournament size is too large", "tournament size is too small"]
+          example: "Already in a tournament"  # Example error message
+      required:
+        - tournament_created
+
+  tournament_register:
+      description: |
+        Sent to join a tournament.
+      type: object
+      properties:
+        type:
+          type: string
+          enum: ["tournament_register"]
+          example: "tournament_register"
+        tournament_id:
+          type: string
+          example: "tournament1"
+      required:
+        - type
+        - tournament_id
+
+      response_schema:
+        description: |
+          Expected response from the backend.
+        type: object
+        properties:
+          tournament_registered:
+            type: boolean
+            example: true  # Example indicating the user is registered
+          error_message: # Will not be present if the user was registered
+            type: string
+            enum: ["tournament does not exist", "registered to queue", "registered to tournament", "registered to match", "is full", "already started"]
+            example: "is full"  # Example error message
+        required:
+          - tournament_registered
+
+  tournament_unregister:
+    description: |
+      Sent to leave a tournament.
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["tournament_unregister"]
+        example: "tournament_unregister"
+      tournament_id:
+        type: string
+        example: "tournament1"
+    required:
+      - type
+      - tournament_id
+
+    response_schema:
+      description: |
+        Expected response from the backend.
+      type: object
+      properties:
+        tournament_unregistered:
+          type: boolean
+          example: true  # Example indicating the user is unregistered
+        error_message: # Will not be present if the user was unregistered
+          type: string
+          enum: ["tournament does not exist", "not registered to tournament", "already started"]
+          example: "not registered to tournament"  # Example error message
+      required:
+        - tournament_unregistered
+
+  tournament_start:
+    description: |
+      Sent to start a tournament.
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["tournament_start"]
+        example: "tournament_start"
+      tournament_id:
+        type: string
+        example: "tournament1"
+    required:
+      - type
+      - tournament_id
+
+    response_schema:
+      description: |
+        Expected response from the backend.
+      type: object
+      properties:
+        tournament_started:
+          type: boolean
+          example: true  # Example indicating the tournament was started
+        error_message: # Will not be present if the tournament was started
+          type: string
+          enum: ["tournament does not exist", "not the tournament owner"]
+          example: "not the tournament owner"  # Example error message
+      required:
+        - tournament_started
+
+  tournament_cancel:
+    description: |
+      Sent to cancel a tournament.
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["tournament_cancel"]
+        example: "tournament_cancel"
+      tournament_id:
+        type: string
+        example: "tournament1"
+    required:
+      - type
+      - tournament_id
+
+    response_schema:
+      description: |
+        Expected response from the backend.
+      type: object
+      properties:
+        tournament_canceled:
+          type: boolean
+          example: true  # Example indicating the tournament was canceled
+        error_message: # Will not be present if the tournament was canceled
+          type: string
+          enum: ["tournament does not exist", "not the tournament owner", "already started"]
+          example: "not the tournament owner"  # Example error message
+      required:
+        - tournament_canceled
+
+  tournament_get_open:
+    description: |
+      Sent to get all open tournaments.
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["tournament_get_open"]
+        example: "tournament_get_open"
+    required:
+      - type
+    
+    response_schema:
+      description: |
+        Expected response from the backend.
+      type: object
+      properties:
+        type:
+          type: string
+          enum: ["open_tournaments_list"]
+          example: "open_tournaments_list"
+        tournaments:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                example: "tournament1"
+              name:
+                type: string
+                example: "Tournament 1"
+              max_players:
+                type: number
+                example: 4
+              owner:
+                type: string
+                example: "user1"
+              users:
+                type: array
+                items:
+                  type: string
+                  example: "user2"
+              is_owner:
+                type: boolean
+                example: true
+            required:
+              - id
+              - name
+              - max_players
+              - owner
+              - users
+              - is_owner
+      required:
+        - type
+        - tournaments
+
+
+# Match socket: backend -> frontend.
+backend_match_messages_schema:
+
+  user_mapping:
+    description: |
+      Sent when a user connects to a match.
+      Contains the user mapping.
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["user_mapping"]
+        example: "user_mapping"
+      is_local_match:
+        type: boolean
+        example: true
+      player1:
+        type: string
+        example: "someUserID"
+      player2: # Will be null if it is a local match
+        type: string
+        example: "anotherUserID"      
+    required:
+      - type
+      - is_local_match
+      - player1
+
+    frontend_processing:
+      description: |
+        Save the user mapping in the frontend
+        to display the correct user names.
+
+  user_connected:
+    description: |
+      Sent when a user connects to the match.
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["user_connected"]
+        example: "user_connected"
+      user_id:
+        type: string
+        example: "user_id"
+    required:
+      - type
+      - user_id
+
+    frontend_processing:
+      description: | 
+        Can be used to show a message that
+        the opponent has connected.
+
+  user_disconnected:
+    description: |
+      Sent when a user disconnects from the match.
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["user_disconnected"]
+        example: "user_disconnected"
+      user_id:
+        type: string
+        example: "user_id"
+    required:
+      - type
+      - user_id
+
+    frontend_processing:
+      description: |
+        Should be handled because the game will freeze until the
+        opponent reconnects or the match is canceled.
+
+  start_timer_update:
+    description: |
+      Sent to show when the match will start.
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["start_timer_update"]
+        example: "start_timer_update"
+      start_timer:
+        type: number
+        example: 3
+    required:
+      - type
+      - start_timer
+
+    frontend_processing:
+      description: |
+        Show the start timer in the frontend.
+
+  position_update:
+    description: |
+      Sent to update of the paddles and ball position.
+      Will also be sent when the match starts to initialize the positions.
+    type: object
+    properties:
+      paddleLeftX:
+        type: float32
+        offset: 0
+      paddleLeftY:
+        type: float32
+        offset: 4
+      paddleRightX:
+        type: float32
+        offset: 8
+      paddleRightY:
+        type: float32
+        offset: 12
+      ballPosX:
+        type: float32
+        offset: 16
+      ballPosY:
+        type: float32
+        offset: 20
+    byteLength: 24
+
+    frontend_processing:
+      description: |
+        Update the paddles and ball position in the frontend.
+
+  player_scores:
+    description: |
+      Sent when a player connects to the match.
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["player_scores"]
+        example: "player_scores"
+      player1:
+        type: number
+        example: 0
+      player2:
+        type: number
+        example: 0
+
+    frontend_processing:
+      description: |
+        Update the player scores in the frontend.
+    
+  game_over:
+    description: |
+      Sent when the game is over.
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["game_over"]
+        example: "game_over"
+      winner:
+        type: number
+        enum: [0, 1] # 0: left, 1: right
+        example: 1
+      loser:
+        type: number
+        enum: [0, 1] # 0: left, 1: right
+        example: 0
+    required:
+      - type
+      - winner
+      - loser
+
+    frontend_processing:
+      description: |
+        Show the game over screen in the frontend.
+
+# Match socket: frontend -> backend.
+frontend_match_messages_schema:
+
+  player_input:
+    description: |
+      Sent to update the player input.
+      Should only be sent when the direction changes.
+      player_key is only used in local matches but should be sent in all cases.
+    type: object
+    properties:
+      type:
+        type: string
+        enum: ["player_input"]
+        example: "player_input"
+      direction:
+        type: number
+        enum: [-1, 0, 1] # -1: up, 0: stop, 1: down
+        example: 1 # down
+      player_id:
+        type: number
+        enum: [0, 1] # 0: left, 1: right
+    required:
+      - type
+      - direction
+      - player_id

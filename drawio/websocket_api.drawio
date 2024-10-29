@@ -1,0 +1,132 @@
+<mxfile host="65bd71144e">
+    <diagram id="QP8pms8pTWOLu2dkqmeQ" name="Page-1">
+        <mxGraphModel dx="1508" dy="1590" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="2" value="GameSessionConsumer (ws/pong/game/(?P&amp;lt;game_id&amp;gt;[^/]+)/$)" style="swimlane;whiteSpace=wrap;html=1;swimlaneFillColor=default;" parent="1" vertex="1">
+                    <mxGeometry x="-680" y="50" width="490" height="830" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="Server -&amp;gt; Client" style="swimlane;whiteSpace=wrap;html=1;swimlaneFillColor=#F5F6FF;" parent="2" vertex="1">
+                    <mxGeometry x="20" y="35" width="220" height="760" as="geometry"/>
+                </mxCell>
+                <mxCell id="6" value="&lt;b&gt;Heartbeat&lt;br&gt;&lt;/b&gt;(every 3 seconds)&lt;br&gt;&lt;br&gt;type: heartbeat" style="rounded=0;whiteSpace=wrap;html=1;fillColor=default;gradientColor=none;" parent="3" vertex="1">
+                    <mxGeometry x="20" y="36" width="120" height="75" as="geometry"/>
+                </mxCell>
+                <mxCell id="7" value="&lt;b&gt;Position update&lt;br&gt;&lt;/b&gt;&lt;br&gt;type: position&lt;br&gt;value: {&lt;br&gt;ply: 0, pry: 0, bx: 0, by: 0&lt;br&gt;}" style="rounded=0;whiteSpace=wrap;html=1;fillColor=default;gradientColor=none;" parent="3" vertex="1">
+                    <mxGeometry x="20" y="115" width="120" height="105" as="geometry"/>
+                </mxCell>
+                <mxCell id="8" value="&lt;b&gt;Gamestate&lt;br&gt;&lt;/b&gt;&lt;br&gt;type: gamestate&lt;br&gt;value: {&lt;br&gt;initialization, starting {timer: x seconds}, running, paused, end {winner: user_id}&lt;br&gt;}" style="rounded=0;whiteSpace=wrap;html=1;fillColor=default;gradientColor=none;" parent="3" vertex="1">
+                    <mxGeometry x="20" y="335" width="120" height="145" as="geometry"/>
+                </mxCell>
+                <mxCell id="9" value="&lt;b&gt;Gamesetup&lt;/b&gt;&lt;br&gt;&lt;br&gt;type: setup&lt;br&gt;value: value: {&lt;br&gt;plx: 0, ply: 0, prx: 0 pry: 0, bx: 0, by: 0&lt;br&gt;}" style="rounded=0;whiteSpace=wrap;html=1;fillColor=default;gradientColor=none;" parent="3" vertex="1">
+                    <mxGeometry x="20" y="225" width="120" height="105" as="geometry"/>
+                </mxCell>
+                <mxCell id="5" value="Client -&amp;gt; Server" style="swimlane;whiteSpace=wrap;html=1;swimlaneFillColor=#F5F6FF;gradientColor=none;fillColor=default;" parent="2" vertex="1">
+                    <mxGeometry x="260" y="35" width="200" height="760" as="geometry"/>
+                </mxCell>
+                <mxCell id="11" value="&lt;b&gt;Heartbeat response&lt;/b&gt;&lt;br&gt;&lt;br&gt;type: heartbeat_response" style="rounded=0;whiteSpace=wrap;html=1;fillColor=default;gradientColor=none;" parent="5" vertex="1">
+                    <mxGeometry x="20" y="35" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="12" value="&lt;b&gt;User input&lt;br&gt;&lt;/b&gt;&lt;br&gt;type: userinput&lt;br&gt;player: 1 or 2&lt;br&gt;value: -1, 0, 1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=default;gradientColor=none;" parent="5" vertex="1">
+                    <mxGeometry x="20" y="111" width="120" height="89" as="geometry"/>
+                </mxCell>
+                <mxCell id="34" style="edgeStyle=none;html=1;" parent="2" source="6" target="11" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="16" value="MatchmakingConsumer (ws/pong/matchmaking/)" style="swimlane;whiteSpace=wrap;html=1;swimlaneFillColor=default;" parent="1" vertex="1">
+                    <mxGeometry x="-170" y="50" width="510" height="830" as="geometry"/>
+                </mxCell>
+                <mxCell id="17" value="Server -&amp;gt; Client" style="swimlane;whiteSpace=wrap;html=1;swimlaneFillColor=#F5F6FF;" parent="16" vertex="1">
+                    <mxGeometry x="20" y="35" width="220" height="760" as="geometry"/>
+                </mxCell>
+                <mxCell id="18" value="&lt;b&gt;Heartbeat&lt;br&gt;&lt;/b&gt;(every 3 seconds)&lt;br&gt;&lt;br&gt;type: heartbeat" style="rounded=0;whiteSpace=wrap;html=1;fillColor=default;gradientColor=none;" parent="17" vertex="1">
+                    <mxGeometry x="20" y="36" width="120" height="75" as="geometry"/>
+                </mxCell>
+                <mxCell id="29" value="&lt;b&gt;Register response&lt;/b&gt;&lt;br&gt;&lt;br&gt;type: register_response&lt;br&gt;value:&amp;nbsp; successful, failed {&lt;br&gt;message&lt;br&gt;}" style="rounded=0;whiteSpace=wrap;html=1;fillColor=default;gradientColor=none;" parent="17" vertex="1">
+                    <mxGeometry x="20" y="125" width="120" height="115" as="geometry"/>
+                </mxCell>
+                <mxCell id="33" value="&lt;b&gt;Create Tournament response&lt;/b&gt;&lt;br&gt;&lt;br&gt;type: successful, failed {&lt;br&gt;message&lt;br&gt;}" style="rounded=0;whiteSpace=wrap;html=1;fillColor=default;gradientColor=none;" parent="17" vertex="1">
+                    <mxGeometry x="20" y="255" width="120" height="125" as="geometry"/>
+                </mxCell>
+                <mxCell id="22" value="Client -&amp;gt; Server" style="swimlane;whiteSpace=wrap;html=1;swimlaneFillColor=#F5F6FF;gradientColor=none;fillColor=default;" parent="16" vertex="1">
+                    <mxGeometry x="260" y="35" width="200" height="760" as="geometry"/>
+                </mxCell>
+                <mxCell id="23" value="&lt;b&gt;Heartbeat response&lt;/b&gt;&lt;br&gt;&lt;br&gt;type: heartbeat_response" style="rounded=0;whiteSpace=wrap;html=1;fillColor=default;gradientColor=none;" parent="22" vertex="1">
+                    <mxGeometry x="20" y="35" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="26" value="&lt;b&gt;Register&lt;/b&gt;&lt;br&gt;&lt;br&gt;type: register&lt;br&gt;value: local, online_mm, tournament {&lt;br&gt;tournament_id&lt;br&gt;}" style="rounded=0;whiteSpace=wrap;html=1;fillColor=default;gradientColor=none;" parent="22" vertex="1">
+                    <mxGeometry x="20" y="115" width="120" height="125" as="geometry"/>
+                </mxCell>
+                <mxCell id="27" value="&lt;b&gt;Create Tournament&lt;/b&gt;&lt;br&gt;&lt;br&gt;type: create_tm&lt;br&gt;value: tm_name" style="rounded=0;whiteSpace=wrap;html=1;fillColor=default;gradientColor=none;" parent="22" vertex="1">
+                    <mxGeometry x="20" y="265" width="120" height="115" as="geometry"/>
+                </mxCell>
+                <mxCell id="28" value="&lt;b&gt;Cancel Tournament&lt;br&gt;&lt;/b&gt;&lt;br&gt;type: cancel_tm&lt;br&gt;value: tm_name" style="rounded=0;whiteSpace=wrap;html=1;fillColor=default;gradientColor=none;" parent="22" vertex="1">
+                    <mxGeometry x="20" y="395" width="120" height="115" as="geometry"/>
+                </mxCell>
+                <mxCell id="31" style="edgeStyle=none;html=1;" parent="16" source="26" target="29" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="32" style="edgeStyle=none;html=1;" parent="16" source="18" target="23" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="35" style="edgeStyle=none;html=1;" parent="16" source="27" target="33" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="36" value="TournamentConsumer (ws/pong/tournament/?P&amp;lt;game_id&amp;gt;[^/]+)/$/)" style="swimlane;whiteSpace=wrap;html=1;swimlaneFillColor=default;startSize=23;" parent="1" vertex="1">
+                    <mxGeometry x="360" y="50" width="490" height="830" as="geometry"/>
+                </mxCell>
+                <mxCell id="37" value="Server -&amp;gt; Client" style="swimlane;whiteSpace=wrap;html=1;swimlaneFillColor=#F5F6FF;" parent="36" vertex="1">
+                    <mxGeometry x="20" y="35" width="220" height="760" as="geometry"/>
+                </mxCell>
+                <mxCell id="38" value="&lt;b&gt;Heartbeat&lt;br&gt;&lt;/b&gt;(every 3 seconds)&lt;br&gt;&lt;br&gt;type: heartbeat" style="rounded=0;whiteSpace=wrap;html=1;fillColor=default;gradientColor=none;" parent="37" vertex="1">
+                    <mxGeometry x="20" y="36" width="120" height="75" as="geometry"/>
+                </mxCell>
+                <mxCell id="39" value="&lt;b&gt;Start tm response&lt;/b&gt;&lt;br&gt;(Ask every player if ready, remove if not)&lt;br&gt;type: start_tm_response&lt;br&gt;value: value: players {user_id_1,user_id_&lt;br style=&quot;border-color: var(--border-color);&quot;&gt;2,user_id_&lt;br style=&quot;border-color: var(--border-color);&quot;&gt;user_id_3,user_id_&lt;br style=&quot;border-color: var(--border-color);&quot;&gt;4,user_id_&lt;br style=&quot;border-color: var(--border-color);&quot;&gt;5 ...}" style="rounded=0;whiteSpace=wrap;html=1;fillColor=default;gradientColor=none;" parent="37" vertex="1">
+                    <mxGeometry x="20" y="125" width="120" height="165" as="geometry"/>
+                </mxCell>
+                <mxCell id="41" value="Client -&amp;gt; Server" style="swimlane;whiteSpace=wrap;html=1;swimlaneFillColor=#F5F6FF;gradientColor=none;fillColor=default;" parent="36" vertex="1">
+                    <mxGeometry x="260" y="35" width="200" height="760" as="geometry"/>
+                </mxCell>
+                <mxCell id="42" value="&lt;b&gt;Heartbeat response&lt;/b&gt;&lt;br&gt;&lt;br&gt;type: heartbeat_response" style="rounded=0;whiteSpace=wrap;html=1;fillColor=default;gradientColor=none;" parent="41" vertex="1">
+                    <mxGeometry x="20" y="35" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="43" value="&lt;b&gt;Start tm&lt;/b&gt;&lt;br&gt;&lt;br&gt;type: start_tm" style="rounded=0;whiteSpace=wrap;html=1;fillColor=default;gradientColor=none;" parent="41" vertex="1">
+                    <mxGeometry x="20" y="115" width="120" height="75" as="geometry"/>
+                </mxCell>
+                <mxCell id="45" value="&lt;b&gt;Cancel Tournament&lt;br&gt;&lt;/b&gt;(Only possible if tm didn't start and only tm leader could cancel it)&lt;br&gt;type: cancel_tm&lt;br&gt;value: tm_name" style="rounded=0;whiteSpace=wrap;html=1;fillColor=default;gradientColor=none;" parent="41" vertex="1">
+                    <mxGeometry x="20" y="215" width="120" height="115" as="geometry"/>
+                </mxCell>
+                <mxCell id="47" style="edgeStyle=none;html=1;" parent="36" source="43" target="39" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="48" style="edgeStyle=none;html=1;" parent="36" source="38" target="42" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="49" style="edgeStyle=none;html=1;" parent="36" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="159.99999999999955" y="623.75" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="13" value="Redis" style="swimlane;whiteSpace=wrap;html=1;swimlaneFillColor=#F5F6FF;gradientColor=none;fillColor=default;" parent="1" vertex="1">
+                    <mxGeometry x="870" y="50" width="330" height="980" as="geometry"/>
+                </mxCell>
+                <mxCell id="52" value="&lt;b&gt;player:session:&amp;lt;player_id&amp;gt;&lt;br&gt;&lt;/b&gt;{&lt;br&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;&quot;online_status&quot;: online, in_queue, playing, offline&lt;br&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;&quot;last_match_id&quot;: match_id&lt;br&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;&quot;last_login&quot;:&amp;nbsp;&quot;2024-08-10T12:34:56Z&quot;&lt;br&gt;}" style="rounded=0;whiteSpace=wrap;html=1;fillColor=default;gradientColor=none;align=left;spacingLeft=6;" parent="13" vertex="1">
+                    <mxGeometry x="10" y="35" width="310" height="125" as="geometry"/>
+                </mxCell>
+                <mxCell id="53" value="&lt;b&gt;matches:open&lt;/b&gt;&lt;br&gt;{&lt;br&gt;  &lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;&quot;match_id&quot;: {&lt;br&gt;    &lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;&lt;/span&gt;&quot;status&quot;: &quot;starting, running, paused, end&quot;,&lt;br&gt;    &lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;&lt;/span&gt;&quot;users&quot;: {&lt;br&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;&quot;user_id_1&quot;,&lt;br&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;&quot;user_id_2&quot;&lt;br&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;}&lt;br&gt;  &lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;},&lt;br&gt;}" style="rounded=0;whiteSpace=wrap;html=1;fillColor=default;gradientColor=none;align=left;verticalAlign=middle;labelPosition=center;verticalLabelPosition=middle;spacingLeft=6;" parent="13" vertex="1">
+                    <mxGeometry x="10" y="171" width="310" height="159" as="geometry"/>
+                </mxCell>
+                <mxCell id="55" value="&lt;b&gt;matchmaking_queue &lt;/b&gt;(list of elements (user_ids))" style="rounded=0;whiteSpace=wrap;html=1;fillColor=default;gradientColor=none;align=left;verticalAlign=middle;labelPosition=center;verticalLabelPosition=middle;spacingLeft=6;" parent="13" vertex="1">
+                    <mxGeometry x="10" y="340" width="310" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="56" value="&lt;b&gt;tournament:tournament_1:details&lt;br&gt;&lt;/b&gt;{&lt;br&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;&quot;name: AwesomeTournament&lt;br&gt;&lt;span style=&quot;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;&quot;state&quot;: &quot;creating&quot;,&lt;br&gt;&lt;span style=&quot;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;&quot;start_time&quot;: &quot;2024-08-10T14:00:00Z&quot;,&lt;br&gt;&lt;span style=&quot;&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;&quot;rounds&quot;: &quot;3&quot;&lt;br&gt;}&lt;br&gt;&lt;br&gt;&lt;b style=&quot;border-color: var(--border-color);&quot;&gt;tournament:tournament_2:details&lt;br style=&quot;border-color: var(--border-color);&quot;&gt;&lt;/b&gt;{&lt;br&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;&quot;name&quot; AnotherCoolTournament&lt;br style=&quot;border-color: var(--border-color);&quot;&gt;&lt;span style=&quot;border-color: var(--border-color);&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;&quot;state&quot;: &quot;running&quot;,&lt;br style=&quot;border-color: var(--border-color);&quot;&gt;&lt;span style=&quot;border-color: var(--border-color);&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;&quot;start_time&quot;: &quot;2024-08-10T14:00:00Z&quot;,&lt;br style=&quot;border-color: var(--border-color);&quot;&gt;&lt;span style=&quot;border-color: var(--border-color);&quot;&gt;&#9;&lt;/span&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;&quot;rounds&quot;: &quot;6&quot;&lt;br style=&quot;border-color: var(--border-color);&quot;&gt;}&lt;br&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=default;gradientColor=none;align=left;spacingLeft=6;" parent="13" vertex="1">
+                    <mxGeometry x="10" y="385" width="310" height="240" as="geometry"/>
+                </mxCell>
+                <mxCell id="60" value="&lt;div&gt;&lt;b&gt;tournament:tournament_1:players&lt;/b&gt;&lt;/div&gt;&lt;div&gt;{&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;&quot;player_1&quot;,&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;&quot;player_2&quot;,&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#9;&lt;/span&gt;&quot;player_3&quot;&lt;/div&gt;&lt;div&gt;}&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=default;gradientColor=none;align=left;spacingLeft=6;" parent="13" vertex="1">
+                    <mxGeometry x="10" y="635" width="310" height="110" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
