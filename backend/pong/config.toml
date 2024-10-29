@@ -11,7 +11,7 @@ world_size = [16.0, 9.0]                        # World size in units (X, Y)
         
     [game.ball]
         speed = 8.0                      # Ball speed in units per second
-        speed_multiplier = 0.15        # Increase ball speed after each second for a fraction of the base speed
+        speed_multiplier = 0.3        # Increase ball speed after each second for a fraction of the base speed
         size = 0.2
 
 [match]
