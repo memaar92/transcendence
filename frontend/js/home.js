@@ -1,5 +1,6 @@
 import { api } from "./api.js";
 import { router } from "./app.js";
+import { showAlert } from "./app.js"
 
 function isValidEmail(email) {
   var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -23,8 +24,14 @@ document.getElementById("login").addEventListener("click", async (e) => {
   if (result.ok) {
     const json = await result.json();
     localStorage.setItem("uid", json["id"]);
-    if (json["email_verified"] == true) router.navigate("/login");
-    else router.navigate("/email_verification");
+    if (json["email_verified"] == true && json["42auth"] == false) {
+        router.navigate("/login")
+    } else if (json["email_verified"] == true && json["42auth"] == true) {
+        showAlert('You are already registered with 42. Please login with 42.')
+        router.navigate("/home")
+    } else {
+        router.navigate("/email_verification")
+    }
   } else {
     router.navigate("/register");
   }

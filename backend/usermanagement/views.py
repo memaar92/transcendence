@@ -397,7 +397,8 @@ class CheckEmail(APIView):
                 'properties': {
                     'detail': {'type': 'string', 'enum': ['User with this email exists']},
                     'id': {'type': 'integer'},
-                    'email_verified': {'type': 'boolean'}
+                    'email_verified': {'type': 'boolean'},
+                    '42auth': {'type': 'boolean'}
                 },
             },
             (400, 'application/json'): {
@@ -418,9 +419,9 @@ class CheckEmail(APIView):
     def post(self, request):
         serializer = CheckEmailSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = CustomUser.objects.filter(email=request.data['email']).values('email', 'email_verified', 'id')
+        user = CustomUser.objects.filter(email=request.data['email']).values('email', 'email_verified', 'id', 'is_42_auth')
         if user.exists():
-            return Response({'detail': 'User with this email exists', 'id': user.first()['id'], 'email_verified': user.first()['email_verified']}, status=200)
+            return Response({'detail': 'User with this email exists', 'id': user.first()['id'], 'email_verified': user.first()['email_verified'], '42auth': user.first()['is_42_auth']}, status=200)
         return Response({'detail': 'User with this email does not exist'}, status=404)
 
 
