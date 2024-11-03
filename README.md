@@ -1,6 +1,6 @@
 # transcendence
 
-This is an reimagination of the classic Pong game. It was developed as part of the curriculum at 42. The project serves as a playground to explore frontend and backend integration, database handling, authentication, and secure communication.
+This is a reimagination of the classic Pong game. It was developed as part of the curriculum at 42. The project serves as a playground to explore frontend and backend integration, database handling, authentication, and secure communication.
 
 ## Features
 - Game Modes: Matchmaking system for online players, round-robin tournaments and local game support
