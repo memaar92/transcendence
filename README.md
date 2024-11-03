@@ -16,6 +16,7 @@ This is a reimagination of the classic Pong game. It was developed as part of th
 - WebSocket: Real-time communication implemented using WebSocket to handle live chat and gameplay
 - Authentication: JWT stored inside httpOnly cookies, 2FA via authenticator app, OTP for email verification, OAuth 2.0 for third-party auth
 - Docker: Containerized development and deployment using Docker for consistency and scalability
+- Swagger: API documentation
 
 ## Preview
 
