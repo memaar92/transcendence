@@ -20,6 +20,11 @@ This is an reimagination of the classic Pong game. It was developed as part of t
 ## Preview
 
 
+https://github.com/user-attachments/assets/09d4cc86-9cf6-4a56-9d8d-049152a285f1
+
+
+
+
 
 ## Running the app
 Follow these instructions to get your copy of the project up and running on your local machine for development and testing purposes.
@@ -45,7 +50,7 @@ postgresql_user.txt
 Provide cryptographic signing. Django will refuse to start if SECRET_KEY is not set. Generate it.
 secret_key.txt
 
-OTP email for email verification. To print the OTP in the console instead, uncomment the "print("send email with otp", otp)" in backend/usermanagement/views.py
+OTP email for email verification. To print the OTP in the console instead, uncomment "print("send email with otp", otp)" in backend/usermanagement/views.py (and comment out the line "send_otp_email(user_profile.email, otp)"
 email_host.txt 
 email_host_pw.txt
 
